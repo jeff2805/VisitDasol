@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="Visit Dasol">
+  <rect width="48" height="48" rx="12" fill="#0D3B47"/>
+  <circle cx="24" cy="27" r="10" fill="#F2B134"/>
+  <rect x="4" y="27" width="40" height="17" fill="#0D3B47"/>
+  <g fill="none" stroke="#8FD0C9" stroke-width="2" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M8 29.5h32"/>
+    <rect x="9.5" y="34" width="13" height="6.5" rx="1"/>
+    <rect x="25.5" y="34" width="13" height="6.5" rx="1"/>
+  </g>
+</svg>

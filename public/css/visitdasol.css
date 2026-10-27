@@ -1,0 +1,5703 @@
+/*
+ * Visit Dasol stylesheet
+ *
+ * Loaded after Bootstrap 5.3, which supplies the grid and a handful of
+ * utilities. Everything that gives this site its own look is written here.
+ *
+ * Section 1 holds the design tokens: colour, spacing, type scale, elevation
+ * and motion. Reach for a token before writing a number — the scales were
+ * measured from what this stylesheet already did, so they fit it.
+ *
+ * Sections:
+ *   1. Design tokens          9. Dashboard shell (owner / MTO)
+ *   2. Bootstrap overrides   10. Error pages and utilities
+ *   3. Base typography       11. Listing cards, galleries, detail pages
+ *   4. Components            12. Map pins, popups, the map page
+ *   5. Salt-bed motif        13. Charts
+ *   6. Public navbar/footer  14. Office dashboard
+ *   7. Hero & home           15. Phones and tablets
+ *   8. Auth layout           16. Print
+ */
+
+/* 1. Design tokens ------------------------------------------------------ */
+:root {
+  --vd-bay: #0D3B47;          /* Dasol Bay: navigation, hero, footer */
+  --vd-bay-raised: #16505E;
+  --vd-lagoon: #0F7C7A;       /* primary actions and links */
+  --vd-lagoon-dark: #0B6462;
+  --vd-lagoon-tint: #D8EEEC;
+  --vd-lagoon-light: #5ED3CE; /* on navy, where the dark teal would disappear */
+  --vd-salt: #F5F8F7;         /* page background */
+  --vd-brine: #E1ECEA;        /* borders, quiet surfaces */
+  --vd-brine-dark: #C7DBD8;
+  --vd-mango: #F2B134;        /* call-to-action accent */
+  --vd-mango-dark: #D99A1E;
+  --vd-mangrove: #2E6B4E;     /* success */
+  --vd-ink: #16323A;          /* body text */
+  --vd-muted: #5B7178;        /* secondary text */
+  --vd-on-bay: #E9F3F1;       /* text on Dasol Bay */
+  --vd-on-bay-muted: #A9C6C3;
+  --vd-seafoam: #8FD0C9;
+
+  --vd-font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', 'Arial Narrow', 'Segoe UI', system-ui, sans-serif;
+  --vd-font-body: 'Figtree Variable', 'Figtree', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+
+  --vd-radius-sm: .375rem;
+  --vd-radius: .625rem;
+  --vd-radius-lg: 1rem;
+  /* The resting shadow, under its older name. Kept so the rules already
+     using it need no edit; both now point at one value. */
+  --vd-shadow: var(--vd-elevation-1);
+  --vd-sidebar-width: 17rem;
+  --vd-topbar-height: 4rem;
+
+  /* Status colors (badges, used from Phase 4) */
+  --vd-status-pending-bg: #FDF1D6;   --vd-status-pending-fg: #8A5A00;
+  --vd-status-active-bg: #DDEFE5;    --vd-status-active-fg: #1F5A3E;
+  --vd-status-rejected-bg: #FADFDC;  --vd-status-rejected-fg: #9B2C1F;
+  --vd-status-inactive-bg: #E7ECED;  --vd-status-inactive-fg: #4B5D63;
+  --vd-status-completed-bg: #DCE8F7; --vd-status-completed-fg: #1D4F8C;
+
+  /*
+  | Supporting tones
+  |
+  | The palette is a coastal one — bay navy and lagoon teal — and these two
+  | widen it without changing its identity. Sand is a warm ground for sections
+  | that would otherwise be a third sheet of white; charcoal is for text that
+  | must sit on sand, where the bay navy reads as a link.
+  */
+  --vd-sand: #F3EFE7;
+  --vd-sand-dark: #E6DFD1;
+  --vd-charcoal: #2A3133;
+
+  /*
+  | Spacing scale
+  |
+  | Measured from the stylesheet as it stands, not invented: 1rem and .75rem
+  | were already carrying most of the work, with drift at .35, .6, .7, .85 and
+  | 1.15 where a step was missing. These are those steps, regularised. Nothing
+  | existing is changed by adding them; they are for what comes next.
+  */
+  --vd-space-3xs: .25rem;
+  --vd-space-2xs: .375rem;
+  --vd-space-xs: .5rem;
+  --vd-space-sm: .75rem;
+  --vd-space-md: 1rem;
+  --vd-space-lg: 1.25rem;
+  --vd-space-xl: 1.5rem;
+  --vd-space-2xl: 2rem;
+  --vd-space-3xl: 3rem;
+
+  /*
+  | Type scale
+  |
+  | Also measured: .8125rem is the most used size in the project, then
+  | .9375rem and .875rem. The names say what each is for, so a size is chosen
+  | by its job rather than by its number.
+  */
+  --vd-text-caption: .75rem;     /* timestamps, counts, fine print */
+  --vd-text-small: .8125rem;     /* labels, helper lines, table meta */
+  --vd-text-body-sm: .875rem;    /* dense body: tables, cards */
+  --vd-text-body: .9375rem;      /* body in panels */
+  --vd-text-lead: 1.0625rem;     /* opening sentence of a section */
+  --vd-text-h3: 1.25rem;
+  --vd-text-h2: 1.5rem;
+  --vd-text-h1: clamp(1.75rem, 1.2rem + 2vw, 2.5rem);
+  --vd-text-display: clamp(2rem, 1.4rem + 2vw, 3.25rem);
+
+  --vd-leading-tight: 1.15;      /* headings */
+  --vd-leading-snug: 1.35;       /* short blocks, card text */
+  --vd-leading-normal: 1.6;      /* running body text */
+
+  /*
+  | Elevation
+  |
+  | There were ten different box-shadow values in this file and one token, so
+  | nine of them were written by hand and none agreed with the others. Three
+  | levels is enough for this site: a resting card, something lifted under the
+  | pointer, and something floating over the page.
+  */
+  --vd-elevation-1: 0 1px 2px rgba(13, 59, 71, .06), 0 4px 14px rgba(13, 59, 71, .06);
+  --vd-elevation-2: 0 2px 4px rgba(13, 59, 71, .08), 0 10px 24px rgba(13, 59, 71, .10);
+  --vd-elevation-3: 0 4px 8px rgba(13, 59, 71, .10), 0 18px 40px rgba(13, 59, 71, .14);
+
+  /*
+  | Motion
+  |
+  | Durations were .15s, .18s and .2s — three values meaning "quick". One set,
+  | so a hover on a card and a hover on a button feel like the same site.
+  | Every use of these is still inside the prefers-reduced-motion guard.
+  */
+  --vd-ease: cubic-bezier(.2, 0, .2, 1);
+  --vd-transition-fast: .12s var(--vd-ease);
+  --vd-transition: .18s var(--vd-ease);
+  --vd-transition-slow: .28s var(--vd-ease);
+
+  /* 2. Bootstrap overrides (CSS variables) */
+  --bs-body-font-family: var(--vd-font-body);
+  --bs-body-font-size: 1rem;
+  --bs-body-line-height: 1.6;
+  --bs-body-color: var(--vd-ink);
+  --bs-body-color-rgb: 22, 50, 58;
+  --bs-body-bg: var(--vd-salt);
+  --bs-emphasis-color: var(--vd-bay);
+  --bs-secondary-color: var(--vd-muted);
+  --bs-secondary-bg: var(--vd-brine);
+  --bs-tertiary-bg: #EDF4F2;
+  --bs-heading-color: var(--vd-bay);
+  --bs-primary: var(--vd-lagoon);
+  --bs-primary-rgb: 15, 124, 122;
+  --bs-primary-text-emphasis: #084E4D;
+  --bs-primary-bg-subtle: var(--vd-lagoon-tint);
+  --bs-primary-border-subtle: #A9D7D4;
+  --bs-success: var(--vd-mangrove);
+  --bs-success-rgb: 46, 107, 78;
+  --bs-warning: var(--vd-mango);
+  --bs-warning-rgb: 242, 177, 52;
+  --bs-dark: var(--vd-bay);
+  --bs-dark-rgb: 13, 59, 71;
+  --bs-link-color: var(--vd-lagoon);
+  --bs-link-color-rgb: 15, 124, 122;
+  --bs-link-hover-color: var(--vd-lagoon-dark);
+  --bs-link-hover-color-rgb: 11, 100, 98;
+  --bs-border-color: var(--vd-brine);
+  --bs-border-color-translucent: rgba(13, 59, 71, .12);
+  --bs-border-radius: var(--vd-radius-sm);
+  --bs-border-radius-lg: var(--vd-radius);
+  --bs-border-radius-xl: var(--vd-radius-lg);
+  --bs-focus-ring-color: rgba(15, 124, 122, .35);
+
+  /* Alert and subtle-background colors in the project palette */
+  --bs-success-text-emphasis: #1F5A3E;
+  --bs-success-bg-subtle: #E3F1E9;
+  --bs-success-border-subtle: #B9DCC8;
+  --bs-info-text-emphasis: #084E4D;
+  --bs-info-bg-subtle: var(--vd-lagoon-tint);
+  --bs-info-border-subtle: #A9D7D4;
+  --bs-warning-text-emphasis: #6E4800;
+  --bs-warning-bg-subtle: #FDF1D6;
+  --bs-warning-border-subtle: #F4D48F;
+  --bs-danger-text-emphasis: #8A2418;
+  --bs-danger-bg-subtle: #FBE6E3;
+  --bs-danger-border-subtle: #F2BDB5;
+}
+
+.btn-primary {
+  --bs-btn-bg: var(--vd-lagoon);
+  --bs-btn-border-color: var(--vd-lagoon);
+  --bs-btn-hover-bg: var(--vd-lagoon-dark);
+  --bs-btn-hover-border-color: var(--vd-lagoon-dark);
+  --bs-btn-active-bg: #09504F;
+  --bs-btn-active-border-color: #09504F;
+  --bs-btn-disabled-bg: var(--vd-lagoon);
+  --bs-btn-disabled-border-color: var(--vd-lagoon);
+  --bs-btn-focus-shadow-rgb: 15, 124, 122;
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--vd-lagoon);
+  --bs-btn-border-color: var(--vd-lagoon);
+  --bs-btn-hover-bg: var(--vd-lagoon);
+  --bs-btn-hover-border-color: var(--vd-lagoon);
+  --bs-btn-active-bg: var(--vd-lagoon-dark);
+  --bs-btn-active-border-color: var(--vd-lagoon-dark);
+  --bs-btn-disabled-color: var(--vd-lagoon);
+  --bs-btn-disabled-border-color: var(--vd-lagoon);
+  --bs-btn-focus-shadow-rgb: 15, 124, 122;
+}
+
+/* Mango call-to-action button */
+.btn-accent {
+  --bs-btn-color: var(--vd-bay);
+  --bs-btn-bg: var(--vd-mango);
+  --bs-btn-border-color: var(--vd-mango);
+  --bs-btn-hover-color: var(--vd-bay);
+  --bs-btn-hover-bg: var(--vd-mango-dark);
+  --bs-btn-hover-border-color: var(--vd-mango-dark);
+  --bs-btn-active-color: var(--vd-bay);
+  --bs-btn-active-bg: #C4880F;
+  --bs-btn-active-border-color: #C4880F;
+  --bs-btn-disabled-color: var(--vd-bay);
+  --bs-btn-disabled-bg: var(--vd-mango);
+  --bs-btn-disabled-border-color: var(--vd-mango);
+  --bs-btn-focus-shadow-rgb: 242, 177, 52;
+  font-weight: 650;
+}
+
+/* Light outline button for dark (bay) backgrounds */
+.btn-outline-salt {
+  --bs-btn-color: var(--vd-on-bay);
+  --bs-btn-border-color: rgba(233, 243, 241, .45);
+  --bs-btn-hover-color: var(--vd-bay);
+  --bs-btn-hover-bg: var(--vd-on-bay);
+  --bs-btn-hover-border-color: var(--vd-on-bay);
+  --bs-btn-active-color: var(--vd-bay);
+  --bs-btn-active-bg: #FFFFFF;
+  --bs-btn-active-border-color: #FFFFFF;
+  --bs-btn-focus-shadow-rgb: 233, 243, 241;
+}
+
+.btn {
+  --bs-btn-font-weight: 600;
+  --bs-btn-border-radius: var(--vd-radius-sm);
+}
+
+.form-control,
+.form-select {
+  border-color: var(--vd-brine-dark);
+  background-color: #FFFFFF;
+}
+
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+  border-color: var(--vd-lagoon);
+  box-shadow: 0 0 0 .25rem rgba(15, 124, 122, .2);
+}
+
+.form-check-input:checked {
+  background-color: var(--vd-lagoon);
+  border-color: var(--vd-lagoon);
+}
+
+.form-label {
+  font-weight: 600;
+  color: var(--vd-bay);
+  margin-bottom: .35rem;
+}
+
+/* Password fields carry a show/hide button inside their right-hand edge. */
+.vd-password {
+  position: relative;
+}
+
+.vd-password .form-control {
+  /* Room for the button, so a long password does not run underneath it. */
+  padding-right: 2.75rem;
+}
+
+/*
+ * Bootstrap paints a warning icon into that same corner, and Edge adds a
+ * reveal button of its own. Both would sit under ours; the red border and the
+ * message below already say the field is wrong.
+ */
+.vd-password .form-control.is-invalid {
+  background-image: none;
+}
+
+.vd-password .form-control::-ms-reveal,
+.vd-password .form-control::-ms-clear {
+  display: none;
+}
+
+.vd-password__toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0 var(--vd-radius-sm) var(--vd-radius-sm) 0;
+  background: none;
+  color: var(--vd-muted);
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.vd-password__toggle:hover {
+  color: var(--vd-lagoon);
+}
+
+/*
+ * The wrapper stands between the field and its message, so Bootstrap's own
+ * ".is-invalid ~ .invalid-feedback" no longer reaches it. The wrapper repeats
+ * the state to bring the message back.
+ */
+.vd-password--invalid ~ .invalid-feedback {
+  display: block;
+}
+
+.form-text {
+  color: var(--vd-muted);
+}
+
+/* Bootstrap styles <legend> like a heading; inside forms it should match labels. */
+legend.form-label {
+  float: none;
+  width: auto;
+  font-size: 1rem;
+  line-height: inherit;
+}
+
+.nav-pills {
+  --bs-nav-pills-link-active-bg: var(--vd-lagoon);
+}
+
+.pagination {
+  --bs-pagination-color: var(--vd-lagoon);
+  --bs-pagination-hover-color: var(--vd-lagoon-dark);
+  --bs-pagination-focus-color: var(--vd-lagoon-dark);
+  --bs-pagination-active-bg: var(--vd-lagoon);
+  --bs-pagination-active-border-color: var(--vd-lagoon);
+  --bs-pagination-border-color: var(--vd-brine);
+}
+
+.dropdown-menu {
+  --bs-dropdown-link-active-bg: var(--vd-lagoon);
+  --bs-dropdown-border-color: var(--vd-brine);
+  --bs-dropdown-box-shadow: var(--vd-shadow);
+  box-shadow: var(--bs-dropdown-box-shadow);
+}
+
+.table {
+  --bs-table-border-color: var(--vd-brine);
+  --bs-table-hover-bg: #EEF5F4;
+}
+
+.table > thead th {
+  color: var(--vd-muted);
+  font-weight: 600;
+  font-size: .875rem;
+  background-color: #F0F6F5;
+  white-space: nowrap;
+}
+
+.card {
+  --bs-card-border-color: var(--vd-brine);
+  --bs-card-border-radius: var(--vd-radius);
+  --bs-card-cap-bg: transparent;
+}
+
+.alert {
+  --bs-alert-border-radius: var(--vd-radius-sm);
+}
+
+/* 3. Base typography ---------------------------------------------------- */
+body {
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* Safari on iOS inflates text of its own accord when a phone is turned on
+     its side. The page is already responsive, so it must not. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* A long resort name or email address must wrap, not widen the page. */
+  overflow-wrap: break-word;
+}
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6,
+.vd-display {
+  font-family: var(--vd-font-display);
+  font-weight: 700;
+  font-stretch: 92%;
+  letter-spacing: -.01em;
+  line-height: 1.15;
+}
+
+h1, .h1 { font-size: clamp(2rem, 1.4rem + 2.2vw, 2.75rem); }
+h2, .h2 { font-size: clamp(1.625rem, 1.3rem + 1.3vw, 2.125rem); }
+h3, .h3 { font-size: 1.5rem; }
+h4, .h4 { font-size: 1.25rem; }
+h5, .h5 { font-size: 1.0625rem; }
+
+.lead {
+  font-size: 1.1875rem;
+  line-height: 1.55;
+}
+
+.vd-prose {
+  max-width: 68ch;
+}
+
+a {
+  text-underline-offset: .18em;
+}
+
+:focus-visible {
+  outline: 3px solid var(--vd-mango);
+  outline-offset: 2px;
+}
+
+.vd-skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -3rem;
+  z-index: 2000;
+  padding: .5rem 1rem;
+  border-radius: var(--vd-radius-sm);
+  background: var(--vd-mango);
+  color: var(--vd-bay);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.vd-skip-link:focus {
+  top: 1rem;
+}
+
+/* 4. Components --------------------------------------------------------- */
+.vd-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+/* The logo image. Its height sets the size; the width follows the artwork. */
+.vd-brand__logo {
+  display: block;
+  height: 2.5rem;
+  width: auto;
+  max-width: 100%;
+}
+
+.navbar .vd-brand__logo {
+  height: 2.6rem;
+}
+
+.vd-sidebar__header .vd-brand__logo {
+  height: 2.3rem;
+}
+
+.vd-footer .vd-brand__logo,
+.vd-error .vd-brand__logo {
+  height: 2.75rem;
+}
+
+.vd-auth__panel .vd-brand__logo {
+  height: 3rem;
+}
+
+@media (max-width: 575.98px) {
+  .navbar .vd-brand__logo {
+    height: 2.2rem;
+  }
+}
+
+
+.vd-panel {
+  background: #FFFFFF;
+  border: 1px solid var(--vd-brine);
+  border-radius: var(--vd-radius);
+}
+
+.vd-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.vd-page-header__title {
+  margin: 0;
+  font-size: clamp(1.5rem, 1.2rem + 1vw, 1.875rem);
+}
+
+.vd-page-header__subtitle {
+  margin: .25rem 0 0;
+  color: var(--vd-muted);
+  max-width: 64ch;
+}
+
+.vd-empty {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  border: 1px dashed var(--vd-brine-dark);
+  border-radius: var(--vd-radius);
+  background: #FFFFFF;
+}
+
+.vd-empty__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  margin-bottom: 1rem;
+  border-radius: 50%;
+  background: var(--vd-lagoon-tint);
+  color: var(--vd-lagoon-dark);
+  font-size: 1.5rem;
+}
+
+.vd-empty__title {
+  font-size: 1.125rem;
+  margin-bottom: .35rem;
+}
+
+.vd-empty__text {
+  color: var(--vd-muted);
+  max-width: 44ch;
+  margin: 0 auto 1.25rem;
+}
+
+.vd-stat {
+  padding: 1.25rem;
+}
+
+.vd-stat__value {
+  font-family: var(--vd-font-display);
+  font-weight: 700;
+  font-stretch: 85%;
+  font-size: 2.125rem;
+  line-height: 1;
+  color: var(--vd-bay);
+}
+
+.vd-stat__label {
+  color: var(--vd-muted);
+  font-size: .9375rem;
+  margin-top: .4rem;
+}
+
+/* A line of context under the label: "Sent in, not yet decided."
+
+   This class was in use on the barangay dashboard with no rule behind it at
+   all, so the note rendered as unstyled text running into the label beside
+   it. Both are fixed by <x-stat>, which is now the only way these are
+   written. */
+.vd-stat__note {
+  margin: .3rem 0 0;
+  font-size: .8125rem;
+  line-height: 1.35;
+  color: var(--vd-muted);
+}
+
+/* The variant with an icon beside the figure. The flexbox lives here rather
+   than as a row of utility classes repeated at each call site. */
+.vd-stat--with-icon {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+
+.vd-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .25rem .65rem;
+  border-radius: 999px;
+  font-size: .8125rem;
+  font-weight: 650;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.vd-badge::before {
+  content: '';
+  width: .45rem;
+  height: .45rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.vd-badge--pending   { background: var(--vd-status-pending-bg);   color: var(--vd-status-pending-fg); }
+.vd-badge--active,
+.vd-badge--paid,
+.vd-badge--confirmed,
+.vd-badge--published { background: var(--vd-status-active-bg);    color: var(--vd-status-active-fg); }
+.vd-badge--rejected,
+.vd-badge--failed    { background: var(--vd-status-rejected-bg);  color: var(--vd-status-rejected-fg); }
+.vd-badge--inactive,
+.vd-badge--cancelled,
+.vd-badge--draft     { background: var(--vd-status-inactive-bg);  color: var(--vd-status-inactive-fg); }
+.vd-badge--completed,
+.vd-badge--refunded  { background: var(--vd-status-completed-bg); color: var(--vd-status-completed-fg); }
+/* A hidden review reads like anything else switched off. */
+.vd-badge--hidden    { background: var(--vd-status-inactive-bg);  color: var(--vd-status-inactive-fg); }
+
+/* Paying for a confirmed reservation. */
+.vd-pay__due {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .75rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: var(--vd-radius);
+  background: var(--vd-lagoon-tint);
+  color: var(--bs-primary-text-emphasis);
+}
+
+.vd-pay__due strong {
+  font-family: var(--vd-font-display);
+  font-weight: 700;
+  font-stretch: 85%;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.vd-pay__choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: .75rem;
+  margin-bottom: .75rem;
+}
+
+.vd-pay__button {
+  width: 100%;
+  padding: .85rem 1rem;
+  border: 1px solid var(--vd-brine-dark);
+  border-radius: var(--vd-radius);
+  background: #FFFFFF;
+  text-align: left;
+}
+
+.vd-pay__button:hover {
+  border-color: var(--vd-lagoon);
+  box-shadow: var(--vd-shadow);
+}
+
+.vd-pay__name {
+  display: block;
+  font-weight: 650;
+  color: var(--vd-bay);
+}
+
+.vd-pay__detail {
+  display: block;
+  font-size: .8125rem;
+  color: var(--vd-muted);
+}
+
+/* Chevrons laid on the road where it climbs or drops noticeably. */
+.vd-slope-wrap {
+  background: none;
+  border: 0;
+}
+
+.vd-slope {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid #FFFFFF;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .3);
+  color: #FFFFFF;
+  font-size: .625rem;
+  line-height: 1;
+}
+
+/* The key to those colours, under the map. */
+.vd-slope-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .375rem .875rem;
+  margin: .5rem 0 0;
+  font-size: .8125rem;
+  color: var(--vd-muted);
+}
+
+.vd-slope-key span {
+  display: inline-flex;
+  align-items: center;
+  gap: .375rem;
+}
+
+.vd-slope-key i {
+  width: 1.25rem;
+  height: .25rem;
+  border-radius: 2px;
+}
+
+/* The filter bar across the top of the room listing.
+
+   It used to be a narrow column down the left, which squeezed every control
+   and pushed the rooms into two thirds of the page. */
+.vd-filterbar .form-label {
+  margin-bottom: .25rem;
+  font-size: .8125rem;
+  font-weight: 650;
+  color: var(--vd-bay);
+}
+
+.vd-filterbar__more {
+  margin-top: .875rem;
+  padding-top: .875rem;
+  border-top: 1px solid var(--vd-brine-dark);
+  font-size: .875rem;
+}
+
+.vd-filterbar__more > summary {
+  cursor: pointer;
+  font-weight: 650;
+  color: var(--vd-bay);
+}
+
+/* So an open amenity list never looks like part of the summary line. */
+.vd-filterbar__count {
+  display: inline-block;
+  margin-left: .35rem;
+  padding: .05rem .45rem;
+  border-radius: 999px;
+  background: var(--vd-lagoon);
+  color: #FFFFFF;
+  font-size: .75rem;
+  font-weight: 650;
+}
+
+/* Columns rather than a scrolling box: across the full width there is room
+   to show every amenity at once, and a list you have to scroll hides the
+   very options it exists to offer. */
+.vd-filterbar__amenities {
+  columns: 2;
+  column-gap: 1.5rem;
+  margin: .75rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.vd-filterbar__amenities .form-check {
+  break-inside: avoid;
+}
+
+@media (min-width: 768px) {
+  .vd-filterbar__amenities { columns: 3; }
+}
+
+@media (min-width: 1200px) {
+  .vd-filterbar__amenities { columns: 4; }
+}
+
+.vd-filterbar__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-top: .875rem;
+  padding-top: .875rem;
+  border-top: 1px solid var(--vd-brine-dark);
+}
+
+/* Categories as pills inside the same panel as the search, so the two filters
+   read as one set of controls rather than two unrelated blocks. */
+.vd-filterbar__pills {
+  margin-top: .875rem;
+  padding-top: .875rem;
+  border-top: 1px solid var(--vd-brine-dark);
+}
+
+/* The buttons sit at the right on a wide screen, where the eye ends up after
+   reading the row of fields; full width on a phone, where they are thumbed. */
+@media (min-width: 576px) {
+  .vd-filterbar__actions { justify-content: flex-end; }
+}
+
+@media (max-width: 575.98px) {
+  .vd-filterbar__actions > .btn { flex: 1 1 100%; }
+}
+
+/* "Continue with Google" and "Continue with Facebook". */
+.vd-social {
+  margin-top: 1.25rem;
+}
+
+/* A rule with the word "or" sitting in the gap. */
+/* A rule with the word "or" sitting in the gap. Used between the sign-in form
+   and the other ways in, whether those are the social buttons or an offer to
+   make an account. */
+.vd-or,
+.vd-social__or {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin: 0 0 .875rem;
+  color: var(--vd-muted);
+  font-size: .8125rem;
+}
+
+.vd-or::before,
+.vd-or::after,
+.vd-social__or::before,
+.vd-social__or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--vd-brine-dark);
+}
+
+/* Standing on its own rather than heading a block, it needs air above. */
+.vd-or {
+  margin-top: 1.5rem;
+}
+
+.vd-social__button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .625rem;
+  width: 100%;
+  padding: .7rem 1rem;
+  margin-bottom: .5rem;
+  border: 1px solid var(--vd-brine-dark);
+  border-radius: var(--vd-radius);
+  background: #FFFFFF;
+  color: var(--vd-bay);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.vd-social__button:hover,
+.vd-social__button:focus-visible {
+  border-color: var(--vd-lagoon);
+  box-shadow: var(--vd-shadow);
+  color: var(--vd-bay);
+}
+
+.vd-social__button i {
+  font-size: 1.125rem;
+  line-height: 1;
+}
+
+/* Each provider's own colour, on the mark only. The button stays white,
+   which is what both companies ask for and what keeps the two legible
+   beside each other. */
+.vd-social__button--google i { color: #DB4437; }
+.vd-social__button--facebook i { color: #1877F2; }
+
+.vd-social__note {
+  margin: .625rem 0 0;
+  font-size: .75rem;
+  line-height: 1.4;
+  color: var(--vd-muted);
+}
+
+/* "Where, when, how many" — the search that sits in the hero.
+
+   A white card on the photograph, so it reads as the thing to use rather
+   than as more of the picture. */
+.vd-stay-search {
+  display: grid;
+  gap: var(--vd-space-sm);
+  padding: var(--vd-space-md);
+  border-radius: var(--vd-radius-lg);
+  background: rgba(255, 255, 255, .96);
+  box-shadow: var(--vd-elevation-3);
+}
+
+.vd-stay-search .form-label {
+  margin-bottom: var(--vd-space-3xs);
+  font-size: var(--vd-text-small);
+  font-weight: 650;
+  color: var(--vd-bay);
+}
+
+.vd-stay-search__field { min-width: 0; }
+
+/* One column on a phone: four controls side by side at 360px are four
+   controls nobody can use. */
+@media (min-width: 576px) {
+  .vd-stay-search {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* The whole row once there is room for it. "Where" takes the extra space
+   because a barangay name is longer than a date or a number. */
+@media (min-width: 992px) {
+  .vd-stay-search {
+    grid-template-columns: 1.6fr 1fr 1fr .7fr auto;
+    align-items: end;
+    gap: var(--vd-space-md);
+    padding: var(--vd-space-lg);
+  }
+
+  .vd-stay-search__go { align-self: end; }
+}
+
+/* On the hero the search is the brightest thing on the page, so the buttons
+   under it step back to outlines rather than competing with it. */
+.vd-hero .vd-stay-search {
+  max-width: 58rem;
+}
+
+/* Availability, on a room card, once the visitor has named dates. */
+.vd-card__free {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--vd-space-3xs);
+  padding: .15rem .5rem;
+  border-radius: 999px;
+  font-size: var(--vd-text-caption);
+  font-weight: 650;
+}
+
+.vd-card__free--yes {
+  background: var(--vd-status-active-bg);
+  color: var(--vd-status-active-fg);
+}
+
+.vd-card__free--no {
+  background: var(--vd-status-inactive-bg);
+  color: var(--vd-status-inactive-fg);
+}
+
+/* Pagination and totals sitting under a table, inside its panel. */
+.vd-table__below {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vd-space-sm);
+  padding: var(--vd-space-sm) var(--vd-space-md);
+  border-top: 1px solid var(--vd-brine);
+}
+
+.vd-table__below > *:last-child { margin-bottom: 0; }
+.vd-table__below .pagination { margin-bottom: 0; }
+
+/* The scroll region gets a visible edge when it is focused from the keyboard,
+   so somebody tabbing to it can see that it is now what arrow keys move. */
+.table-responsive:focus-visible {
+  outline: 2px solid var(--vd-lagoon);
+  outline-offset: -2px;
+}
+
+/* A column heading that sorts the list.
+ *
+ * The whole heading is the target, not just the few characters of its label,
+ * and the arrow reserves its own space so the row does not shift by a few
+ * pixels when the sorted column changes.
+ */
+.vd-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--vd-space-3xs);
+  color: inherit;
+  text-decoration: none;
+}
+
+.vd-sort:hover,
+.vd-sort:focus-visible {
+  color: var(--vd-lagoon-dark);
+  text-decoration: underline;
+}
+
+.vd-sort .bi {
+  font-size: .7em;
+  /* Held at full width while dim, so switching columns never reflows the row. */
+  opacity: .35;
+}
+
+.vd-sort.is-on {
+  color: var(--vd-bay);
+}
+
+.vd-sort.is-on .bi {
+  opacity: 1;
+}
+
+/* The sorted column reads slightly stronger than the rest of the header. */
+th[aria-sort] {
+  background: var(--vd-lagoon-tint);
+}
+
+/* A foldaway explanation under a field, for choices that need one. */
+.vd-hints {
+  font-size: .8125rem;
+  color: var(--vd-muted);
+}
+
+.vd-hints > summary {
+  cursor: pointer;
+  color: var(--bs-primary-text-emphasis);
+}
+
+.vd-hints__list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: .15rem .625rem;
+  margin: .5rem 0 0;
+  padding: .625rem .75rem;
+  border-radius: var(--vd-radius);
+  background: var(--vd-lagoon-tint);
+}
+
+.vd-hints__list dt {
+  font-weight: 650;
+  color: var(--vd-bay);
+  white-space: nowrap;
+}
+
+.vd-hints__list dd {
+  margin: 0;
+}
+
+/* The figures belonging to a discount, revealed when its box is ticked.
+   Set in from the checkbox and ruled down the left, so it reads as the
+   detail of that one choice and not as the next question on the form. */
+.vd-discount-fields {
+  margin-bottom: 1rem;
+  border-left: 2px solid var(--vd-brine-dark);
+  padding-left: 1rem !important;
+}
+
+.vd-discount-fields .mb-3:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* The height of a route: how much it climbs and how much it drops. */
+.vd-profile {
+  margin-top: .75rem;
+  padding: .75rem .875rem;
+  border: 1px solid var(--vd-brine-dark);
+  border-radius: var(--vd-radius);
+  background: #FFFFFF;
+}
+
+.vd-profile__words {
+  margin: 0 0 .5rem;
+  font-size: .875rem;
+  color: var(--vd-bay);
+}
+
+/* Stretched to the panel's width: the shape of the road is what is being
+   read here, not a measurement off the picture. The numbers are in the
+   sentence above, which is the part that has to be exact. */
+.vd-profile__chart {
+  display: block;
+  width: 100%;
+  height: 5.5rem;
+}
+
+.vd-profile__fill {
+  fill: var(--vd-lagoon-tint);
+}
+
+.vd-profile__line {
+  fill: none;
+  stroke: var(--vd-lagoon);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  /* The viewBox is stretched, so without this the stroke stretches with it. */
+  vector-effect: non-scaling-stroke;
+}
+
+/* "From here to there" above the map. Wraps to one field per line on a phone,
+   because three controls side by side at 360px are three unusable controls. */
+.vd-trip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: .5rem .75rem;
+  padding: .75rem;
+  margin-bottom: .75rem;
+  border: 1px solid var(--vd-brine-dark);
+  border-radius: var(--vd-radius);
+  background: var(--vd-lagoon-tint);
+}
+
+.vd-trip__field {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
+.vd-trip .form-label {
+  margin-bottom: .15rem;
+  font-size: .8125rem;
+  font-weight: 650;
+  color: var(--vd-bay);
+}
+
+.vd-trip button[type="submit"] {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 575.98px) {
+  .vd-trip__field { flex-basis: 100%; }
+  .vd-trip button[type="submit"] { width: 100%; }
+}
+
+/* Barangay names on the map.
+
+   A label, not a pin: a barangay is an area, and most of these points are
+   placed from a landmark rather than a surveyed centre, so a teardrop would
+   claim an accuracy nobody here has. It sits quietly under the resort and
+   tourist spot pins, which are what a visitor came to click. */
+.vd-brgy-wrap {
+  /* The icon box is 0x0, so the label hangs from the point itself. */
+  width: 0 !important;
+  height: 0 !important;
+  overflow: visible;
+}
+
+.vd-brgy {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  white-space: nowrap;
+  padding: .1rem .4rem;
+  border-radius: 999px;
+  font-size: .6875rem;
+  font-weight: 650;
+  letter-spacing: .02em;
+  color: var(--vd-bay);
+  background: rgba(255, 255, 255, .82);
+  border: 1px solid rgba(13, 59, 71, .18);
+  cursor: pointer;
+}
+
+.vd-brgy:hover {
+  background: #FFFFFF;
+  border-color: var(--vd-lagoon);
+}
+
+/* Placed from a landmark, not confirmed by the office. Dashed, because the
+   difference between "we know" and "roughly here" has to be visible. */
+.vd-brgy--approx {
+  border-style: dashed;
+  color: var(--vd-muted);
+}
+
+/* Over satellite imagery the pale label disappears, so it gets a solid ground. */
+.leaflet-container .vd-brgy {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .18);
+}
+
+/* The name sitting inside a barangay outline ---------------------------
+   A Leaflet tooltip, stripped of its box: an outline already says where
+   the barangay is, so the label only has to say which one, and a second
+   bordered chip inside every shape would bury the map. */
+.leaflet-tooltip.vd-brgy-label {
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  font-size: .6875rem;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--vd-bay);
+  /* Readable over the street map AND over dark satellite imagery, which
+     is the whole reason the boundaries are not welded to a basemap. */
+  text-shadow:
+     0  1px 2px rgba(255, 255, 255, .95),
+     0 -1px 2px rgba(255, 255, 255, .95),
+     1px  0  2px rgba(255, 255, 255, .95),
+    -1px  0  2px rgba(255, 255, 255, .95);
+  pointer-events: none;
+}
+
+/* Leaflet draws a little arrow on every tooltip. An outline label points
+   at nothing, so it has none. */
+.leaflet-tooltip.vd-brgy-label::before {
+  display: none;
+}
+
+/* The outlines themselves, so a keyboard can tell which one it is on. */
+.leaflet-interactive:focus-visible {
+  outline: 2px solid var(--vd-lagoon);
+  outline-offset: 2px;
+}
+
+/* A swatch of the boundary style, for the key beside the map. */
+.vd-legend-shape {
+  display: inline-block;
+  width: 1.5rem;
+  height: 1rem;
+  border: 1.5px solid var(--vd-bay);
+  border-radius: .15rem;
+  background: rgba(15, 124, 122, .12);
+  vertical-align: -.15rem;
+}
+
+/* Choosing how to pay, on the booking form. Cards rather than a bare radio
+   list, because this sits directly above "Confirm reservation" and has to be
+   as easy to hit with a thumb as the button itself. */
+.vd-paychoice {
+  margin: 1.25rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.vd-paychoice__legend {
+  float: none;                 /* Bootstrap stretches a legend to full width. */
+  width: auto;
+  margin-bottom: .5rem;
+  font-size: .9375rem;
+  font-weight: 650;
+  color: var(--vd-bay);
+}
+
+.vd-paychoice__option {
+  display: flex;
+  gap: .625rem;
+  align-items: flex-start;
+  padding: .75rem .875rem;
+  margin-bottom: .5rem;
+  border: 1px solid var(--vd-brine-dark);
+  border-radius: var(--vd-radius);
+  background: #FFFFFF;
+  cursor: pointer;
+}
+
+.vd-paychoice__option:last-child { margin-bottom: 0; }
+
+.vd-paychoice__option:hover {
+  border-color: var(--vd-lagoon);
+}
+
+/* The whole card reads as chosen, not just the dot. */
+.vd-paychoice__option:has(input:checked) {
+  border-color: var(--vd-lagoon);
+  background: var(--vd-lagoon-tint);
+}
+
+/* Keyboard focus has to land somewhere visible: the input itself is small
+   and sits inside a card that otherwise shows no sign of being focused. */
+.vd-paychoice__option:has(input:focus-visible) {
+  outline: 2px solid var(--vd-lagoon);
+  outline-offset: 2px;
+}
+
+.vd-paychoice__option .form-check-input {
+  flex: 0 0 auto;
+  margin-top: .15rem;
+}
+
+.vd-paychoice__text { min-width: 0; }
+
+.vd-paychoice__name {
+  display: block;
+  font-weight: 650;
+  color: var(--vd-bay);
+}
+
+.vd-paychoice__detail {
+  display: block;
+  font-size: .8125rem;
+  color: var(--vd-muted);
+}
+
+.vd-map {
+  width: 100%;
+  height: clamp(18rem, 55vh, 34rem);
+  border-radius: var(--vd-radius);
+  border: 1px solid var(--vd-brine);
+  background: var(--vd-brine);
+  z-index: 0;
+}
+
+/* 5. Salt-bed motif -------------------------------------------------------
+ * A tiling grid of evaporation ponds, after Dasol's salt farms.
+ * Apply .vd-saltbeds to a positioned element; it fades toward one side.
+ */
+.vd-saltbeds {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='176' height='104' viewBox='0 0 176 104'%3E%3Cg fill='none' stroke='%23E9F3F1' stroke-opacity='.075' stroke-width='1.25'%3E%3Crect x='4' y='4' width='80' height='44' rx='2'/%3E%3Crect x='92' y='4' width='80' height='44' rx='2'/%3E%3Crect x='4' y='56' width='50' height='44' rx='2'/%3E%3Crect x='62' y='56' width='110' height='44' rx='2'/%3E%3C/g%3E%3Crect x='92' y='4' width='80' height='44' rx='2' fill='%23E9F3F1' fill-opacity='.025'/%3E%3Crect x='4' y='56' width='50' height='44' rx='2' fill='%23E9F3F1' fill-opacity='.045'/%3E%3C/svg%3E");
+  background-size: 176px 104px;
+  -webkit-mask-image: linear-gradient(to left, #000 10%, transparent 70%);
+  mask-image: linear-gradient(to left, #000 10%, transparent 70%);
+}
+
+.vd-saltbeds--full {
+  -webkit-mask-image: linear-gradient(to top, #000 10%, rgba(0, 0, 0, .35) 70%, transparent);
+  mask-image: linear-gradient(to top, #000 10%, rgba(0, 0, 0, .35) 70%, transparent);
+}
+
+/* 6. Public navbar & footer --------------------------------------------- */
+.vd-navbar {
+  background: rgba(255, 255, 255, .94);
+  border-bottom: 1px solid var(--vd-brine);
+  backdrop-filter: saturate(1.4) blur(8px);
+  --bs-navbar-padding-y: .7rem;
+  --bs-navbar-color: var(--vd-ink);
+  --bs-navbar-hover-color: var(--vd-lagoon);
+  --bs-navbar-active-color: var(--vd-lagoon-dark);
+  --bs-navbar-disabled-color: #9AABAF;
+}
+
+.vd-navbar .navbar-brand {
+  color: var(--vd-bay);
+}
+
+.vd-navbar .nav-link {
+  font-weight: 550;
+  padding-inline: .75rem;
+  border-radius: var(--vd-radius-sm);
+}
+
+.vd-navbar .nav-link.active {
+  font-weight: 700;
+}
+
+@media (min-width: 992px) {
+  .vd-navbar .nav-link.active {
+    box-shadow: inset 0 -3px 0 var(--vd-mango);
+    border-radius: 0;
+  }
+}
+
+.vd-footer {
+  position: relative;
+  overflow: hidden;
+  background: var(--vd-bay);
+  color: var(--vd-on-bay);
+  padding: 3.5rem 0 1.5rem;
+  margin-top: auto;
+}
+
+.vd-footer a {
+  color: var(--vd-on-bay);
+  text-decoration: none;
+}
+
+.vd-footer a:hover {
+  color: var(--vd-mango);
+  text-decoration: underline;
+}
+
+.vd-footer__heading {
+  font-family: var(--vd-font-body);
+  font-size: .9375rem;
+  font-weight: 700;
+  color: var(--vd-seafoam);
+  letter-spacing: 0;
+  margin-bottom: .85rem;
+}
+
+.vd-footer__text {
+  color: var(--vd-on-bay-muted);
+  max-width: 36ch;
+}
+
+.vd-footer__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: .45rem;
+}
+
+.vd-footer__list .disabled {
+  color: var(--vd-on-bay-muted);
+  opacity: .6;
+}
+
+.vd-footer__bottom {
+  border-top: 1px solid rgba(233, 243, 241, .14);
+  margin-top: 2.5rem;
+  padding-top: 1.25rem;
+  color: var(--vd-on-bay-muted);
+  font-size: .875rem;
+}
+
+/* 7. Hero & home -------------------------------------------------------- */
+/*
+ * The hero's wording is light because it was written for a solid navy panel.
+ * The photograph that replaced that navy is bright almost everywhere - sky,
+ * salt mounds, pale road - so the words need their own ground to sit on. The
+ * scrim below is that ground: it darkens the picture towards Dasol Bay navy,
+ * hardest on the left where the words are, and lets the road and sky show
+ * through on the right.
+ *
+ * Change the photograph and the wording stays readable, because the scrim
+ * darkens whatever is underneath rather than assuming what it looks like.
+ */
+.vd-hero {
+    position: relative;
+    overflow: hidden;
+    min-height: 300px;
+    height: 650px;
+
+    background-image: url('/images/image1.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+
+    color: var(--vd-on-bay);
+}
+.vd-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    /* Held strong right across the text column, then dropped away quickly so
+       the arch and the road are still worth looking at on the right. */
+    linear-gradient(95deg,
+      rgba(13, 59, 71, .93) 0%,
+      rgba(13, 59, 71, .88) 55%,
+      rgba(13, 59, 71, .45) 80%,
+      rgba(13, 59, 71, .22) 100%),
+    linear-gradient(180deg,
+      rgba(13, 59, 71, .50) 0%,
+      rgba(13, 59, 71, .22) 45%,
+      rgba(11, 48, 58, .60) 100%);
+       background: none !important;
+    pointer-events: none;
+}
+
+.vd-hero__place {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  color: #fb2e2e;
+  font-weight: 700;
+  font-size: .8125rem;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  margin-bottom: .9rem;
+}
+
+/* A short gold rule, the same mark the office dashboard's banner uses. */
+.vd-hero__place::after {
+  content: '';
+  width: 2.25rem;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--vd-mango);
+  opacity: .85;
+}
+
+/*
+ * The shadow is insurance, not decoration. The scrim already carries the
+ * contrast; this keeps the words legible over the one bright cloud the
+ * gradient happens to be thinnest across.
+ */
+.vd-wordmark {
+  font-family: var(--vd-font-display);
+  font-weight: 760;
+  font-stretch: 76%;
+  font-size: clamp(3.75rem, 2rem + 9vw, 9rem);
+  line-height: .86;
+  letter-spacing: -.025em;
+  color: #FFFFFF;
+  margin: 0;
+  text-shadow: 0 2px 24px rgba(8, 36, 44, .45);
+}
+
+.vd-hero__tagline {
+  font-family:  'Playfair Display', Georgia, serif;
+  font-stretch: 100%;
+  font-weight: 500;
+  font-size: clamp(1.25rem, 1rem + 1vw, 1.75rem);
+  /* Lifted off the palette's mango: on navy the darker tone loses its edge. */
+
+  color: #064E45;
+    text-shadow: none;
+}
+
+.vd-hero__lead {
+  max-width: 46ch;
+  /* Was --vd-on-bay at .88 opacity, which the photograph washed out. */
+  color:#2600ff;
+  font-size: 1.125rem;
+  text-shadow: 0 1px 10px rgba(8, 36, 44, .45);
+
+}
+
+/*
+ * What the search and the two buttons above all lead to, in three words.
+ * Reuses the same icon-plus-two-line-label shape as .vd-auth__features on the
+ * sign-in panel, so a visitor sees the same three promises whether they land
+ * here signed out or sign in later — just set for a bright photo instead of
+ * a solid navy ground.
+ */
+.vd-hero__features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vd-space-lg) var(--vd-space-xl);
+  margin: var(--vd-space-xl) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vd-hero__features > li {
+  display: flex;
+  align-items: center;
+  gap: var(--vd-space-xs);
+  color: rgba(255, 255, 255, .85);
+  font-size: var(--vd-text-caption);
+  line-height: 1.25;
+  text-shadow: 0 1px 8px rgba(8, 36, 44, .4);
+}
+
+.vd-hero__features .bi {
+  flex-shrink: 0;
+  color: var(--vd-seafoam);
+  font-size: 1.15rem;
+}
+
+.vd-hero__features strong {
+  display: block;
+  color: #FFFFFF;
+  font-weight: 650;
+  font-size: var(--vd-text-small);
+}
+
+/* Low tide line at the bottom of the hero */
+.vd-shore {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  width: 100%;
+  height: clamp(2.5rem, 6vw, 4.5rem);
+  color: var(--vd-salt);
+}
+
+.vd-shore__fill {
+  fill: currentColor;
+}
+
+/* The waterline itself: a thin gold stroke riding the crest of the curve. */
+.vd-shore__line {
+  stroke: var(--vd-mango);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+  opacity: .9;
+}
+
+/*
+ * Section eyebrow: a short, wide-tracked label above a heading. It names the
+ * part of the site you are in before the heading says what is in it.
+ */
+.vd-eyebrow {
+  font-size: .8125rem;
+  font-weight: 700;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--vd-lagoon);
+  margin-bottom: .5rem;
+}
+
+/*
+ * A section that lifts off the page background. Used where a band of content
+ * needs to feel like its own place rather than more of the same page.
+ */
+.vd-section--tinted {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, #EAF3F0 0%, var(--vd-salt) 100%);
+}
+
+/*
+ * Palm silhouettes at the outer edges of a tinted band. Purely decorative and
+ * deliberately faint: they must never compete with a resort photograph.
+ * Hidden on small screens, where there is no room to spare.
+ */
+.vd-fronds {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 15rem;
+  pointer-events: none;
+  color: var(--vd-lagoon);
+  opacity: .1;
+}
+
+.vd-fronds--left {
+  left: -3rem;
+}
+
+.vd-fronds--right {
+  right: -3rem;
+  transform: scaleX(-1);
+}
+
+@media (max-width: 991.98px) {
+  .vd-fronds {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .vd-wordmark {
+    animation: vd-tide-in .9s cubic-bezier(.2, .7, .2, 1) both;
+  }
+
+  @keyframes vd-tide-in {
+    from {
+      opacity: 0;
+      font-stretch: 100%;
+      letter-spacing: .02em;
+    }
+    to {
+      opacity: 1;
+      font-stretch: 76%;
+      letter-spacing: -.025em;
+    }
+  }
+}
+
+.vd-section {
+  padding: clamp(3rem, 6vw, 5rem) 0;
+}
+
+.vd-feature {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.vd-feature__icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--vd-radius);
+  background: var(--vd-lagoon-tint);
+  color: var(--vd-lagoon-dark);
+  font-size: 1.35rem;
+}
+
+.vd-feature__title {
+  font-size: 1.25rem;
+  margin-bottom: .35rem;
+}
+
+.vd-feature p {
+  color: var(--vd-muted);
+  margin-bottom: 0;
+}
+
+.vd-owner-band {
+  position: relative;
+  overflow: hidden;
+  background: var(--vd-bay-raised);
+  color: var(--vd-on-bay);
+  border-radius: var(--vd-radius-lg);
+  padding: clamp(2rem, 4vw, 3rem);
+}
+
+.vd-owner-band h2 {
+  color: #FFFFFF;
+}
+
+.vd-dev-note {
+  border: 1px dashed var(--vd-brine-dark);
+  border-radius: var(--vd-radius);
+  background: #FFFFFF;
+  padding: 1rem 1.25rem;
+  font-size: .9375rem;
+}
+
+/*
+ * The signed-in tourist's welcome band. It borrows the hero's colours and
+ * shore curve so the dashboard reads as the same place as the home page,
+ * but it is shorter: the guest came here to do something, not to be sold to.
+ */
+.vd-welcome {
+  position: relative;
+  overflow: hidden;
+  background: var(--vd-bay);
+  color: var(--vd-on-bay);
+  padding: clamp(2.5rem, 5vw, 4rem) 0 clamp(4rem, 7vw, 5.5rem);
+}
+
+.vd-welcome__eyebrow {
+  color: var(--vd-seafoam);
+  font-weight: 600;
+  font-size: .9375rem;
+  margin-bottom: .5rem;
+}
+
+.vd-welcome__title {
+  font-family: var(--vd-font-display);
+  font-weight: 720;
+  font-stretch: 82%;
+  font-size: clamp(2rem, 1.4rem + 3vw, 3.5rem);
+  line-height: 1.02;
+  letter-spacing: -.02em;
+  color: #FFFFFF;
+  margin: 0;
+}
+
+.vd-welcome__lead {
+  max-width: 52ch;
+  color: var(--vd-on-bay);
+  opacity: .88;
+  font-size: 1.0625rem;
+  margin: .85rem 0 0;
+}
+
+/*
+ * The next stay: details on the left, the decision column on the right.
+ * It collapses to one column on small screens, where the side column's
+ * button is what the thumb is reaching for anyway.
+ */
+.vd-next-stay {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  padding: clamp(1.25rem, 3vw, 1.75rem);
+}
+
+@media (min-width: 768px) {
+  .vd-next-stay {
+    grid-template-columns: 1fr 15rem;
+  }
+}
+
+.vd-next-stay__facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 1rem 1.5rem;
+  margin: 0;
+}
+
+.vd-next-stay__facts dt {
+  color: var(--vd-muted);
+  font-size: .8125rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.vd-next-stay__facts dd {
+  margin: .15rem 0 0;
+  font-weight: 600;
+  color: var(--vd-ink);
+}
+
+.vd-next-stay__side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .75rem;
+  padding-top: .25rem;
+}
+
+@media (min-width: 768px) {
+  .vd-next-stay__side {
+    border-left: 1px solid var(--vd-brine);
+    padding-left: 1.5rem;
+  }
+}
+
+.vd-next-stay__countdown {
+  font-family: var(--vd-font-display);
+  font-weight: 700;
+  font-stretch: 85%;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--vd-bay);
+  margin: 0;
+}
+
+.vd-next-stay__total {
+  margin: 0;
+}
+
+/* What is not paid yet. An icon as well as the colour, and the quiet lagoon
+   tint rather than a warning amber: paying here is optional, and dressing an
+   option as an alarm would be a lie told in colour. */
+.vd-next-stay__due {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--vd-space-xs);
+  width: 100%;
+  margin: 0;
+  padding: var(--vd-space-xs) var(--vd-space-sm);
+  border-radius: var(--vd-radius-sm);
+  background: var(--vd-lagoon-tint);
+  color: var(--bs-primary-text-emphasis);
+  font-size: var(--vd-text-body-sm);
+}
+
+.vd-next-stay__due .bi {
+  flex-shrink: 0;
+  margin-top: .1em;
+}
+
+/* 8. Auth layout -------------------------------------------------------- */
+
+/*
+ * The pale wash lives on the row, not on the form's column.
+ *
+ * The photograph panel is cut on a slant at its right edge, and whatever sits
+ * behind it shows through the triangle that cut leaves. That has to be this
+ * wash: on the column it would stop at the column's own straight edge and the
+ * triangle would come out white.
+ */
+.vd-auth {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: linear-gradient(160deg, var(--vd-salt) 0%, #FFFFFF 45%, var(--vd-lagoon-tint) 100%);
+}
+
+/*
+ * The same photograph as the hero, and the same need: it is far too bright to
+ * carry light wording on its own, so it gets the same navy scrim.
+ */
+.vd-auth__panel {
+  position: relative;
+  overflow: hidden;
+
+  background-image: url('/images/dasol-arko.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+
+  color: var(--vd-on-bay);
+  padding: 2rem;
+}
+
+.vd-auth__panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,
+    rgba(13, 59, 71, .88) 0%,
+    rgba(13, 59, 71, .72) 45%,
+    rgba(11, 48, 58, .93) 100%);
+}
+.vd-auth__panel .vd-brand {
+  color: #FFFFFF;
+}
+
+.vd-auth__panel-title {
+  /* Was near-black, which reads as a mistake on a dark panel; the scrim now
+     does the work the colour was trying to do on its own. */
+  color: #FFFFFF;
+
+  /* Spelled out because this is a <p>. It used to be an <h1> and took the
+     display face, the weight and the margin from the heading styles, which
+     is also why every sign-in page had two first-level headings. The look is
+     unchanged; only the tag is. */
+  font-family: var(--vd-font-display);
+  font-weight: 500;
+  margin: 0;
+
+  font-stretch: 82%;
+  font-size: clamp(2rem, 1.4rem + 2vw, 3.25rem);
+  line-height: 1;
+  max-width: 12ch;
+  text-shadow: 0 2px 18px rgba(8, 36, 44, .45);
+}
+
+.vd-auth__panel-text {
+  color: rgba(255, 255, 255, .88);
+  max-width: 38ch;
+}
+
+/* Bootstrap's 50%-white is too faint to read over a photograph. */
+.vd-auth__panel .text-white-50 {
+  color: rgba(255, 255, 255, .75) !important;
+}
+
+/*
+ * The water at the foot of the panel.
+ *
+ * Deep teal rather than the salt white the curve uses under the hero: there is
+ * no white section below this one, only the foot of the panel itself. The gold
+ * waterline stays — it is the one warm mark on an otherwise cold photograph.
+ */
+/*
+ * Water lit from above: the curves are LIGHTER than the foot of the panel,
+ * which the gradient has taken almost to black by that point. A darker wave
+ * on a dark ground is a wave nobody can see.
+ */
+.vd-auth__panel .vd-auth__wave {
+  color: var(--vd-lagoon);
+  height: clamp(4rem, 9vw, 7rem);
+  opacity: .9;
+}
+
+/* A second, deeper curve behind it, flipped and set a little higher, so the
+   foot reads as moving water rather than as one drawn line. */
+.vd-auth__panel .vd-auth__wave--back {
+  color: var(--vd-lagoon-dark);
+  opacity: .75;
+  transform: translateY(-1.4rem) scaleX(-1);
+}
+
+/* No gold waterline here. It belongs to the hero, where the curve is the line
+   between land and sea; on this panel it reads as a stray stroke. */
+.vd-auth__wave .vd-shore__line {
+  display: none;
+}
+
+/* The same water on the form's side, at a fraction of the strength: a hint
+   that the two halves belong to one page. */
+.vd-auth__form-wrap .vd-auth__wave--pale {
+  color: var(--vd-lagoon);
+  opacity: .12;
+  height: clamp(5rem, 12vw, 9rem);
+}
+
+
+/*
+ * The slanted edge between the photograph and the form.
+ *
+ * Only once the two sit side by side. Stacked on a phone, a diagonal would cut
+ * a wedge out of the bottom of the photograph for no reason.
+ */
+@media (min-width: 992px) {
+  .vd-auth__panel {
+    /* Leaning left as it falls, so the eye is carried down toward the form.
+       The triangle this leaves shows the row's wash behind it.
+
+       No negative margin to go with it: pulling the panel over the next
+       column would push that column past the right edge of the row and make
+       the whole page scroll sideways. The cut takes its space from the
+       panel's own half instead. */
+    clip-path: polygon(0 0, 100% 0, calc(100% - 3rem) 100%, 0 100%);
+    /* Keeps the wording clear of the slant at the foot of the panel. */
+    padding-right: 4rem;
+  }
+}
+
+/*
+ * What is on the other side of signing in.
+ *
+ * The panel was a photograph, a sentence, and then a tall stretch of empty
+ * navy. These three lines fill it with the only thing a sign-in page has to
+ * say for itself: what the site is for.
+ */
+/* Across the panel rather than down it: three short labels in a column would
+   be a list to read, and in a row they are a glance. */
+.vd-auth__features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vd-space-lg) var(--vd-space-xl);
+  margin: var(--vd-space-2xl) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vd-auth__features > li {
+  display: flex;
+  align-items: center;
+  gap: var(--vd-space-xs);
+  color: rgba(255, 255, 255, .82);
+  font-size: var(--vd-text-caption);
+  line-height: 1.25;
+}
+
+/* Small, plain, and in the brand's light teal — the one colour on the panel
+   that is neither the photograph nor the wording, so the three marks read as
+   signposts rather than as more text. A ring around each would make them
+   badges competing with the words they only point at. */
+.vd-auth__features .bi {
+  flex-shrink: 0;
+  color: var(--vd-lagoon-light);
+  font-size: 1.3rem;
+}
+
+.vd-auth__features strong {
+  display: block;
+  color: #FFFFFF;
+  font-weight: 650;
+  font-size: var(--vd-text-small);
+}
+
+/*
+ * Pushed to the foot of the panel, under a short rule.
+ *
+ * The rule is a few characters wide on purpose: a line across the whole panel
+ * would cut the photograph in two, and this only has to separate the address
+ * from the wording above it.
+ */
+.vd-auth__office {
+  margin-top: auto;
+  padding-top: var(--vd-space-xl);
+}
+
+.vd-auth__office::before {
+  content: "";
+  display: block;
+  width: 2.5rem;
+  height: 2px;
+  margin-bottom: var(--vd-space-md);
+  background: var(--vd-lagoon-light);
+}
+
+/* The panel's three parts — logo, wording, office line — spread down it. */
+@media (min-width: 992px) {
+  .vd-auth__panel {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .vd-auth__panel > .position-relative:nth-of-type(2) {
+    margin-top: auto;
+  }
+}
+
+/* The form's side. The wash behind it comes from .vd-auth, so the slanted cut
+   in the panel beside it shows the same colours rather than bare white. */
+.vd-auth__form-wrap {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem 3rem;
+}
+
+/* The card itself, lifted off that wash. */
+.vd-auth__card {
+  position: relative;
+  width: 100%;
+  max-width: 30rem;
+  padding: clamp(1.5rem, 1rem + 2vw, 2.5rem);
+  border-radius: var(--vd-radius-lg);
+  background: #FFFFFF;
+  box-shadow: var(--vd-elevation-2);
+}
+
+/* The card settling onto the page, the way the wordmark on the hero settles
+   into place with vd-tide-in. One run on load, not on every interaction. */
+@media (prefers-reduced-motion: no-preference) {
+  .vd-auth__card {
+    animation: vd-rise-in .5s var(--vd-ease) both;
+  }
+
+  @keyframes vd-rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(.75rem);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* Who is being welcomed, above the instruction. */
+.vd-auth__welcome {
+  font-weight: 700;
+  color: var(--vd-bay);
+}
+
+/* The way in for somebody with no account yet: an offer in its own panel,
+   not small print under the form. */
+.vd-auth__new {
+  padding: var(--vd-space-md);
+  border: 1px solid var(--vd-brine);
+  border-radius: var(--vd-radius);
+  background: var(--vd-salt);
+}
+
+/* The icon before a field's label, where one helps the eye find the box. */
+.vd-form-label__icon {
+  margin-right: var(--vd-space-3xs);
+  color: var(--vd-lagoon);
+}
+
+/* A field carrying an icon inside its left edge. */
+.vd-field {
+  position: relative;
+}
+
+.vd-field__icon {
+  position: absolute;
+  left: .85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--vd-muted);
+  font-size: .95rem;
+  /* The field underneath takes the click, not the decoration on top of it. */
+  pointer-events: none;
+}
+
+.vd-field--icon .form-control {
+  padding-left: 2.5rem;
+}
+
+/* The wordmark's lockup: the tagline set small and wide beneath it, each word
+   separated by a bullet rather than by the full stop it carries in prose. */
+.vd-auth__tagline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .9em;
+  margin: .5rem 0 0;
+  color: rgba(255, 255, 255, .72);
+  font-size: var(--vd-text-caption);
+  font-weight: 600;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+}
+
+/* The bullet belongs between words, so it is drawn by the gap rather than
+   typed — nothing to read aloud, and none left dangling at the end. */
+.vd-auth__tagline > span + span::before {
+  content: "•";
+  margin-right: .9em;
+  color: var(--vd-lagoon-light);
+}
+
+/* The place name, picked out of the heading the way the wordmark picks it out
+   of "VisitDasol". */
+.vd-auth__panel-accent {
+  color: var(--vd-lagoon-light);
+}
+
+/* The arrow follows the words rather than sitting in the middle with them. */
+.vd-signin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--vd-space-xs);
+}
+
+.vd-signin .bi {
+  transition: transform var(--vd-transition);
+}
+
+/* A small forward nudge on the one icon that means "go". Bootstrap already
+   darkens the button itself on hover and on focus alike, with no motion
+   query needed; only this transform waits on one. */
+@media (prefers-reduced-motion: no-preference) {
+  .vd-signin:hover .bi,
+  .vd-signin:focus-visible .bi {
+    transform: translateX(.2rem);
+  }
+}
+
+/* The live "this code stops working in 9:47" line on the confirmation screen. */
+.vd-otp-clock {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+  padding: .55rem .85rem;
+  border-radius: var(--vd-radius-sm);
+  background: var(--vd-lagoon-tint);
+  color: var(--bs-primary-text-emphasis);
+  font-size: .9375rem;
+}
+
+.vd-otp-clock strong {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 992px) {
+  .vd-auth__panel {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    height: 100dvh;
+    padding: 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+}
+
+/* 9. Dashboard shell ----------------------------------------------------
+ * The top bar runs the full width of the window; the sidebar and the page
+ * sit side by side underneath it.
+ */
+/*
+ * 100vh is the WRONG height on a phone: Safari and Chrome both measure it
+ * against the window with the address bar hidden, so a 100vh page is taller
+ * than the screen and jumps as the bar slides away. 100dvh follows the space
+ * actually on screen; the vh line above it is the fallback for older browsers.
+ */
+.vd-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.vd-sidebar {
+  --bs-offcanvas-width: var(--vd-sidebar-width);
+  --bs-offcanvas-bg: var(--vd-bay);
+  --bs-offcanvas-color: var(--vd-on-bay);
+}
+
+.vd-sidebar__inner {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  /* The drawer slides in from the left edge, which is where the notch is. */
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Same height as the top bar, so the two bottom edges line up. */
+.vd-sidebar__header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  height: var(--vd-topbar-height);
+  padding: 0 1.25rem;
+  border-bottom: 1px solid rgba(233, 243, 241, .1);
+}
+
+.vd-sidebar__header .vd-brand {
+  color: #FFFFFF;
+}
+
+/* "Municipal Tourism Office" / "Resort owner", at the top of the menu. */
+.vd-sidebar__area {
+  font-size: .8125rem;
+  color: var(--vd-seafoam);
+  font-weight: 600;
+  margin: 0;
+  padding: .1rem .75rem .25rem;
+}
+
+.vd-sidebar__nav {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 1rem .75rem 2rem;
+}
+
+.vd-sidebar__group {
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--vd-on-bay-muted);
+  padding: 1.1rem .75rem .4rem;
+  margin: 0;
+}
+
+.vd-sidebar__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.vd-sidebar__link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .55rem .75rem;
+  margin-bottom: 2px;
+  border-radius: var(--vd-radius-sm);
+  color: var(--vd-on-bay);
+  opacity: .82;
+  text-decoration: none;
+  font-weight: 550;
+  background: none;
+  border: 0;
+  width: 100%;
+  text-align: left;
+}
+
+.vd-sidebar__link .bi {
+  font-size: 1.1rem;
+  width: 1.25rem;
+  text-align: center;
+}
+
+.vd-sidebar__link:hover {
+  opacity: 1;
+  color: #FFFFFF;
+  background: rgba(233, 243, 241, .07);
+}
+
+/* The page you are on is a filled pill, not a tint, so it reads at a glance. */
+.vd-sidebar__link.active {
+  opacity: 1;
+  color: #FFFFFF;
+  background: var(--vd-lagoon);
+  font-weight: 700;
+  box-shadow: 0 2px 10px rgba(9, 80, 79, .45);
+}
+
+.vd-sidebar__link.active:hover {
+  background: var(--vd-lagoon-dark);
+}
+
+.vd-sidebar__link.disabled {
+  opacity: .42;
+  pointer-events: none;
+}
+
+.vd-sidebar__soon {
+  margin-left: auto;
+  font-size: .75rem;
+  font-weight: 500;
+}
+
+.vd-sidebar__count {
+  margin-left: auto;
+  min-width: 1.6rem;
+  padding: .1rem .45rem;
+  border-radius: 999px;
+  background: var(--vd-mango);
+  color: var(--vd-bay);
+  font-size: .75rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.vd-sidebar__beds {
+  height: 7rem;
+  top: auto;
+  -webkit-mask-image: linear-gradient(to top, #000, transparent);
+  mask-image: linear-gradient(to top, #000, transparent);
+}
+
+/* The tagline standing on the shoreline at the foot of the menu. */
+.vd-sidebar__sign {
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
+  padding: 1.5rem 1.5rem 1.75rem;
+}
+
+.vd-sidebar__sign .vd-fronds {
+  left: -4.5rem;
+  width: 11rem;
+  color: var(--vd-seafoam);
+  opacity: .16;
+}
+
+.vd-sidebar__sign-words {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  font-family: var(--vd-font-display);
+  font-weight: 700;
+  font-stretch: 85%;
+  font-size: 1.5rem;
+  line-height: 1.05;
+  color: rgba(233, 243, 241, .5);
+}
+
+.vd-sidebar__sign-place {
+  position: relative;
+  z-index: 1;
+  margin: .6rem 0 0;
+  font-size: .6875rem;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--vd-on-bay-muted);
+}
+
+.vd-main {
+  min-width: 0;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.vd-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  height: var(--vd-topbar-height);
+  padding-right: 1rem;
+  /* Clear of the rounded corner when a notched phone is turned on its side. */
+  padding-right: calc(1rem + env(safe-area-inset-right, 0px));
+  background: #FFFFFF;
+  border-bottom: 1px solid var(--vd-brine);
+}
+
+/* Exactly the sidebar's width, so the logo stands above the navy column. */
+.vd-topbar__brand {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: 100%;
+  padding: 0 1rem;
+  padding-left: calc(1rem + env(safe-area-inset-left, 0px));
+}
+
+.vd-topbar__menu {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: var(--vd-radius-sm);
+  background: none;
+  color: var(--vd-bay);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.vd-topbar__menu:hover {
+  background: var(--vd-salt);
+}
+
+/* Office quick search. Hidden on small screens, where the pages have their
+   own filters and the bar has no room for it. */
+.vd-search {
+  display: none;
+  align-items: center;
+  gap: .15rem;
+  /* Narrow on a tablet, where the logo and the account block leave little
+     room; it stretches again on a desktop below. */
+  width: min(20rem, 32vw);
+  height: 2.5rem;
+  margin-left: auto;
+  padding: 0 .3rem;
+  border: 1px solid var(--vd-brine-dark);
+  border-radius: 999px;
+  background: #FFFFFF;
+}
+
+.vd-search:focus-within {
+  border-color: var(--vd-lagoon);
+  box-shadow: 0 0 0 .2rem rgba(15, 124, 122, .18);
+}
+
+.vd-search__go,
+.vd-search__scope {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 1.9rem;
+  height: 1.9rem;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--vd-muted);
+}
+
+.vd-search__go:hover,
+.vd-search__scope:hover {
+  background: var(--vd-salt);
+  color: var(--vd-lagoon);
+}
+
+.vd-search__field {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--vd-ink);
+  font-size: .9375rem;
+}
+
+.vd-search__field:focus {
+  outline: none;
+}
+
+/* The browser's own clear button sits awkwardly inside a pill. */
+.vd-search__field::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+
+.vd-bell {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--vd-bay);
+  font-size: 1.15rem;
+}
+
+.vd-bell:hover {
+  background: var(--vd-salt);
+}
+
+.vd-bell__count {
+  position: absolute;
+  top: .15rem;
+  right: .05rem;
+  min-width: 1.15rem;
+  padding: 0 .25rem;
+  border-radius: 999px;
+  background: #C0392B;
+  color: #FFFFFF;
+  font-size: .6875rem;
+  font-weight: 800;
+  line-height: 1.15rem;
+  text-align: center;
+}
+
+.vd-bell__menu {
+  min-width: 17rem;
+}
+
+.vd-account {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  flex-shrink: 0;
+  padding: .3rem .5rem;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--vd-bay);
+  text-align: left;
+}
+
+.vd-account:hover {
+  background: var(--vd-salt);
+}
+
+.vd-account__who {
+  display: none;
+  line-height: 1.25;
+}
+
+.vd-account__name {
+  display: block;
+  font-weight: 650;
+  font-size: .9375rem;
+  white-space: nowrap;
+}
+
+.vd-account__role {
+  display: block;
+  font-size: .75rem;
+  color: var(--vd-muted);
+  white-space: nowrap;
+}
+
+.vd-account__caret {
+  font-size: .7rem;
+  color: var(--vd-muted);
+}
+
+.vd-avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: var(--vd-lagoon);
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: .875rem;
+}
+
+.vd-content {
+  padding: 1.5rem 1rem 3rem;
+  padding-left: calc(1rem + env(safe-area-inset-left, 0px));
+  padding-right: calc(1rem + env(safe-area-inset-right, 0px));
+  padding-bottom: calc(3rem + env(safe-area-inset-bottom, 0px));
+  flex: 1 0 auto;
+}
+
+@media (min-width: 576px) {
+  .vd-account__who {
+    display: block;
+  }
+}
+
+@media (min-width: 768px) {
+  .vd-search {
+    display: flex;
+  }
+}
+
+@media (min-width: 992px) {
+  .vd-shell__body {
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .vd-sidebar-rail {
+    position: sticky;
+    top: var(--vd-topbar-height);
+    flex: 0 0 var(--vd-sidebar-width);
+    width: var(--vd-sidebar-width);
+    height: calc(100vh - var(--vd-topbar-height));
+    height: calc(100dvh - var(--vd-topbar-height));
+    background: var(--vd-bay);
+    color: var(--vd-on-bay);
+  }
+
+  .vd-sidebar {
+    height: 100%;
+  }
+
+  /* The top bar already carries the logo here; the sidebar's own header is
+     only there for the small-screen offcanvas. */
+  .vd-sidebar__header {
+    display: none;
+  }
+
+  .vd-sidebar__nav {
+    padding-top: 1.25rem;
+  }
+
+  .vd-topbar__brand {
+    width: var(--vd-sidebar-width);
+    padding: 0 1.25rem;
+  }
+
+  .vd-content {
+    padding: 2rem 2rem 3rem;
+    padding-right: calc(2rem + env(safe-area-inset-right, 0px));
+    padding-bottom: calc(3rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* The menu button folds the sidebar away when the page needs the width. */
+  .vd-shell--tucked .vd-sidebar-rail {
+    flex-basis: 0;
+    width: 0;
+    overflow: hidden;
+  }
+
+  .vd-shell--tucked .vd-topbar__brand {
+    width: auto;
+  }
+}
+
+@media (min-width: 1200px) {
+  .vd-search {
+    width: min(26rem, 38vw);
+  }
+}
+
+@media (min-width: 992px) and (prefers-reduced-motion: no-preference) {
+  .vd-sidebar-rail,
+  .vd-topbar__brand {
+    transition: flex-basis .2s ease, width .2s ease;
+  }
+}
+
+/* 10. Error pages and utilities ----------------------------------------- */
+.vd-error {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1rem;
+}
+
+.vd-error__code {
+  font-family: var(--vd-font-display);
+  font-weight: 760;
+  font-stretch: 75%;
+  font-size: clamp(5rem, 3rem + 10vw, 9rem);
+  line-height: .9;
+  color: var(--vd-lagoon);
+  margin: 0;
+}
+
+.vd-error__title {
+  margin: 1rem 0 .5rem;
+}
+
+.vd-error__text {
+  color: var(--vd-muted);
+  max-width: 46ch;
+}
+
+.vd-check-icon {
+  font-size: 1.15rem;
+}
+
+.vd-check-icon--pass { color: var(--vd-mangrove); }
+.vd-check-icon--warn { color: #B07A0B; }
+.vd-check-icon--fail { color: #B42318; }
+
+.text-muted-vd {
+  color: var(--vd-muted) !important;
+}
+
+.min-w-0 {
+  min-width: 0;
+}
+
+/* 11. Listing cards, galleries, and detail pages ------------------------ */
+.vd-card {
+  display: flex;
+  flex-direction: column;
+  background: #FFFFFF;
+  border: 1px solid var(--vd-brine);
+  border-radius: var(--vd-radius);
+  overflow: hidden;
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+
+.vd-card:hover {
+  box-shadow: var(--vd-shadow);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .vd-card:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.vd-card__media {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 10;
+  background: var(--vd-brine);
+  overflow: hidden;
+}
+
+.vd-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.vd-card__flag {
+  position: absolute;
+  top: .75rem;
+  left: .75rem;
+  padding: .2rem .6rem;
+  border-radius: 999px;
+  background: var(--vd-mango);
+  color: var(--vd-bay);
+  font-size: .75rem;
+  font-weight: 700;
+}
+
+.vd-card__body {
+  flex: 1 1 auto;
+  padding: 1rem 1.15rem;
+}
+
+.vd-card__eyebrow {
+  color: var(--vd-lagoon-dark);
+  font-size: .8125rem;
+  font-weight: 650;
+  margin-bottom: .35rem;
+}
+
+.vd-card__title {
+  font-size: 1.1875rem;
+  margin-bottom: .3rem;
+}
+
+.vd-card__title a {
+  color: var(--vd-bay);
+  text-decoration: none;
+}
+
+.vd-card__title a:hover {
+  color: var(--vd-lagoon-dark);
+  text-decoration: underline;
+}
+
+.vd-card__meta {
+  color: var(--vd-muted);
+  font-size: .875rem;
+  margin-bottom: .5rem;
+}
+
+.vd-card__text {
+  color: var(--vd-muted);
+  font-size: .9375rem;
+  margin-bottom: .75rem;
+}
+
+.vd-card__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.vd-card__tags li {
+  padding: .15rem .55rem;
+  border-radius: 999px;
+  background: var(--vd-lagoon-tint);
+  color: var(--vd-lagoon-dark);
+  font-size: .75rem;
+  font-weight: 600;
+}
+
+.vd-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .85rem 1.15rem;
+  border-top: 1px solid var(--vd-brine);
+}
+
+/* For a card whose footer holds only the way in: the button still ends up
+   where it does on every other card, bottom right, instead of sliding left. */
+.vd-card__footer--end {
+  justify-content: flex-end;
+}
+
+.vd-card__price {
+  font-family: var(--vd-font-display);
+  font-size: 1.25rem;
+  font-stretch: 88%;
+  color: var(--vd-bay);
+}
+
+/* Detail page hero image and gallery */
+.vd-gallery__main {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: var(--vd-radius);
+  background: var(--vd-brine);
+}
+
+.vd-gallery__strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: .5rem;
+  margin-top: .5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.vd-gallery__strip img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: var(--vd-radius-sm);
+  background: var(--vd-brine);
+}
+
+.vd-detail__lead {
+  color: var(--vd-muted);
+  font-size: 1.0625rem;
+}
+
+.vd-amenity-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: .6rem 1rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.vd-amenity-list li {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  color: var(--vd-ink);
+}
+
+.vd-amenity-list .bi {
+  color: var(--vd-lagoon);
+}
+
+.vd-announcement {
+  border-left: 4px solid var(--vd-mango);
+  padding-left: 1rem;
+}
+
+/* 12. Map pins, popups, and the map page ------------------------------- */
+.vd-pin-wrap {
+  background: none;
+  border: 0;
+}
+
+.vd-pin {
+  display: grid;
+  place-items: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  border: 2px solid #FFFFFF;
+  box-shadow: 0 2px 6px rgba(13, 59, 71, .35);
+  background: var(--vd-lagoon);
+}
+
+.vd-pin .bi {
+  transform: rotate(45deg);
+  font-size: .8rem;
+  color: #FFFFFF;
+  line-height: 1;
+}
+
+.vd-pin--destination {
+  background: var(--vd-mango);
+}
+
+.vd-pin--destination .bi {
+  color: var(--vd-bay);
+}
+
+/* Anything not published is greyed out (office map only) */
+.vd-pin--muted {
+  background: var(--vd-muted);
+  opacity: .85;
+}
+
+/* How full a resort is, on the public map.
+
+   Colour is never the only signal: the pin's popup names the status in
+   words, the key beside the map names all three, and the percentage is
+   written out. These are only the glance. */
+.vd-pin--available { background: #2E7D52; }
+.vd-pin--busy      { background: #B5660C; }
+.vd-pin--full      { background: #A32C28; }
+
+/* Nothing published, so nothing claimed either way. */
+.vd-pin--unknown {
+  background: var(--vd-muted);
+}
+
+/* Street map or satellite ---------------------------------------------
+   Two labelled buttons rather than radios buried in the layers panel:
+   this is the choice a visitor most often wants to make, so it is the
+   one thing on the map that looks like a control. */
+.vd-basemap {
+  display: flex;
+  overflow: hidden;
+  border: 1px solid var(--vd-brine-dark);
+  border-radius: var(--vd-radius);
+  background: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(13, 59, 71, .18);
+  font-family: inherit;
+}
+
+.vd-basemap__option {
+  display: flex;
+  align-items: center;
+  gap: .3rem;
+  /* Tall enough to hit with a thumb without looking at it. */
+  min-height: 2.25rem;
+  padding: .4rem .7rem;
+  border: 0;
+  background: #FFFFFF;
+  color: var(--vd-bay);
+  font-size: .8125rem;
+  font-weight: 650;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.vd-basemap__option + .vd-basemap__option {
+  border-left: 1px solid var(--vd-brine-dark);
+}
+
+.vd-basemap__option:hover {
+  background: var(--vd-lagoon-tint);
+}
+
+/* The one showing. Not colour alone: aria-pressed carries the same
+   answer for a reader that cannot see which is filled in. */
+.vd-basemap__option.is-on {
+  background: var(--vd-bay);
+  color: #FFFFFF;
+}
+
+.vd-basemap__option:focus-visible {
+  outline: 2px solid var(--vd-lagoon);
+  outline-offset: -2px;
+}
+
+/* Leaflet paints links inside a map its own blue; these are buttons, but
+   the icon font inherits colour, so it is pinned to the button's. */
+.vd-basemap__option .bi {
+  font-size: .9rem;
+  color: inherit;
+}
+
+/* A phone has less room, and "Satellite" is the longer word. */
+@media (max-width: 575.98px) {
+  .vd-basemap__option {
+    padding: .4rem .55rem;
+    font-size: .75rem;
+  }
+}
+
+/* Occupancy inside a map popup --------------------------------------- */
+.vd-occupancy {
+  display: grid;
+  gap: .3rem;
+  margin: .5rem 0;
+  padding: .55rem .65rem;
+  border-radius: var(--vd-radius-sm);
+  background: var(--vd-lagoon-tint);
+  font-size: .8125rem;
+}
+
+.vd-occupancy__status {
+  font-weight: 700;
+  color: var(--vd-bay);
+}
+
+.vd-occupancy--busy .vd-occupancy__status { color: #8A4E09; }
+.vd-occupancy--full .vd-occupancy__status { color: #8C2521; }
+
+.vd-occupancy--full,
+.vd-occupancy--unknown {
+  background: var(--vd-brine);
+}
+
+.vd-occupancy__line {
+  color: var(--vd-muted);
+  line-height: 1.35;
+}
+
+.vd-occupancy__meter {
+  height: .4rem;
+  border-radius: 999px;
+  background: #FFFFFF;
+  overflow: hidden;
+}
+
+.vd-occupancy__meter > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #2E7D52;
+}
+
+.vd-occupancy--busy .vd-occupancy__meter > span { background: #B5660C; }
+.vd-occupancy--full .vd-occupancy__meter > span { background: #A32C28; }
+
+/* What a reservation pays, and by when -------------------------------- */
+.vd-terms {
+  padding: .85rem 1rem;
+  border: 1px solid var(--vd-brine-dark);
+  border-radius: var(--vd-radius);
+  background: var(--vd-sand);
+}
+
+.vd-terms__title {
+  margin: 0 0 .6rem;
+  font-size: .9375rem;
+  font-weight: 700;
+  color: var(--vd-bay);
+}
+
+.vd-terms__lines {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: .3rem .75rem;
+  margin: 0 0 .7rem;
+  font-size: .875rem;
+}
+
+.vd-terms__lines dt {
+  font-weight: 400;
+  color: var(--vd-muted);
+}
+
+.vd-terms__lines dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 650;
+  color: var(--vd-bay);
+  white-space: nowrap;
+}
+
+/* The one figure the reader is looking for. */
+.vd-terms__lines dd.vd-terms__due {
+  font-size: 1.0625rem;
+  color: var(--vd-lagoon-dark);
+}
+
+.vd-terms__sentence {
+  padding-top: .6rem;
+  border-top: 1px solid var(--vd-brine-dark);
+  font-size: .8125rem;
+  line-height: 1.45;
+  color: var(--vd-bay);
+}
+
+.vd-terms__note {
+  margin-top: .4rem;
+  font-size: .8125rem;
+  line-height: 1.45;
+  color: var(--vd-muted);
+}
+
+/* The municipality's environmental fee, told to a guest ----------------
+   Deliberately unlike the price panel beside it. Green and leafy rather
+   than the booking's teal, so it reads at a glance as somebody else's
+   charge and never as one more line of the resort's bill. */
+.vd-envfee {
+  padding: .85rem 1rem;
+  border: 1px solid rgba(46, 107, 78, .35);
+  border-left: 4px solid var(--vd-mangrove);
+  border-radius: var(--vd-radius);
+  background: #F2F8F4;
+}
+
+.vd-envfee__title {
+  margin: 0 0 .4rem;
+  font-size: .9375rem;
+  font-weight: 700;
+  color: var(--vd-mangrove);
+}
+
+.vd-envfee__rate {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--vd-bay);
+  line-height: 1.2;
+}
+
+.vd-envfee__unit {
+  font-size: .8125rem;
+  font-weight: 400;
+  color: var(--vd-muted);
+}
+
+.vd-envfee__line {
+  font-size: .8125rem;
+  line-height: 1.45;
+  color: var(--vd-muted);
+}
+
+/* The nights the map is reporting on ---------------------------------- */
+.vd-mapdates {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: .6rem;
+  padding: .75rem .875rem;
+  border: 1px solid var(--vd-brine-dark);
+  border-radius: var(--vd-radius);
+  background: #FFFFFF;
+}
+
+.vd-mapdates__field {
+  flex: 1 1 10rem;
+  min-width: 9rem;
+}
+
+.vd-mapdates__field .form-label {
+  margin-bottom: .2rem;
+  font-size: .8125rem;
+  font-weight: 650;
+  color: var(--vd-bay);
+}
+
+/* Its own full-width row under the fields, so a long sentence does not
+   stretch the controls beside it. */
+.vd-mapdates__readout {
+  flex: 1 0 100%;
+  font-size: .8125rem;
+  color: var(--vd-muted);
+}
+
+.vd-mapdates__readout--error {
+  color: #8C2521;
+}
+
+/* Somewhere you pass on the way, not somewhere you are going. Smaller
+   and quieter than a resort or a spot, so it never competes with the
+   pins a visitor actually came to click. */
+.vd-pin--fuel {
+  width: 1.4rem;
+  height: 1.4rem;
+  background: var(--vd-bay-raised);
+  box-shadow: 0 1px 4px rgba(13, 59, 71, .3);
+}
+
+.vd-pin--fuel .bi {
+  font-size: .62rem;
+}
+
+/* Where the municipality collects its environmental fee. A place money
+   is taken, not a place to go, so it is told apart from both. */
+.vd-pin--checkpoint {
+  width: 1.65rem;
+  height: 1.65rem;
+  background: var(--vd-mango-dark);
+}
+
+.vd-pin--checkpoint .bi {
+  font-size: .72rem;
+  color: var(--vd-bay);
+}
+
+/* Where the visitor is standing, told apart from the places they can go. */
+.vd-pin--here {
+  background: var(--vd-bay);
+  box-shadow: 0 0 0 3px rgba(143, 208, 201, .55);
+}
+
+/* This pin can be dragged to correct a browser that placed it wrongly,
+   so it has to look like it can. Leaflet puts .leaflet-marker-draggable
+   on the marker itself. */
+.leaflet-marker-draggable .vd-pin--here {
+  cursor: grab;
+}
+
+.leaflet-marker-draggable:active .vd-pin--here {
+  cursor: grabbing;
+}
+
+/* A steady pulse while it is the thing to notice, so "drag me" in the
+   readout has something to point at. */
+@media (prefers-reduced-motion: no-preference) {
+  .leaflet-marker-draggable .vd-pin--here {
+    animation: vd-here-pulse 2.4s ease-in-out infinite;
+  }
+
+  @keyframes vd-here-pulse {
+    0%, 100% { box-shadow: 0 0 0 3px rgba(143, 208, 201, .55); }
+    50%      { box-shadow: 0 0 0 7px rgba(143, 208, 201, .22); }
+  }
+}
+
+.vd-pin--here .bi {
+  color: #FFFFFF;
+}
+
+/* The "My location" button and the line of text it writes. */
+.vd-map-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .75rem;
+  margin-bottom: .75rem;
+}
+
+.vd-map-readout {
+  flex: 1 1 16rem;
+  padding: .5rem .75rem;
+  border-radius: var(--vd-radius-sm);
+  background: var(--vd-lagoon-tint);
+  color: var(--bs-primary-text-emphasis);
+  font-size: .875rem;
+}
+
+/* Nothing was measured: the map says so rather than showing a wrong figure. */
+.vd-map-readout.is-warning {
+  background: var(--vd-status-pending-bg);
+  color: var(--vd-status-pending-fg);
+}
+
+.vd-map-list__away {
+  display: block;
+  margin-top: .1rem;
+  font-size: .8125rem;
+  font-weight: 650;
+  color: var(--vd-muted);
+}
+
+/* A road figure is the real answer, so it is the one that stands out. */
+.vd-map-list__away.is-road {
+  color: var(--vd-lagoon-dark);
+}
+
+.vd-map-list__away.is-road::before {
+  content: '\F46E';
+  font-family: 'bootstrap-icons';
+  font-weight: normal;
+  margin-right: .25rem;
+}
+
+/* The road route drawn between the visitor and one resort. */
+.vd-route {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.vd-map-popup {
+  display: grid;
+  gap: .35rem;
+  min-width: 11rem;
+}
+
+.vd-map-popup img {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  object-fit: cover;
+  border-radius: var(--vd-radius-sm);
+}
+
+.vd-map-popup__meta {
+  color: var(--vd-muted);
+  font-size: .8125rem;
+}
+
+.vd-map-popup .btn {
+  justify-self: start;
+}
+
+/*
+ * Leaflet colours every link inside a map with its own blue, which beats
+ * Bootstrap's button colour and leaves button text unreadable on our
+ * teal fill. These two rules put the button colours back.
+ */
+.leaflet-container a.btn {
+  color: var(--bs-btn-color);
+}
+
+.leaflet-container a.btn:hover,
+.leaflet-container a.btn:focus {
+  color: var(--bs-btn-hover-color, var(--bs-btn-color));
+}
+
+.vd-map--tall {
+  height: clamp(24rem, 72vh, 44rem);
+}
+
+/* A glimpse on the home page, not the full working map beside it — shorter,
+   so the section reads as an invitation to click through rather than a second
+   place to actually plan a trip from. */
+.vd-map--preview {
+  height: clamp(16rem, 42vh, 22rem);
+}
+
+.vd-map-list {
+  max-height: clamp(24rem, 72vh, 44rem);
+  overflow-y: auto;
+}
+
+.vd-map-list__item {
+  display: flex;
+  gap: .75rem;
+  width: 100%;
+  padding: .65rem .75rem;
+  border: 0;
+  border-bottom: 1px solid var(--vd-brine);
+  background: none;
+  text-align: left;
+}
+
+.vd-map-list__item:hover,
+.vd-map-list__item:focus-visible {
+  background: var(--vd-lagoon-tint);
+}
+
+.vd-map-list__item img {
+  width: 3.25rem;
+  height: 2.5rem;
+  object-fit: cover;
+  border-radius: var(--vd-radius-sm);
+  flex-shrink: 0;
+}
+
+/* Works as a paragraph of spans or as a list of items; a key is really a list. */
+.vd-map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vd-space-xs) var(--vd-space-md);
+  align-items: center;
+  /* No margin reset: this stylesheet loads after Bootstrap, so setting one
+     here would beat the mb-3 the pages put on it and close the gap under the
+     key. A bare <ul> already carries the same 1rem from reboot. */
+  padding-left: 0;
+  list-style: none;
+  font-size: var(--vd-text-body-sm);
+  color: var(--vd-muted);
+}
+
+.vd-map-legend > li,
+.vd-map-legend > span {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--vd-space-xs);
+}
+
+.vd-map-legend span.vd-pin {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.vd-map-legend .bi {
+  font-size: .6rem;
+}
+
+/* The sentence, not a key entry: it takes the rest of the line. */
+.vd-map-legend__hint {
+  flex: 1 1 18rem;
+}
+
+/* The two-pane map -------------------------------------------------------
+ * Left: the map. Right: the places on it. Both exactly the same height.
+ *
+ * Everything on this page used to be one column — heading, key, buttons,
+ * planner, map, then the list below the fold. On a laptop the map was cut off
+ * at the bottom and the list it pairs with was off screen, so picking a place
+ * meant scrolling the map away and back. The panes fix that: the list scrolls
+ * inside itself and the map never moves.
+ */
+.vd-mapstage {
+  display: grid;
+  gap: var(--vd-space-sm);
+  grid-template-areas:
+    "trip"
+    "dates"
+    "map"
+    "aside"
+    "profile";
+}
+
+.vd-mapstage__trip {
+  grid-area: trip;
+  margin-bottom: 0;
+}
+
+/* Directly above the map, because it is the map the dates change. */
+.vd-mapstage__dates {
+  grid-area: dates;
+  margin-bottom: 0;
+}
+
+/* A definite height at every width: Leaflet collapses to nothing inside a
+   parent that is only as tall as its contents. */
+.vd-mapstage__map {
+  grid-area: map;
+  min-width: 0;
+  height: clamp(18rem, 52vh, 28rem);
+}
+
+.vd-mapstage__canvas {
+  height: 100%;
+}
+
+.vd-mapstage__aside {
+  grid-area: aside;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 28rem;
+  overflow: hidden;
+}
+
+/* "My location" and what it reports: pinned, so the list can scroll under it. */
+.vd-mapstage__tools {
+  display: grid;
+  gap: var(--vd-space-xs);
+  padding: var(--vd-space-sm);
+  border-bottom: 1px solid var(--vd-brine);
+  background: var(--vd-sand);
+  border-radius: var(--vd-radius) var(--vd-radius) 0 0;
+  flex-shrink: 0;
+}
+
+.vd-mapstage__scroll {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
+}
+
+/* Stays put while its own group scrolls past, so a long list never leaves you
+   wondering whether you are still among the resorts. */
+.vd-mapstage__group {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0;
+  padding: var(--vd-space-xs) var(--vd-space-sm);
+  border-bottom: 1px solid var(--vd-brine);
+  background: #FFFFFF;
+  font-size: var(--vd-text-small);
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--vd-muted);
+}
+
+.vd-mapstage__none {
+  margin: 0;
+  padding: var(--vd-space-sm);
+  color: var(--vd-muted);
+  font-size: var(--vd-text-body-sm);
+}
+
+.vd-mapstage__profile {
+  grid-area: profile;
+  margin: 0;
+}
+
+@media (min-width: 992px) {
+  .vd-mapstage {
+    /* One height for both panes, so they line up top and bottom. */
+    --vd-mapstage-height: clamp(26rem, 68vh, 42rem);
+
+    grid-template-columns: minmax(0, 1fr) clamp(17rem, 27%, 23rem);
+    grid-template-areas:
+      "trip    trip"
+      "dates   dates"
+      "map     aside"
+      "profile profile";
+  }
+
+  .vd-mapstage__map,
+  .vd-mapstage__aside {
+    height: var(--vd-mapstage-height);
+    max-height: none;
+  }
+}
+
+/*
+ * A decision the office still has to make, left visible on the page rather
+ * than hidden in a comment, so a notice cannot be published with a blank in it.
+ */
+.vd-todo-note {
+  padding: .75rem 1rem;
+  border-left: 4px solid var(--vd-mango);
+  border-radius: 0 var(--vd-radius-sm) var(--vd-radius-sm) 0;
+  background: #FDF6E6;
+  color: var(--vd-bay);
+}
+
+/* Star ratings ---------------------------------------------------------- */
+.vd-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  white-space: nowrap;
+}
+
+.vd-stars__icons {
+  color: var(--vd-mango);
+  letter-spacing: .05em;
+}
+
+.vd-stars__value {
+  font-weight: 700;
+  color: var(--vd-bay);
+}
+
+.vd-stars__count,
+.vd-stars--none {
+  color: var(--vd-muted);
+  font-size: .875rem;
+}
+
+/* Guest reviews --------------------------------------------------------- */
+.vd-reviews {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.vd-review {
+  padding: 1.1rem 0;
+  border-top: 1px solid var(--vd-brine);
+}
+
+.vd-review__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .6rem;
+  margin-bottom: .5rem;
+}
+
+.vd-review__who {
+  font-weight: 650;
+  color: var(--vd-bay);
+}
+
+.vd-review__when {
+  font-size: .8125rem;
+  color: var(--vd-muted);
+}
+
+.vd-review__text {
+  margin: 0;
+  color: var(--vd-ink);
+}
+
+/* The resort answering, set in from the review it belongs to. */
+.vd-review__reply {
+  margin: .85rem 0 0 1rem;
+  padding: .75rem 1rem;
+  border-left: 3px solid var(--vd-lagoon);
+  border-radius: 0 var(--vd-radius-sm) var(--vd-radius-sm) 0;
+  background: var(--vd-salt);
+  font-size: .9375rem;
+}
+
+.vd-review__reply-who {
+  margin: 0 0 .25rem;
+  font-weight: 650;
+  font-size: .875rem;
+  color: var(--vd-lagoon-dark);
+}
+
+/*
+ * Choosing a rating. Radio buttons rather than a star widget, so it works
+ * with the keyboard, with a screen reader, and with no JavaScript.
+ */
+.vd-rate {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+}
+
+.vd-rate__choice {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .55rem .85rem;
+  border: 1px solid var(--vd-brine);
+  border-radius: var(--vd-radius);
+  cursor: pointer;
+}
+
+.vd-rate__choice:hover {
+  border-color: var(--vd-brine-dark);
+  background: var(--vd-salt);
+}
+
+/* :has() keeps the whole row highlighted, not just the little circle. */
+.vd-rate__choice:has(input:checked) {
+  border-color: var(--vd-lagoon);
+  background: var(--vd-lagoon-tint);
+}
+
+.vd-rate__choice:has(input:focus-visible) {
+  outline: 2px solid var(--vd-lagoon);
+  outline-offset: 2px;
+}
+
+.vd-rate__stars {
+  color: var(--vd-mango);
+  font-size: 1.1rem;
+  letter-spacing: .05em;
+}
+
+.vd-rate__word {
+  font-weight: 600;
+  color: var(--vd-bay);
+}
+
+/* The booking request form and its running summary. */
+.vd-booking__head {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.vd-booking__thumb {
+  width: 6rem;
+  height: 4.5rem;
+  object-fit: cover;
+  border-radius: var(--vd-radius);
+  background: var(--vd-brine);
+  flex-shrink: 0;
+}
+
+.vd-booking__title {
+  margin: 0;
+  font-size: clamp(1.4rem, 1.1rem + 1vw, 1.875rem);
+}
+
+.vd-booking__where {
+  color: var(--vd-muted);
+  font-size: .9375rem;
+}
+
+/* Small caps-ish heading inside each panel of the form. */
+.vd-booking__legend {
+  margin-bottom: 1rem;
+  padding-bottom: .6rem;
+  border-bottom: 1px solid var(--vd-brine);
+  color: var(--vd-bay);
+}
+
+.vd-booking__room-photo {
+  width: 100%;
+  height: 9rem;
+  object-fit: cover;
+  border-radius: var(--vd-radius);
+  background: var(--vd-brine);
+  margin-bottom: 1rem;
+}
+
+.vd-booking__lines {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: .4rem 1rem;
+  margin: 0 0 1rem;
+  font-size: .9375rem;
+}
+
+.vd-booking__lines dt {
+  color: var(--vd-muted);
+  font-weight: 400;
+}
+
+.vd-booking__lines dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 600;
+  color: var(--vd-bay);
+}
+
+.vd-booking__totals {
+  padding-top: .85rem;
+  border-top: 1px solid var(--vd-brine);
+}
+
+.vd-booking__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: .9375rem;
+  color: var(--vd-muted);
+}
+
+.vd-booking__row + .vd-booking__row {
+  margin-top: .5rem;
+}
+
+/* A discount line. Money coming off reads in the lagoon green rather
+   than the muted grey of the lines it sits between, because it is the
+   one figure on the summary a guest is actively looking for. */
+.vd-booking__row [data-booking-child-discount],
+.vd-booking__row [data-booking-pwd-discount] {
+  font-weight: 650;
+  color: var(--vd-lagoon-dark);
+  white-space: nowrap;
+}
+
+.vd-booking__row--total {
+  padding-top: .6rem;
+  border-top: 1px solid var(--vd-brine);
+  font-size: 1.0625rem;
+  color: var(--vd-bay);
+}
+
+.vd-booking__row--total strong {
+  font-family: var(--vd-font-display);
+  font-weight: 700;
+  font-stretch: 85%;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+@media (min-width: 992px) {
+  /* The figures stay in view while the fields above them are filled in. */
+  .vd-booking__summary {
+    position: sticky;
+    top: 1.5rem;
+  }
+}
+
+/* A short "what is next" list inside a panel: name on the left, dates on the
+   right. A rule between the rows and none above the first, so the list does
+   not start with a line directly under its own heading. */
+.vd-upnext {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vd-upnext > li {
+  display: flex;
+  /* Wraps rather than crushing: a long guest name beside a date range has
+     nowhere to go in a panel the width of a phone, and without this the two
+     squeeze into a column of single words each. */
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--vd-space-3xs) var(--vd-space-xs);
+  padding: var(--vd-space-xs) 0;
+}
+
+.vd-upnext > li > :first-child {
+  min-width: 0;
+}
+
+.vd-upnext > li + li {
+  border-top: 1px solid var(--vd-brine);
+}
+
+/* The Department of Tourism's accommodation return -----------------------
+ *
+ * The office files this on a form whose headings are colour-coded, and reads
+ * the two side by side. The colours are the form's own, so a column can be
+ * found in the same place on both. Each carries a dark-enough text colour to
+ * stay readable rather than relying on the fill alone.
+ */
+.vd-return th {
+  white-space: nowrap;
+  text-align: center;
+  vertical-align: middle;
+  font-size: var(--vd-text-small);
+}
+
+.vd-return tbody th {
+  text-align: left;
+  white-space: normal;
+  min-width: 11rem;
+}
+
+/*
+ * The first column stays put while the other thirteen scroll past it.
+ *
+ * This table cannot stack on a phone — thirteen numeric columns laid out as a
+ * list would be unreadable — so it scrolls sideways instead. Without this,
+ * scrolling as far as the Foreign column leaves a row of bare numbers with
+ * nothing saying which line they belong to. The availability calendar pins its
+ * room column the same way.
+ *
+ * Addressed by position rather than by element, because the first cell of a
+ * body row is a td and of a heading row a th.
+ */
+.vd-return > thead > tr > *:first-child,
+.vd-return > tbody > tr > *:first-child,
+.vd-return > tfoot > tr > *:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  /* Opaque, or the columns scrolling underneath show through it. */
+  background: #FFFFFF;
+  box-shadow: 1px 0 0 var(--vd-brine);
+}
+
+/* The heading and total rows keep the colours they already carry. */
+.vd-return > thead > tr > *:first-child { background: #E4D5D0; }
+.vd-return > tfoot > tr > *:first-child { background: var(--vd-sand); }
+
+.vd-return thead th { color: #1A1A1A; }
+
+.vd-return__resort            { background: #E4D5D0; }
+.vd-return__guest             { background: #EFE7E3; }
+.vd-return__c                 { background: #BFE3E0; }
+.vd-return__o                 { background: #8FDCAF; }
+.vd-return__r                 { background: #B9CEF8; }
+.vd-return__m                 { background: #F7B37C; }
+.vd-return__f                 { background: #F79CC6; }
+.vd-return__o-pangasinan      { background: #FBE96B; }
+.vd-return__o-ilocos          { background: #8FE39B; }
+.vd-return__o-ncr             { background: #FBC54B; }
+.vd-return__o-other_ph        { background: #E2E2E2; }
+.vd-return__o-foreign         { background: #C9A6E8; }
+
+.vd-return tfoot th,
+.vd-return tfoot td {
+  border-top: 2px solid var(--vd-brine-dark);
+  font-weight: 700;
+}
+
+/* 13. Charts ------------------------------------------------------------ */
+.vd-chart {
+  position: relative;
+  width: 100%;
+}
+
+/* 14. Office dashboard --------------------------------------------------
+ * The greeting banner, the headline cards, and the panels beneath them.
+ */
+.vd-greeting {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  isolation: isolate;
+  overflow: hidden;
+  min-height: 15rem;
+  padding: clamp(1.25rem, 3vw, 2.25rem);
+  margin-bottom: 1rem;
+  border-radius: var(--vd-radius-lg);
+  background: var(--vd-bay);
+  color: #FFFFFF;
+}
+
+.vd-greeting__photo {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Darkens the side the words are on and leaves the water showing on the other. */
+.vd-greeting::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(100deg,
+    rgba(13, 59, 71, .94) 0%,
+    rgba(13, 59, 71, .82) 36%,
+    rgba(13, 59, 71, .28) 68%,
+    rgba(13, 59, 71, .05) 100%);
+       background: none !important;
+    pointer-events: none;
+
+}
+
+.vd-greeting__body {
+  flex: 1 1 22rem;
+  align-self: flex-end;
+}
+
+.vd-greeting__place {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin: 0 0 .6rem;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--vd-seafoam);
+}
+
+.vd-greeting__title {
+  margin: 0;
+  font-family: var(--vd-font-display);
+  font-weight: 750;
+  font-stretch: 82%;
+  font-size: clamp(1.9rem, 1.2rem + 2.4vw, 3.25rem);
+  line-height: 1.02;
+  letter-spacing: -.02em;
+  color: #FFFFFF;
+}
+
+.vd-greeting__hello {
+  display: block;
+  font-family: var(--vd-font-body);
+  font-weight: 400;
+  font-size: .5em;
+  letter-spacing: 0;
+  opacity: .92;
+}
+
+.vd-greeting__title::after {
+  content: '';
+  display: block;
+  width: 4.5rem;
+  height: 4px;
+  margin-top: .85rem;
+  border-radius: 2px;
+  background: var(--vd-mango);
+}
+
+.vd-greeting__lead {
+  max-width: 44ch;
+  margin: 1rem 0 0;
+  font-size: 1.0625rem;
+  color: rgba(255, 255, 255, .88);
+}
+
+.vd-greeting__today {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: .7rem 1.1rem;
+  border: 1px solid rgba(255, 255, 255, .28);
+  border-radius: var(--vd-radius);
+  background: rgba(13, 59, 71, .5);
+  text-align: right;
+}
+
+.vd-greeting__today-day {
+  display: block;
+  font-weight: 700;
+  font-size: .9375rem;
+}
+
+.vd-greeting__today-date {
+  display: block;
+  font-size: .8125rem;
+  color: rgba(255, 255, 255, .8);
+}
+
+/* Work waiting for review. Shown only when there is some. */
+.vd-todo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .6rem;
+  padding: .75rem 1rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--vd-mango);
+  border-left-width: 4px;
+  border-radius: var(--vd-radius);
+  background: #FDF6E6;
+}
+
+.vd-todo > .bi {
+  color: var(--vd-mango-dark);
+  font-size: 1.15rem;
+}
+
+.vd-todo__text {
+  flex: 1 1 14rem;
+  font-weight: 600;
+  color: var(--vd-bay);
+}
+
+/* Headline card. Each tone sets the two variables the card paints with. */
+.vd-metric {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: .9rem;
+  height: 100%;
+  padding: 1.1rem;
+  overflow: hidden;
+  border: 1px solid var(--vd-brine);
+  border-radius: var(--vd-radius);
+  background: #FFFFFF;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.vd-metric:hover {
+  border-color: var(--vd-brine-dark);
+  box-shadow: var(--vd-shadow);
+  color: inherit;
+}
+
+/* A wash of the card's own colour in the bottom corner. */
+.vd-metric::after {
+  content: '';
+  position: absolute;
+  right: -2.5rem;
+  bottom: -3.75rem;
+  width: 9rem;
+  height: 6rem;
+  border-radius: 50%;
+  background: var(--vd-metric-tint);
+  opacity: .4;
+}
+
+.vd-metric__icon {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: var(--vd-radius);
+  background: var(--vd-metric-tint);
+  color: var(--vd-metric-ink);
+  font-size: 1.4rem;
+}
+
+.vd-metric__body {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.vd-metric__label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .35rem;
+  font-size: .875rem;
+  color: var(--vd-muted);
+}
+
+.vd-metric__label .bi {
+  font-size: .75rem;
+}
+
+.vd-metric__value {
+  display: block;
+  font-family: var(--vd-font-display);
+  font-weight: 700;
+  font-stretch: 85%;
+  font-size: 2rem;
+  line-height: 1.15;
+  color: var(--vd-bay);
+}
+
+.vd-metric__trend {
+  display: flex;
+  align-items: center;
+  gap: .25rem;
+  font-size: .8125rem;
+  font-weight: 600;
+  color: var(--vd-mangrove);
+}
+
+.vd-metric__trend.is-down {
+  color: #9B2C1F;
+}
+
+.vd-metric__trend.is-flat {
+  color: var(--vd-muted);
+  font-weight: 500;
+}
+
+.vd-metric--lagoon   { --vd-metric-tint: var(--vd-lagoon-tint); --vd-metric-ink: var(--vd-lagoon-dark); }
+.vd-metric--sky      { --vd-metric-tint: #DCE8F7; --vd-metric-ink: #1D4F8C; }
+.vd-metric--mango    { --vd-metric-tint: #FDF1D6; --vd-metric-ink: #8A5A00; }
+.vd-metric--mangrove { --vd-metric-tint: #DDEFE5; --vd-metric-ink: #1F5A3E; }
+
+/* A titled panel: heading and filter on top, content below. */
+.vd-board {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.vd-board__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .9rem 1.15rem;
+  border-bottom: 1px solid var(--vd-brine);
+}
+
+.vd-board__title {
+  margin: 0;
+  font-size: 1.0625rem;
+}
+
+.vd-board__more {
+  font-size: .875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.vd-board__more:hover {
+  text-decoration: underline;
+}
+
+.vd-board__body {
+  flex: 1 1 auto;
+  padding: 1.15rem;
+}
+
+.vd-board__blank {
+  margin: 0;
+  padding: 2.5rem 1.15rem;
+  text-align: center;
+  color: var(--vd-muted);
+}
+
+.vd-board__table {
+  --bs-table-bg: transparent;
+  font-size: .9375rem;
+}
+
+.vd-board__table > thead th {
+  padding: .55rem 1.15rem;
+  font-size: .8125rem;
+  font-weight: 650;
+  white-space: nowrap;
+  color: var(--vd-muted);
+  background: var(--vd-salt);
+  border-bottom: 1px solid var(--vd-brine);
+}
+
+.vd-board__table > tbody td {
+  padding: .7rem 1.15rem;
+}
+
+.vd-board__table > tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.vd-board__table a {
+  text-decoration: none;
+}
+
+.vd-board__table a:hover {
+  text-decoration: underline;
+}
+
+.vd-yearpick {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .25rem .65rem;
+  border: 1px solid var(--vd-brine-dark);
+  border-radius: 999px;
+  background: #FFFFFF;
+  color: var(--vd-muted);
+  font-size: .875rem;
+}
+
+.vd-yearpick:focus-within {
+  border-color: var(--vd-lagoon);
+  box-shadow: 0 0 0 .2rem rgba(15, 124, 122, .18);
+}
+
+.vd-yearpick__select {
+  border: 0;
+  background: none;
+  color: var(--vd-bay);
+  font-weight: 650;
+  font-size: .875rem;
+}
+
+.vd-yearpick__select:focus {
+  outline: none;
+}
+
+/* Doughnut on the left, its key on the right. */
+.vd-mix {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.vd-donut {
+  position: relative;
+  flex: 0 0 11.5rem;
+  width: 11.5rem;
+}
+
+.vd-donut__center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  margin: 0;
+  text-align: center;
+  pointer-events: none;
+}
+
+.vd-donut__total {
+  display: block;
+  font-family: var(--vd-font-display);
+  font-weight: 700;
+  font-stretch: 85%;
+  font-size: 1.75rem;
+  line-height: 1;
+  color: var(--vd-bay);
+}
+
+.vd-donut__caption {
+  display: block;
+  font-size: .8125rem;
+  color: var(--vd-muted);
+}
+
+.vd-mix__key {
+  flex: 1 1 11rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.vd-mix__row {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .3rem 0;
+  font-size: .875rem;
+}
+
+.vd-mix__dot {
+  flex-shrink: 0;
+  width: .65rem;
+  height: .65rem;
+  border-radius: 50%;
+}
+
+.vd-mix__label {
+  flex: 1 1 auto;
+  color: var(--vd-muted);
+}
+
+.vd-mix__count {
+  font-weight: 700;
+  color: var(--vd-bay);
+  font-variant-numeric: tabular-nums;
+}
+
+.vd-mix__share {
+  width: 3.5rem;
+  text-align: right;
+  color: var(--vd-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Busiest resorts, first three on the podium. */
+.vd-rank {
+  list-style: none;
+  margin: 0;
+  padding: .35rem 0;
+}
+
+.vd-rank__row {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .6rem 1.15rem;
+}
+
+.vd-rank__row + .vd-rank__row {
+  border-top: 1px solid var(--vd-brine);
+}
+
+.vd-rank__medal {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  background: var(--vd-brine);
+  color: var(--vd-bay);
+  font-size: .8125rem;
+  font-weight: 800;
+}
+
+.vd-rank__row:nth-child(1) .vd-rank__medal { background: #F2B134; color: #5A3D00; }
+.vd-rank__row:nth-child(2) .vd-rank__medal { background: #CBD5D7; color: #2F4145; }
+.vd-rank__row:nth-child(3) .vd-rank__medal { background: #E0A879; color: #5A3212; }
+
+.vd-rank__photo {
+  flex-shrink: 0;
+  width: 3rem;
+  height: 2.25rem;
+  object-fit: cover;
+  border-radius: var(--vd-radius-sm);
+  background: var(--vd-brine);
+}
+
+.vd-rank__who {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.vd-rank__name {
+  display: block;
+  font-weight: 650;
+  color: var(--vd-bay);
+  text-decoration: none;
+}
+
+.vd-rank__name:hover {
+  text-decoration: underline;
+}
+
+.vd-rank__where {
+  display: block;
+  font-size: .8125rem;
+  color: var(--vd-muted);
+}
+
+.vd-rank__score {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.vd-rank__count {
+  display: block;
+  font-weight: 750;
+  color: var(--vd-bay);
+}
+
+.vd-rank__unit {
+  display: block;
+  font-size: .75rem;
+  color: var(--vd-muted);
+}
+
+/* 15. Phones and tablets ------------------------------------------------
+ * Everything above is written mobile-first; this section is the handling a
+ * touch screen needs on top of that, and it is where the iOS and Android
+ * quirks are dealt with.
+ */
+
+/*
+ * Safari on iOS zooms the whole page in when it focuses a field whose text is
+ * smaller than 16px, and it does not zoom back out. Every field on a touch
+ * screen is therefore at least 16px, which is easier to hit anyway.
+ */
+@media (max-width: 991.98px) {
+  .form-control,
+  .form-select,
+  .form-control-sm,
+  .form-select-sm,
+  .vd-search__field,
+  .vd-yearpick__select,
+  input[type="text"],
+  input[type="search"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="password"],
+  input[type="date"],
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/*
+ * Touch, rather than screen size: a small phone and a large tablet both need
+ * targets a fingertip can land on. 44px is Apple's floor and close enough to
+ * Android's 48dp that one size serves both.
+ */
+@media (pointer: coarse) {
+  .vd-topbar__menu,
+  .vd-bell,
+  .vd-account {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+
+  /* The pill grows with the buttons inside it, rather than being burst by them. */
+  .vd-search {
+    height: 2.75rem;
+  }
+
+  .vd-search__go,
+  .vd-search__scope {
+    width: 2.4rem;
+    height: 2.4rem;
+  }
+
+  .vd-sidebar__link {
+    padding-top: .7rem;
+    padding-bottom: .7rem;
+  }
+
+  .vd-rank__row,
+  .dropdown-item {
+    padding-top: .7rem;
+    padding-bottom: .7rem;
+  }
+
+  /* Small buttons sit in dense table rows all over the office screens, and a
+     31px target is too small to hit reliably with a thumb. */
+  .btn-sm {
+    min-height: 2.5rem;
+  }
+
+  .btn-close {
+    padding: .75rem;
+  }
+
+  /* The grey flash Safari and Chrome paint over a tapped link; the :active and
+     :hover styles already say what was pressed. */
+  a,
+  button,
+  .vd-sidebar__link,
+  .vd-metric {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Stops a double tap zooming instead of counting as two taps. */
+  a,
+  button,
+  select,
+  label,
+  summary {
+    touch-action: manipulation;
+  }
+}
+
+/*
+ * A table of five columns cannot be read on a phone, and scrolling it sideways
+ * hides half of every row. Below the tablet breakpoint each row becomes a small
+ * stack of label-and-value lines instead. The labels come from data-label on
+ * the cells, so the markup stays one ordinary table on any larger screen.
+ *
+ * Opt in per table with .vd-stack-table, because a table only stacks well when
+ * its rows are short; a long list is better left to scroll sideways.
+ */
+@media (max-width: 767.98px) {
+  .vd-stack-table,
+  .vd-stack-table > tbody,
+  .vd-stack-table > tbody > tr,
+  .vd-stack-table > tbody > tr > td {
+    display: block;
+    width: 100%;
+  }
+
+  .vd-stack-table > thead {
+    /* Hidden by position rather than display:none. Laying the table out as
+       blocks already costs the row-and-column relationship, so every cell
+       carries its own label through data-label below. */
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .vd-stack-table > tbody > tr {
+    padding: .85rem 1.15rem;
+    border-bottom: 1px solid var(--vd-brine);
+  }
+
+  .vd-stack-table > tbody > tr:last-child {
+    border-bottom: 0;
+  }
+
+  .vd-stack-table > tbody > tr > td {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .15rem 0;
+    border: 0;
+  }
+
+  .vd-stack-table > tbody > tr > td[data-label]::before {
+    content: attr(data-label);
+    flex: 0 0 auto;
+    font-size: .8125rem;
+    color: var(--vd-muted);
+  }
+
+  /* The first cell names the row, so it leads rather than sits in a pair. */
+  .vd-stack-table > tbody > tr > td:first-child {
+    display: block;
+    margin-bottom: .35rem;
+  }
+}
+
+/* The office dashboard on a phone. */
+@media (max-width: 575.98px) {
+  .vd-greeting {
+    min-height: 0;
+    padding: 1.25rem 1.1rem;
+  }
+
+  /* No width to fade sideways into, so the photo darkens from the bottom up. */
+  .vd-greeting::before {
+    background: linear-gradient(180deg,
+      rgba(13, 59, 71, .55) 0%,
+      rgba(13, 59, 71, .82) 55%,
+      rgba(13, 59, 71, .95) 100%);
+  }
+
+  .vd-greeting__title {
+    font-size: 1.75rem;
+  }
+
+  .vd-greeting__lead {
+    font-size: .9375rem;
+  }
+
+  .vd-greeting__today {
+    order: -1;
+    width: 100%;
+    text-align: left;
+  }
+
+  /* Side by side, the icon would leave no room for a five-figure number. */
+  .vd-metric {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .55rem;
+    padding: .9rem;
+  }
+
+  .vd-metric__body {
+    width: 100%;
+  }
+
+  .vd-metric__icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 1.1rem;
+  }
+
+  .vd-metric__value {
+    font-size: 1.6rem;
+  }
+
+  .vd-metric__label,
+  .vd-metric__trend {
+    font-size: .75rem;
+  }
+
+  .vd-board__head,
+  .vd-board__body {
+    padding: .85rem;
+  }
+
+  .vd-board__table > tbody > tr,
+  .vd-rank__row {
+    padding-left: .85rem;
+    padding-right: .85rem;
+  }
+
+  /* On one column the doughnut reads better centred above its key. */
+  .vd-mix {
+    justify-content: center;
+    gap: .75rem;
+  }
+
+  .vd-mix__key {
+    flex-basis: 100%;
+  }
+
+  .vd-topbar__brand .vd-brand__logo {
+    height: 2rem;
+  }
+
+  .vd-rank__photo {
+    width: 2.5rem;
+    height: 2rem;
+  }
+}
+
+/*
+ * A phone held on its side is only about 380px tall. The banner and the charts
+ * would fill it on their own, so they give some height back.
+ */
+@media (max-height: 460px) and (orientation: landscape) {
+  .vd-greeting {
+    min-height: 0;
+  }
+
+  .vd-chart {
+    max-height: 60vh;
+  }
+}
+
+/* 16. Print -------------------------------------------------------------- */
+@media print {
+  .vd-chart {
+    break-inside: avoid;
+  }
+
+  .vd-panel {
+    break-inside: avoid;
+    border-color: #C7DBD8;
+  }
+
+  .vd-shell,
+  .vd-shell__body,
+  .vd-main {
+    display: block;
+  }
+
+  /* The banner's photograph would swallow a cartridge of ink. */
+  .vd-greeting {
+    min-height: 0;
+    color: var(--vd-ink);
+    background: none;
+  }
+
+  .vd-greeting__photo,
+  .vd-greeting::before {
+    display: none;
+  }
+
+  .vd-greeting__title,
+  .vd-greeting__lead,
+  .vd-greeting__place {
+    color: var(--vd-bay);
+  }
+
+  a[href]::after {
+    content: '';
+  }
+}
+
+@media print {
+  .vd-navbar,
+  .vd-footer,
+  .vd-sidebar-rail,
+  .vd-topbar .btn,
+  .vd-topbar__menu,
+  .vd-search,
+  .vd-bell,
+  .vd-account__caret,
+  .d-print-none {
+    display: none !important;
+  }
+
+  body {
+    background: #FFFFFF;
+  }
+
+  .vd-content {
+    padding: 0;
+  }
+}
+
+
+
+
+.owner-sidebar {
+    background: linear-gradient(180deg, #103f49, #073640);
+    color: #ffffff;
+    min-height: 100vh;
+    padding: 16px 8px;
+}
+
+
+/* Reduce unnecessary spacing in the booking form */
+[data-booking-form] {
+    --booking-field-gap: 12px;
+}
+
+[data-booking-form] .row {
+    --bs-gutter-y: 12px;
+}
+
+/* Reduce space around each form field */
+[data-booking-form] .mb-3,
+[data-booking-form] .mb-4,
+[data-booking-form] .form-group {
+    margin-bottom: 12px !important;
+}
+
+/* Keep labels close to their inputs */
+[data-booking-form] label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+/* Reduce excess spacing in helper text */
+[data-booking-form] .form-text,
+[data-booking-form] small {
+    display: block;
+    margin-top: 5px;
+    margin-bottom: 0;
+    line-height: 1.4;
+}
+
+/* Avoid unnecessary bottom space on fields */
+[data-booking-form] input,
+[data-booking-form] select {
+    margin-bottom: 0;
+}
+
+
+/* VisitDasol booking form — compact field spacing */
+[data-booking-form] .row {
+    --bs-gutter-y: 0.5rem;
+}
+
+/* Reduce vertical spacing from common Bootstrap classes */
+[data-booking-form] .mb-3,
+[data-booking-form] .mb-4,
+[data-booking-form] .form-group {
+    margin-bottom: 0.5rem !important;
+}
+
+/* Tighten label-to-input spacing */
+[data-booking-form] label {
+    margin-bottom: 4px !important;
+}
+
+/* Tighten help text spacing */
+[data-booking-form] .form-text,
+[data-booking-form] small {
+    margin-top: 3px !important;
+    margin-bottom: 0 !important;
+    line-height: 1.35;
+}
+
+/* Prevent empty wrappers from creating unnecessary height */
+[data-booking-form] .form-group:empty {
+    display: none;
+}
+
+/* Keep inputs compact */
+[data-booking-form] input,
+[data-booking-form] select {
+    margin-bottom: 0 !important;
+}
+
+/* ======================================================================
+ * GIS map dashboard  (/map only)
+ *
+ * Three panes — the places, the map, the selection — across the full
+ * width of the window rather than inside the usual container. A map is
+ * the one thing on this site that is worth more the bigger it is.
+ *
+ * Everything here is prefixed .vd-gis and nothing outside this file's
+ * own block is touched, so the rest of the site is unaffected. The
+ * colours are the project's own tokens: a second palette on one page is
+ * how a site stops looking like itself.
+ * ====================================================================== */
+
+.vd-gis {
+  --vd-gis-gap: var(--vd-space-sm);
+  --vd-gis-pane: 20rem;
+  --vd-gis-height: clamp(26rem, 70vh, 46rem);
+
+  padding: var(--vd-space-md) clamp(var(--vd-space-md), 2.5vw, var(--vd-space-2xl))
+           var(--vd-space-2xl);
+  background: var(--vd-salt);
+}
+
+/* Heading strip ------------------------------------------------------- */
+
+.vd-gis__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--vd-space-sm);
+  margin-bottom: var(--vd-gis-gap);
+}
+
+.vd-gis__title h1 {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin: 0;
+  font-size: var(--vd-text-h2, 1.5rem);
+}
+
+.vd-gis__title h1 .bi { color: var(--vd-lagoon); }
+
+.vd-gis__sub {
+  margin: .15rem 0 0;
+  color: var(--vd-muted);
+  font-size: var(--vd-text-body-sm, .9375rem);
+}
+
+.vd-gis__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vd-space-xs);
+}
+
+.vd-gis__links a {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .4rem .75rem;
+  border: 1px solid var(--vd-brine);
+  border-radius: var(--vd-radius);
+  background: #FFFFFF;
+  color: var(--vd-ink);
+  font-size: var(--vd-text-small, .8125rem);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.vd-gis__links a:hover,
+.vd-gis__links a:focus-visible {
+  border-color: var(--vd-lagoon);
+  color: var(--vd-lagoon-dark);
+}
+
+/* The three panes ----------------------------------------------------- */
+
+.vd-gis__stage {
+  display: grid;
+  gap: var(--vd-gis-gap);
+  grid-template-areas:
+    "map"
+    "list"
+    "info"
+    "profile";
+}
+
+.vd-gis__pane {
+  min-width: 0;
+  border: 1px solid var(--vd-brine);
+  border-radius: var(--vd-radius-lg);
+  background: #FFFFFF;
+  box-shadow: var(--vd-shadow);
+}
+
+.vd-gis__pane--list {
+  grid-area: list;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: 32rem;
+}
+
+.vd-gis__pane--map {
+  grid-area: map;
+  display: flex;
+  flex-direction: column;
+  padding: var(--vd-space-sm);
+  gap: var(--vd-space-sm);
+}
+
+.vd-gis__pane--info {
+  grid-area: info;
+  display: flex;
+  flex-direction: column;
+  gap: var(--vd-space-sm);
+  padding: var(--vd-space-sm);
+  overflow-y: auto;
+}
+
+.vd-gis__profile {
+  grid-area: profile;
+  margin: 0;
+}
+
+/* Left pane: search and filters --------------------------------------- */
+
+.vd-gis__search {
+  padding: var(--vd-space-sm);
+  border-bottom: 1px solid var(--vd-brine);
+  display: grid;
+  gap: var(--vd-space-xs);
+}
+
+.vd-gis__searchbox { position: relative; }
+
+.vd-gis__searchbox .bi {
+  position: absolute;
+  top: 50%;
+  left: .7rem;
+  transform: translateY(-50%);
+  color: var(--vd-muted);
+  pointer-events: none;
+}
+
+.vd-gis__searchbox .form-control {
+  padding-left: 2.1rem;
+  border-radius: var(--vd-radius);
+}
+
+.vd-gis__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vd-space-3xs);
+}
+
+.vd-gis__filter {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .3rem .6rem;
+  border: 1px solid var(--vd-brine);
+  border-radius: 999px;
+  background: #FFFFFF;
+  color: var(--vd-muted);
+  font-size: var(--vd-text-small, .8125rem);
+  font-weight: 600;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.vd-gis__filter:hover { border-color: var(--vd-lagoon); color: var(--vd-lagoon-dark); }
+
+.vd-gis__filter.is-on {
+  border-color: var(--vd-lagoon);
+  background: var(--vd-lagoon);
+  color: #FFFFFF;
+}
+
+.vd-gis__filter:focus-visible {
+  outline: 2px solid var(--vd-lagoon-dark);
+  outline-offset: 2px;
+}
+
+.vd-gis__scopenote {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vd-space-xs);
+  margin: 0;
+  padding: .35rem .55rem;
+  border-radius: var(--vd-radius-sm);
+  background: var(--vd-lagoon-tint);
+  color: var(--vd-ink);
+  font-size: var(--vd-text-small, .8125rem);
+}
+
+/* Left pane: the cards ------------------------------------------------- */
+
+.vd-gis__card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: .5rem;
+  margin-top: .15rem;
+}
+
+.vd-gis__price {
+  font-weight: 700;
+  color: var(--vd-ink);
+  font-size: var(--vd-text-body-sm, .9375rem);
+}
+
+.vd-gis__per { font-weight: 400; color: var(--vd-muted); font-size: var(--vd-text-small, .8125rem); }
+
+.vd-gis__rating {
+  display: inline-flex;
+  align-items: center;
+  gap: .2rem;
+  font-size: var(--vd-text-small, .8125rem);
+  font-weight: 600;
+}
+
+.vd-gis__rating .bi { color: var(--vd-mango-dark); }
+
+.vd-gis__status {
+  display: inline-block;
+  margin-top: .3rem;
+  padding: .1rem .5rem;
+  border-radius: 999px;
+  font-size: .75rem;
+  font-weight: 700;
+}
+
+.vd-gis__status--available { background: var(--vd-status-active-bg); color: var(--vd-status-active-fg); }
+.vd-gis__status--busy    { background: var(--vd-status-pending-bg);  color: var(--vd-status-pending-fg); }
+.vd-gis__status--full    { background: var(--vd-status-rejected-bg); color: var(--vd-status-rejected-fg); }
+.vd-gis__status--unknown { background: var(--vd-status-inactive-bg); color: var(--vd-status-inactive-fg); }
+
+/* A barangay row has no photograph, so it gets a mark of the same size
+   and the rows stay in line with one another. */
+.vd-gis__brgyicon {
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  flex-shrink: 0;
+  border-radius: var(--vd-radius-sm);
+  background: var(--vd-lagoon-tint);
+  color: var(--vd-lagoon-dark);
+  font-size: 1.1rem;
+}
+
+.vd-gis__card.is-chosen {
+  background: var(--vd-lagoon-tint);
+  box-shadow: inset 3px 0 0 var(--vd-lagoon);
+}
+
+/* Centre pane: map and its furniture ----------------------------------- */
+
+.vd-gis__dates {
+  margin: 0;
+  padding-bottom: var(--vd-space-xs);
+  border-bottom: 1px solid var(--vd-brine);
+}
+
+.vd-gis__canvaswrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: clamp(18rem, 52vh, 28rem);
+}
+
+.vd-gis__canvas {
+  height: 100%;
+  border-radius: var(--vd-radius);
+}
+
+/* Top right of the map, clear of Leaflet's own zoom control at top left
+   and of the layers panel, which Leaflet puts below it. */
+.vd-gis__expand {
+  position: absolute;
+  top: .6rem;
+  right: .6rem;
+  z-index: 420;
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border: 1px solid var(--vd-brine-dark);
+  border-radius: var(--vd-radius-sm);
+  background: #FFFFFF;
+  color: var(--vd-ink);
+  cursor: pointer;
+}
+
+.vd-gis__expand:hover { background: var(--vd-salt); }
+.vd-gis__expand:focus-visible { outline: 2px solid var(--vd-lagoon); outline-offset: 2px; }
+
+/* In the browser's own fullscreen the pane IS the window, so the map has
+   to fill it rather than keep its clamped height. */
+.vd-gis__canvaswrap:fullscreen { height: 100%; background: #FFFFFF; }
+.vd-gis__canvaswrap:fullscreen .vd-gis__canvas { border-radius: 0; }
+
+.vd-gis__legend > summary {
+  cursor: pointer;
+  font-size: var(--vd-text-small, .8125rem);
+  font-weight: 700;
+  color: var(--vd-muted);
+}
+
+.vd-gis__legend[open] > summary { margin-bottom: var(--vd-space-xs); }
+
+/* Right pane ----------------------------------------------------------- */
+
+.vd-gis__card-panel {
+  padding: var(--vd-space-sm);
+  border: 1px solid var(--vd-brine);
+  border-radius: var(--vd-radius);
+  background: #FFFFFF;
+}
+
+.vd-gis__panelhead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vd-space-xs);
+  margin-bottom: var(--vd-space-xs);
+}
+
+.vd-gis__panelhead h2 {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  margin: 0;
+  font-size: var(--vd-text-body-sm, .9375rem);
+  font-weight: 700;
+}
+
+.vd-gis__panelhead .bi { color: var(--vd-lagoon); }
+
+.vd-gis__panelclose {
+  border: 0;
+  background: none;
+  color: var(--vd-muted);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.vd-gis__panelclose:hover { color: var(--vd-ink); }
+
+.vd-gis__hint {
+  margin: 0;
+  color: var(--vd-muted);
+  font-size: var(--vd-text-small, .8125rem);
+}
+
+.vd-gis__brgyname { margin: 0; font-size: 1.1rem; }
+
+.vd-gis__brgywhere {
+  margin: 0 0 var(--vd-space-xs);
+  color: var(--vd-muted);
+  font-size: var(--vd-text-small, .8125rem);
+}
+
+.vd-gis__stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--vd-space-xs);
+  margin: 0 0 var(--vd-space-xs);
+}
+
+.vd-gis__stats > div {
+  padding: .5rem .6rem;
+  border-radius: var(--vd-radius-sm);
+  background: var(--vd-salt);
+}
+
+.vd-gis__stats dt {
+  margin: 0;
+  color: var(--vd-muted);
+  font-size: .75rem;
+  font-weight: 600;
+}
+
+.vd-gis__stats dd { margin: 0; font-size: 1.25rem; font-weight: 700; }
+
+.vd-gis__brgynote,
+.vd-gis__missing,
+.vd-gis__fee {
+  display: flex;
+  gap: .45rem;
+  margin: var(--vd-space-xs) 0 0;
+  padding: .5rem .6rem;
+  border-radius: var(--vd-radius-sm);
+  font-size: var(--vd-text-small, .8125rem);
+  line-height: 1.45;
+}
+
+.vd-gis__brgynote { background: var(--vd-salt); color: var(--vd-muted); }
+.vd-gis__missing  { background: #FDF6E6; color: var(--vd-bay); }
+.vd-gis__fee      { background: var(--vd-lagoon-tint); color: var(--vd-ink); }
+
+.vd-gis__missing .bi { color: var(--vd-mango-dark); flex-shrink: 0; }
+.vd-gis__fee .bi     { color: var(--vd-lagoon-dark); flex-shrink: 0; }
+
+.vd-gis__trip { margin-bottom: var(--vd-space-xs); }
+
+/* Feature cards -------------------------------------------------------- */
+
+.vd-gis__features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: var(--vd-gis-gap);
+  margin: var(--vd-gis-gap) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vd-gis__features > li {
+  position: relative;
+  padding: var(--vd-space-sm) var(--vd-space-sm) var(--vd-space-sm) 2.6rem;
+  border: 1px solid var(--vd-brine);
+  border-radius: var(--vd-radius);
+  background: #FFFFFF;
+}
+
+.vd-gis__feature-no {
+  position: absolute;
+  top: var(--vd-space-sm);
+  left: var(--vd-space-sm);
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: var(--vd-lagoon);
+  color: #FFFFFF;
+  font-size: .75rem;
+  font-weight: 700;
+}
+
+.vd-gis__features h2 {
+  margin: 0 0 .15rem;
+  font-size: var(--vd-text-body-sm, .9375rem);
+  font-weight: 700;
+}
+
+.vd-gis__features p {
+  margin: 0;
+  color: var(--vd-muted);
+  font-size: var(--vd-text-small, .8125rem);
+  line-height: 1.45;
+}
+
+.vd-gis__credit {
+  margin: var(--vd-gis-gap) 0 0;
+  color: var(--vd-muted);
+  font-size: var(--vd-text-small, .8125rem);
+}
+
+/* Tablet: two panes, the map and the list, with the info below --------- */
+
+@media (min-width: 768px) {
+  .vd-gis__stage {
+    grid-template-columns: var(--vd-gis-pane) minmax(0, 1fr);
+    grid-template-areas:
+      "list map"
+      "info info"
+      "profile profile";
+  }
+
+  .vd-gis__pane--list { max-height: var(--vd-gis-height); }
+  .vd-gis__canvaswrap { height: auto; }
+  .vd-gis__pane--map  { height: var(--vd-gis-height); }
+
+  .vd-gis__pane--info {
+    flex-direction: row;
+    align-items: flex-start;
+    overflow: visible;
+  }
+
+  .vd-gis__pane--info > * { flex: 1 1 0; min-width: 0; }
+}
+
+/* Desktop: the three panes of the design ------------------------------ */
+
+@media (min-width: 1200px) {
+  .vd-gis__stage {
+    grid-template-columns: var(--vd-gis-pane) minmax(0, 1fr) var(--vd-gis-pane);
+    grid-template-areas:
+      "list map  info"
+      "profile profile profile";
+  }
+
+  .vd-gis__pane--info {
+    flex-direction: column;
+    height: var(--vd-gis-height);
+    overflow-y: auto;
+  }
+
+  .vd-gis__pane--info > * { flex: 0 0 auto; }
+}
+
+@media (min-width: 1500px) {
+  .vd-gis { --vd-gis-pane: 22rem; }
+}
+
+/* Phones: the map comes first and gets the room ----------------------- */
+
+@media (max-width: 575.98px) {
+  .vd-gis {
+    padding: var(--vd-space-sm) var(--vd-space-sm) var(--vd-space-xl);
+  }
+
+  .vd-gis__canvaswrap { height: 60vh; }
+  .vd-gis__pane--list { max-height: 24rem; }
+  .vd-gis__stats { grid-template-columns: 1fr; }
+
+  /* Leaflet popups default to a width that overflows a narrow screen. */
+  .vd-gis .leaflet-popup-content { max-width: calc(100vw - 5rem); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vd-gis__card { transition: none; }
+}
+/* Said before the location button is pressed, not after it misplaces
+   somebody. Quieter than the readout, which carries the actual answer. */
+.vd-map-hint {
+  color: var(--vd-muted);
+  font-size: var(--vd-text-small, .8125rem);
+  line-height: 1.45;
+}
+/* ======================================================================
+ * Names over imagery, and room to read them
+ *
+ * Two separate problems, both only visible on the satellite view:
+ *
+ *  1. Aerial photography carries no writing. Esri's transparent
+ *     reference tiles supply road and place names; they are drawn in
+ *     the "vd-labels" pane created in map.js, above the imagery and
+ *     below every marker.
+ *
+ *  2. Zoomed out, the coastal strip stacks resorts, spots, filling
+ *     stations and barangay names on top of one another. The bands
+ *     below shrink the secondary furniture when the map is far out and
+ *     restore it when there is room. No layer is added or removed, so
+ *     nothing is ever duplicated and the layers control stays honest.
+ * ====================================================================== */
+
+/* The label tiles themselves. Imagery is photographic and busy, so the
+   lettering gets a little contrast lift to sit on top of it. */
+.leaflet-pane .leaflet-tile-pane ~ * .leaflet-tile,
+.vd-map .leaflet-pane[class*="vd-labels"] {
+  pointer-events: none;
+}
+
+.vd-map .leaflet-pane[class*="vd-labels"] img {
+  /* Esri draws these for a mid-grey basemap; over dark water and
+     forest they need a touch more separation to stay legible. */
+  filter: contrast(1.12) saturate(.9) drop-shadow(0 0 1px rgba(0, 0, 0, .45));
+}
+
+/* --- Barangay name chips ------------------------------------------- */
+
+/* Far out: the chips are the first thing to crowd, because there are
+   up to eighteen of them inside one municipality. */
+.vd-map.is-zoom-far .vd-brgy {
+  font-size: .625rem;
+  padding: .05rem .3rem;
+  letter-spacing: 0;
+  opacity: .9;
+}
+
+.vd-map.is-zoom-near .vd-brgy {
+  font-size: .75rem;
+  padding: .15rem .5rem;
+}
+
+/* Over imagery the chip competes with the photograph underneath, so it
+   gets a more solid ground and a darker edge than it needs on the
+   street map. */
+.vd-map.is-satellite .vd-brgy {
+  background: rgba(255, 255, 255, .94);
+  border-color: rgba(13, 59, 71, .4);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .45);
+}
+
+.vd-map.is-satellite .vd-brgy--approx {
+  color: var(--vd-charcoal);
+}
+
+/* --- Barangay outline labels ---------------------------------------- */
+
+/* Typography by zoom: an outline label is sized to the shape it sits
+   in, and at municipality zoom the shapes are small. */
+.vd-map.is-zoom-far .leaflet-tooltip.vd-brgy-label {
+  font-size: .625rem;
+  letter-spacing: .02em;
+}
+
+.vd-map.is-zoom-near .leaflet-tooltip.vd-brgy-label {
+  font-size: .8125rem;
+  letter-spacing: .05em;
+}
+
+/* A heavier halo over imagery: the four-way white shadow is tuned for
+   the street map's pale ground and washes out over dark forest. */
+.vd-map.is-satellite .leaflet-tooltip.vd-brgy-label {
+  color: #FFFFFF;
+  text-shadow:
+     0  1px 3px rgba(0, 0, 0, .95),
+     0 -1px 3px rgba(0, 0, 0, .95),
+     1px  0  3px rgba(0, 0, 0, .95),
+    -1px  0  3px rgba(0, 0, 0, .95),
+     0  0  8px rgba(0, 0, 0, .8);
+}
+
+/* --- Decluttering the secondary pins --------------------------------- */
+
+/*
+ * Filling stations and fee checkpoints are things you pass, not things
+ * you set out for, so they are the ones that give way. Shrunk to a dot
+ * when the map is far out; full size once there is room. The marker is
+ * the same marker throughout — only its drawing changes.
+ */
+.vd-map.is-zoom-far .vd-pin--fuel,
+.vd-map.is-zoom-far .vd-pin--checkpoint {
+  width: 13px;
+  height: 13px;
+  opacity: .78;
+}
+
+.vd-map.is-zoom-far .vd-pin--fuel .bi,
+.vd-map.is-zoom-far .vd-pin--checkpoint .bi {
+  font-size: 7px;
+}
+
+.vd-map.is-zoom-mid .vd-pin--fuel,
+.vd-map.is-zoom-mid .vd-pin--checkpoint {
+  width: 18px;
+  height: 18px;
+}
+
+.vd-map.is-zoom-mid .vd-pin--fuel .bi,
+.vd-map.is-zoom-mid .vd-pin--checkpoint .bi {
+  font-size: 9px;
+}
+
+/* A resort or a tourist spot is what somebody came to find, so it never
+   shrinks — it lifts instead, clear of whatever is behind it. */
+.vd-map .vd-pin--resort,
+.vd-map .vd-pin--destination {
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .45);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .vd-pin--fuel,
+  .vd-pin--checkpoint {
+    transition: width .15s ease, height .15s ease, opacity .15s ease;
+  }
+}
+/* ======================================================================
+ * Environmental fee handovers
+ *
+ * Collected money being turned in and counted. The visual job here is
+ * one thing: keep the three figures — expected, declared, counted —
+ * visibly separate, because the gap between them is the only reason a
+ * reconciliation exists. Merging them into one confident total is the
+ * design failure this guards against.
+ * ====================================================================== */
+
+/* The status pills. Same tokens as every other badge, so a handover
+   reads like the rest of the office. */
+.vd-badge--submitted  { background: var(--vd-status-pending-bg);   color: var(--vd-status-pending-fg); }
+.vd-badge--reconciled { background: var(--vd-status-active-bg);    color: var(--vd-status-active-fg); }
+.vd-badge--disputed   { background: var(--vd-status-rejected-bg);  color: var(--vd-status-rejected-fg); }
+
+/* A collector's own list of handovers. */
+.vd-remit-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--vd-space-sm);
+  padding: var(--vd-space-sm);
+  border: 1px solid var(--vd-brine);
+  border-radius: var(--vd-radius);
+  margin-bottom: var(--vd-space-xs);
+  color: inherit;
+  text-decoration: none;
+}
+
+.vd-remit-row:hover,
+.vd-remit-row:focus-visible {
+  border-color: var(--vd-lagoon);
+  background: var(--vd-salt);
+}
+
+.vd-remit-row__main { min-width: 0; }
+.vd-remit-row__money { text-align: right; flex-shrink: 0; }
+
+/* The figures, side by side and equally weighted. */
+.vd-remit-figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: var(--vd-space-xs);
+  margin: 0 0 var(--vd-space-sm);
+}
+
+.vd-remit-figures > div {
+  padding: var(--vd-space-xs) var(--vd-space-sm);
+  border-radius: var(--vd-radius-sm);
+  background: var(--vd-salt);
+}
+
+.vd-remit-figures dt {
+  margin: 0;
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--vd-muted);
+}
+
+.vd-remit-figures dd {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.vd-remit-figures__total { background: var(--vd-lagoon-tint); }
+
+/* The slip --------------------------------------------------------- */
+
+.vd-slip {
+  padding: var(--vd-space-lg);
+  border: 1px solid var(--vd-brine);
+  border-radius: var(--vd-radius-lg);
+  background: #FFFFFF;
+}
+
+.vd-slip__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--vd-space-sm);
+  padding-bottom: var(--vd-space-sm);
+  border-bottom: 1px solid var(--vd-brine);
+  margin-bottom: var(--vd-space-sm);
+}
+
+.vd-slip__ref {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 1.25rem;
+}
+
+.vd-slip__where { color: var(--vd-muted); font-size: var(--vd-text-body-sm, .9375rem); }
+
+.vd-slip__meaning {
+  margin: 0 0 var(--vd-space-sm);
+  color: var(--vd-muted);
+  font-size: var(--vd-text-small, .8125rem);
+}
+
+.vd-slip__details { margin-bottom: var(--vd-space-sm); }
+.vd-slip__figures { margin-bottom: var(--vd-space-sm); }
+
+/* A difference is the thing to notice, so it is allowed to shout. */
+.vd-slip__variance {
+  display: flex;
+  gap: .5rem;
+  margin: 0 0 var(--vd-space-xs);
+  padding: var(--vd-space-xs) var(--vd-space-sm);
+  border-radius: var(--vd-radius-sm);
+  font-size: var(--vd-text-small, .8125rem);
+  line-height: 1.5;
+}
+
+.vd-slip__variance .bi { flex-shrink: 0; margin-top: .15rem; }
+
+.vd-slip__variance--declared {
+  background: var(--vd-status-pending-bg);
+  color: var(--vd-status-pending-fg);
+}
+
+.vd-slip__variance--counted {
+  background: var(--vd-status-rejected-bg);
+  color: var(--vd-status-rejected-fg);
+}
+
+.vd-slip__variance--drift {
+  background: var(--vd-status-completed-bg);
+  color: var(--vd-status-completed-fg);
+}
+
+.vd-slip__note {
+  margin: var(--vd-space-xs) 0 0;
+  padding: var(--vd-space-xs) var(--vd-space-sm);
+  border-left: 3px solid var(--vd-brine-dark);
+  background: var(--vd-salt);
+  font-size: var(--vd-text-small, .8125rem);
+}
+
+.vd-slip__note--office { border-left-color: var(--vd-lagoon); }
+
+.vd-slip__subhead {
+  margin: var(--vd-space-lg) 0 var(--vd-space-xs);
+  font-size: var(--vd-text-body-sm, .9375rem);
+  font-weight: 700;
+}
+
+.vd-slip__table th {
+  font-size: .75rem;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: var(--vd-muted);
+}
+
+.vd-slip__disclaimer {
+  margin: var(--vd-space-lg) 0 0;
+  padding-top: var(--vd-space-sm);
+  border-top: 1px dashed var(--vd-brine-dark);
+  color: var(--vd-muted);
+  font-size: var(--vd-text-small, .8125rem);
+  line-height: 1.5;
+}
+
+/* Printed, this is a document somebody files ------------------------ */
+
+@media print {
+  .vd-slip {
+    border: 0;
+    padding: 0;
+  }
+
+  .vd-slip__table { font-size: 11pt; }
+
+  /* A slip torn in half across the receipt list is a slip that has to
+     be reprinted. */
+  .vd-slip__figures,
+  .vd-slip__variance,
+  .vd-slip__note {
+    break-inside: avoid;
+  }
+
+  /* The disclaimer is the half that matters most on paper: it is what
+     stops a printed slip being waved about as a bank receipt. */
+  .vd-slip__disclaimer {
+    break-inside: avoid;
+    color: #000;
+  }
+}
+/* Changing when a fee stops applying, folded away until wanted.
+   The rate is not in this form on purpose: receipts have been written
+   against it, and editing it would rewrite what visitors were charged
+   on days already gone. */
+.vd-fee-extend > summary {
+  display: inline-block;
+  list-style: none;
+  cursor: pointer;
+}
+
+.vd-fee-extend > summary::-webkit-details-marker { display: none; }
+
+.vd-fee-extend__form {
+  margin-top: var(--vd-space-xs);
+  padding: var(--vd-space-sm);
+  border: 1px solid var(--vd-brine);
+  border-radius: var(--vd-radius-sm);
+  background: var(--vd-salt);
+  text-align: left;
+  min-width: 15rem;
+}
+/* Checkpoints a collector is posted to, on the staff form. A grid
+   rather than a list: the office reads them as a set of gates, and a
+   municipality with a dozen makes a very long column. */
+.vd-staff-checkpoints {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: var(--vd-space-xs);
+}
+
+.vd-staff-checkpoints__item {
+  display: flex;
+  gap: .5rem;
+  align-items: flex-start;
+  padding: var(--vd-space-xs) var(--vd-space-sm);
+  border: 1px solid var(--vd-brine);
+  border-radius: var(--vd-radius-sm);
+  cursor: pointer;
+}
+
+.vd-staff-checkpoints__item:hover {
+  border-color: var(--vd-lagoon);
+  background: var(--vd-salt);
+}
+
+.vd-staff-checkpoints__item:has(input:checked) {
+  border-color: var(--vd-lagoon);
+  background: var(--vd-lagoon-tint);
+}

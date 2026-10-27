@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" role="img" aria-label="No photo yet">
+  <rect width="800" height="500" fill="#E1ECEA"/>
+  <circle cx="400" cy="270" r="70" fill="#C7DBD8"/>
+  <rect x="0" y="271" width="800" height="229" fill="#E1ECEA"/>
+  <g fill="none" stroke="#C7DBD8" stroke-width="3">
+    <path d="M30 271h740"/>
+    <rect x="30" y="300" width="230" height="80" rx="4"/>
+    <rect x="285" y="300" width="230" height="80" rx="4"/>
+    <rect x="540" y="300" width="230" height="80" rx="4"/>
+    <rect x="30" y="400" width="355" height="70" rx="4"/>
+    <rect x="415" y="400" width="355" height="70" rx="4"/>
+  </g>
+  <text x="400" y="140" text-anchor="middle" font-family="Figtree, Segoe UI, Arial, sans-serif" font-size="30" fill="#5B7178">No photo yet</text>
+</svg>
