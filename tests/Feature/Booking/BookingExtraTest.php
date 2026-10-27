@@ -468,7 +468,7 @@ class BookingExtraTest extends TestCase
             ->assertOk()
             ->assertSee('Banana boat ride')
             ->assertSee('Waiting for the resort')
-            ->assertSee('settled with the resort');
+            ->assertSee('separate from the reservation total');
     }
 
     public function test_the_owner_sees_the_request_with_buttons_to_answer_it(): void
@@ -494,7 +494,9 @@ class BookingExtraTest extends TestCase
             ]))
             ->assertOk()
             ->assertSee('Kayak hire')
-            ->assertSee('not part of the total');
+            // A short fragment: the sentence wraps in the Blade source,
+            // so a longer needle fails on where the line broke.
+            ->assertSee('The resort confirms each one');
     }
 
     public function test_a_resort_with_nothing_on_offer_shows_no_section(): void

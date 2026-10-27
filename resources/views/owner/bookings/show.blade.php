@@ -44,6 +44,8 @@
                      which IDs to ask for before taking the money. --}}
                 <x-price-breakdown :booking="$booking" />
 
+                <x-booking-extras :booking="$booking" :owner="true" />
+
                 {{-- The terms this guest agreed to, which are the terms that
                      stand even if you have changed your policy since. What
                      to collect on arrival is the balance, not the total. --}}

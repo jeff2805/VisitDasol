@@ -65,6 +65,10 @@
                 @endif
             </section>
 
+            {{-- What the guest asked for besides the room. Read-only
+                 here: answering is the resort's job, not the office's. --}}
+            <x-booking-extras :booking="$booking" />
+
             <section class="vd-panel p-4">
                 <h2 class="h5 mb-3">What happened</h2>
                 <ul class="list-unstyled mb-0 small">

@@ -5701,3 +5701,89 @@ th[aria-sort] {
   border-color: var(--vd-lagoon);
   background: var(--vd-lagoon-tint);
 }
+/* What a resort offers besides the room ------------------------------
+ *
+ * Kayak hire, a banana boat ride, island hopping. Guests ASK for these
+ * and the resort answers, so the status pill is as important as the
+ * price — a confirmed boat and a requested one look nothing alike to
+ * somebody planning a day around it.
+ */
+
+.vd-extras__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--vd-space-sm);
+  padding: var(--vd-space-sm);
+  border: 1px solid var(--vd-brine);
+  border-radius: var(--vd-radius-sm);
+  margin-bottom: var(--vd-space-xs);
+}
+
+.vd-extras__item:has(input:not([value=""]):not(:placeholder-shown)) {
+  border-color: var(--vd-lagoon);
+  background: var(--vd-lagoon-tint);
+}
+
+.vd-extras__what { min-width: 0; flex: 1 1 14rem; }
+.vd-extras__count { flex: 0 0 7.5rem; }
+
+/* On a booking, with the resort's answer ----------------------------- */
+
+.vd-extras-list {
+  list-style: none;
+  margin: 0 0 var(--vd-space-sm);
+  padding: 0;
+}
+
+.vd-extras-list__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--vd-space-sm);
+  padding: var(--vd-space-sm) 0;
+  border-bottom: 1px solid var(--vd-brine);
+}
+
+.vd-extras-list__item:last-child { border-bottom: 0; }
+
+.vd-extras-list__what { flex: 1 1 12rem; min-width: 0; }
+.vd-extras-list__money { text-align: right; flex: 0 0 auto; }
+
+.vd-extras-list__note {
+  margin-top: .25rem;
+  padding: .3rem .5rem;
+  border-left: 3px solid var(--vd-brine-dark);
+  background: var(--vd-salt);
+}
+
+.vd-extras-list__answer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vd-space-3xs);
+  align-items: flex-start;
+  flex: 1 1 100%;
+}
+
+.vd-extras-list__decline > summary {
+  display: inline-block;
+  list-style: none;
+  cursor: pointer;
+}
+
+.vd-extras-list__decline > summary::-webkit-details-marker { display: none; }
+
+.vd-extras-list__declineform {
+  margin-top: var(--vd-space-xs);
+  padding: var(--vd-space-sm);
+  border: 1px solid var(--vd-brine);
+  border-radius: var(--vd-radius-sm);
+  background: var(--vd-salt);
+  min-width: 16rem;
+}
+
+.vd-extras-list__totals {
+  padding-top: var(--vd-space-xs);
+  border-top: 1px solid var(--vd-brine);
+}
