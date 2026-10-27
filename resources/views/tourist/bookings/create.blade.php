@@ -193,6 +193,60 @@
                                     </div>
                                 </div>
 
+                                {{-- What else the resort offers.
+
+                                     ASKED FOR, NOT BOUGHT. Whether a boat goes
+                                     out depends on the weather and the boatman,
+                                     so the resort answers each one — and none of
+                                     it is added to the total below, because
+                                     these are settled at the resort. Saying both
+                                     here is the difference between a guest who
+                                     turns up expecting a kayak and one who
+                                     knows to ask again. --}}
+                                @if ($extras->isNotEmpty())
+                                    <fieldset class="vd-extras mb-3">
+                                        <legend class="form-label">Anything else? <span class="text-muted-vd fw-normal small">(optional)</span></legend>
+
+                                        <p class="form-text mt-0 mb-2">
+                                            Tick what you would like. The resort confirms each one,
+                                            and you pay for them there &mdash; they are not part of
+                                            the total on the right.
+                                        </p>
+
+                                        @foreach ($extras as $extra)
+                                            @php($asked = (int) old('extras.'.$extra->id, 0))
+                                            <div class="vd-extras__item">
+                                                <span class="vd-extras__what">
+                                                    <span class="d-block fw-semibold">{{ $extra->name }}</span>
+                                                    <span class="small text-muted-vd">
+                                                        @peso($extra->price) {{ $extra->price_unit->suffix() }}
+                                                    </span>
+                                                    @if (filled($extra->description))
+                                                        <span class="d-block small text-muted-vd">{{ $extra->description }}</span>
+                                                    @endif
+                                                </span>
+
+                                                <span class="vd-extras__count">
+                                                    <label class="form-label small mb-1"
+                                                           for="field-extra-{{ $extra->id }}">
+                                                        {{ $extra->price_unit->quantityLabel() }}
+                                                    </label>
+                                                    <input type="number" class="form-control form-control-sm"
+                                                           id="field-extra-{{ $extra->id }}"
+                                                           name="extras[{{ $extra->id }}]"
+                                                           min="0" max="{{ $extra->max_quantity }}" step="1"
+                                                           value="{{ $asked > 0 ? $asked : '' }}"
+                                                           placeholder="0">
+                                                </span>
+                                            </div>
+                                        @endforeach
+
+                                        @error('extras')
+                                            <p class="text-danger small mb-0">{{ $message }}</p>
+                                        @enderror
+                                    </fieldset>
+                                @endif
+
                                 <div class="mb-3">
                                     <label class="form-label" for="field-room-type">Room type</label>
                                     <select class="form-select" id="field-room-type" data-booking-room>

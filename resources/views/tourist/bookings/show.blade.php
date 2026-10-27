@@ -242,6 +242,11 @@
                     <x-price-breakdown :booking="$booking" class="mb-2" />
                 </section>
 
+                {{-- What was asked for besides the room, and what the resort
+                     said. Its own panel, below the price: these are settled
+                     at the resort and are no part of the figures above. --}}
+                <x-booking-extras :booking="$booking" />
+
                 {{-- The terms this reservation was made under, read back
                      from its own snapshot. A resort that changes its
                      deposit next month does not change what was agreed
