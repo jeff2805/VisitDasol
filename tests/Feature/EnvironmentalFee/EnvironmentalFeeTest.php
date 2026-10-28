@@ -402,6 +402,119 @@ class EnvironmentalFeeTest extends TestCase
     }
 
     /**
+     * THE RECEIPT PAGE, RENDERED, IN EVERY STATE A COLLECTION CAN BE IN.
+     *
+     * Nothing asserted that this page comes back at all. It did not: a
+     * directive written against a word — "Voided@if (...)" — is not
+     * compiled by Blade, but its @endif is, so the @endif closed the
+     * wrong @if and left the @elseif below with nothing to belong to.
+     * The view threw a PHP syntax error, and every receipt in the
+     * municipality was unopenable by anybody, whatever its state.
+     *
+     * The page is where somebody goes to find out what happened to a
+     * receipt, so it is checked here state by state rather than once.
+     */
+    public function test_a_receipt_can_be_opened_in_each_state_it_can_be_in(): void
+    {
+        $this->policy();
+        $this->assign($this->official);
+
+        $this->actingAs($this->official)
+            ->post(route('environmental-fee.store'), $this->collectionPayload());
+
+        $collection = EnvironmentalFeeCollection::sole();
+
+        // 1. A live collection.
+        $this->actingAs($this->mto)
+            ->get(route('environmental-fee.show', $collection))
+            ->assertOk()
+            ->assertSee($collection->reference)
+            ->assertSee('004512')
+            ->assertSee('₱50.00')
+            ->assertDontSee('no longer counts');
+
+        // 2. Voided, with the reason and who did it on the page.
+        $this->actingAs($this->mto)->patch(route('environmental-fee.void', $collection), [
+            'void_reason' => 'Receipt written twice for the same vehicle.',
+        ]);
+
+        $this->flushSession();
+
+        $this->actingAs($this->mto)
+            ->get(route('environmental-fee.show', $collection->refresh()))
+            ->assertOk()
+            ->assertSee('Voided')
+            ->assertSee('Receipt written twice for the same vehicle.')
+            ->assertSee('no longer counts towards any total')
+            ->assertSee($this->mto->full_name);
+
+        // 3. Superseded by a correction.
+        $collection->forceFill(['status' => CollectionStatus::Corrected])->save();
+
+        $this->actingAs($this->mto)
+            ->get(route('environmental-fee.show', $collection))
+            ->assertOk()
+            ->assertSee('Replaced by a correction')
+            ->assertSee('no longer counts towards any total')
+            // The void notice belongs to the other branch, not this one.
+            ->assertDontSee('Receipt written twice for the same vehicle.');
+    }
+
+    /**
+     * The people who work the fee are not the tourism office, and the
+     * office's menu is no use to them. They had no menu at all: the
+     * shared screens extend layouts.dashboard, which yielded an empty
+     * sidebar, so a collector landed on a page with no way out of it.
+     */
+    public function test_a_collector_gets_a_menu_of_their_own(): void
+    {
+        $this->policy();
+
+        $collector = User::factory()->create(['role' => 'fee_collector']);
+        $this->assign($collector);
+
+        $response = $this->actingAs($collector)
+            ->get(route('environmental-fee.index'))
+            ->assertOk();
+
+        $response->assertSee('Collect');
+        $response->assertSee(route('environmental-fee.remittances.index'), false);
+        $response->assertSee(route('profile.edit'), false);
+
+        // Not the office's menu.
+        $response->assertDontSee(route('admin.users.index'), false);
+        $response->assertDontSee('Municipal Tourism Office');
+    }
+
+    /**
+     * A cashier reaches some of admin/environmental-fee, which is wider
+     * at the door than the rest of admin/ on purpose. The views there
+     * extend layouts.admin, so without a guard the cashier got the whole
+     * office menu — approvals, users, the activity log — every item of
+     * it a 403 waiting to happen.
+     */
+    public function test_a_cashier_does_not_get_the_offices_menu(): void
+    {
+        $this->policy();
+
+        $cashier = User::factory()->create(['role' => 'cashier']);
+
+        $response = $this->actingAs($cashier)
+            ->get(route('admin.environmental-fee.remittances.index'))
+            ->assertOk();
+
+        // What a cashier is for.
+        $response->assertSee(route('admin.environmental-fee.reports'), false);
+        $response->assertSee(route('admin.environmental-fee.verify'), false);
+
+        // What they are not.
+        $response->assertDontSee(route('admin.users.index'), false);
+        $response->assertDontSee(route('admin.owner-applications.index'), false);
+        $response->assertDontSee(route('admin.activity-logs.index'), false);
+        $response->assertDontSee('Municipal Tourism Office');
+    }
+
+    /**
      * A collector able to cancel their own receipts could take money at
      * a gate and erase the only record that they did.
      */

@@ -60,7 +60,21 @@ class EnvironmentalFeeRemittancePolicy
             return false;
         }
 
+        /*
+         * A CASHIER TOO.
+         *
+         * review() below already lets a cashier count an envelope, and
+         * viewAny() already shows them the office list — but this was
+         * left at super admin, so a cashier could see a handover in the
+         * list, click it, and be refused the one page they have to open
+         * to do the counting. Permission to count without permission to
+         * read is not a safer rule, only an unusable one.
+         *
+         * Reading is not signing off. review() still refuses a cashier
+         * their own envelope and anything already reviewed.
+         */
         return $user->isSuperAdmin()
+            || $user->isCashier()
             || (int) $remittance->collector_id === (int) $user->id;
     }
 

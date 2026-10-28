@@ -428,6 +428,70 @@ class EnvironmentalFeeRemittanceTest extends TestCase
         return EnvironmentalFeeRemittance::sole();
     }
 
+    /**
+     * The office's handover page, actually rendered.
+     *
+     * Every other test here posts a count or reads the list; nothing
+     * opened this page, and a sweep of the app could not reach it
+     * either because it needs a row that only a submission creates. A
+     * page nothing has ever rendered is where a view defect sits
+     * unnoticed — which is exactly how a stray @endif made every
+     * environmental fee receipt unopenable.
+     */
+    public function test_the_office_can_open_a_handover_before_and_after_counting_it(): void
+    {
+        $remittance = $this->handedIn();
+
+        $this->actingAs($this->mto)
+            ->get(route('admin.environmental-fee.remittances.show', $remittance))
+            ->assertOk()
+            ->assertSee($remittance->reference)
+            ->assertSee($this->official->full_name)
+            ->assertSee($this->checkpoint->name)
+            ->assertSee('₱100.00');
+
+        $this->actingAs($this->mto)
+            ->patch(route('admin.environmental-fee.remittances.review', $remittance), [
+                'counted_amount' => '90.00',
+                'review_note' => 'Ten pesos short; collector informed.',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $this->flushSession();
+
+        $this->actingAs($this->mto)
+            ->get(route('admin.environmental-fee.remittances.show', $remittance->refresh()))
+            ->assertOk()
+            ->assertSee('Ten pesos short; collector informed.')
+            ->assertSee('₱90.00');
+    }
+
+    /** A cashier counts envelopes; that is the whole job. */
+    public function test_a_cashier_can_open_a_handover(): void
+    {
+        $remittance = $this->handedIn();
+
+        $cashier = User::factory()->create(['role' => 'cashier']);
+
+        $this->actingAs($cashier)
+            ->get(route('admin.environmental-fee.remittances.show', $remittance))
+            ->assertOk()
+            ->assertSee($remittance->reference);
+    }
+
+    public function test_a_resort_owner_cannot_open_a_handover(): void
+    {
+        $remittance = $this->handedIn();
+
+        $this->actingAs($this->owner)
+            ->get(route('admin.environmental-fee.remittances.show', $remittance))
+            ->assertForbidden();
+
+        $this->actingAs($this->tourist)
+            ->get(route('admin.environmental-fee.remittances.show', $remittance))
+            ->assertForbidden();
+    }
+
     public function test_the_office_counts_a_matching_handover(): void
     {
         $remittance = $this->handedIn();
