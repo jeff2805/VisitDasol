@@ -37,27 +37,7 @@ class DestinationFactory extends Factory
         return $this->state(fn () => ['status' => DestinationStatus::Inactive]);
     }
 
-    /** Sent in by a barangay and not yet read by the office. */
-    public function pending(): static
-    {
-        return $this->state(fn () => [
-            'status' => DestinationStatus::Pending,
-            'submitted_at' => now(),
-        ]);
-    }
-
-    /** Sent back to the barangay with a reason. */
-    public function sentBack(string $remarks = 'Please add how to get there from the highway.'): static
-    {
-        return $this->state(fn () => [
-            'status' => DestinationStatus::Rejected,
-            'submitted_at' => now()->subDay(),
-            'reviewed_at' => now(),
-            'review_remarks' => $remarks,
-        ]);
-    }
-
-    /** Written by this account, which is what ties it to a barangay official. */
+    /** Written by this account. */
     public function writtenBy(\App\Models\User $user): static
     {
         return $this->state(fn () => [

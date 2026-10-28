@@ -199,48 +199,6 @@
     };
   }
 
-  /*
-   * An environmental fee checkpoint. Built as nodes, like every other
-   * popup here.
-   *
-   * It says WHERE the fee is taken and nothing about what it costs or
-   * who is exempt. Those come from an ordinance, they can change
-   * without this map hearing about it, and a stale figure on a pin is
-   * worse than no figure: a visitor would budget against it.
-   */
-  function checkpointPopup(point) {
-    return function () {
-      var wrap = document.createElement('div');
-      wrap.className = 'vd-map-popup';
-
-      var name = document.createElement('strong');
-      name.textContent = point.name;
-      wrap.appendChild(name);
-
-      if (point.barangay) {
-        var where = document.createElement('span');
-        where.className = 'vd-map-popup__meta';
-        where.textContent = 'Brgy. ' + point.barangay;
-        wrap.appendChild(where);
-      }
-
-      if (point.note) {
-        var note = document.createElement('span');
-        note.className = 'vd-map-popup__meta';
-        note.textContent = point.note;
-        wrap.appendChild(note);
-      }
-
-      var what = document.createElement('span');
-      what.className = 'vd-map-popup__meta';
-      what.textContent = 'The municipality collects its environmental fee here. '
-        + 'Ask at the checkpoint for the current rate.';
-      wrap.appendChild(what);
-
-      return wrap;
-    };
-  }
-
   /* Built as nodes, so nothing here can run as markup. */
   function barangayPopup(barangay) {
     return function () {
@@ -1048,43 +1006,6 @@
       });
 
       overlays['Filling stations'] = fuelLayer;
-    }
-
-    /* Environmental fee checkpoints ---------------------------------------- */
-
-    /*
-     * Where the municipality collects its environmental fee.
-     *
-     * The page sends these only while a fee is actually in force, so
-     * there is nothing to decide here: if the list arrived, the charge
-     * is real. A driver should meet the barrier knowing it is there.
-     *
-     * Its own layer and its own icon, so it is never mistaken for a
-     * resort or a tourist spot — this is a place money is taken, not a
-     * place to go.
-     */
-    var checkpoints = JSON.parse(element.dataset.checkpoints || '[]');
-
-    if (checkpoints.length) {
-      var checkpointLayer = L.layerGroup().addTo(map);
-
-      checkpoints.forEach(function (point) {
-        L.marker([point.lat, point.lng], {
-          icon: L.divIcon({
-            className: 'vd-pin-wrap',
-            html: '<span class="vd-pin vd-pin--checkpoint">'
-              + '<i class="bi bi-ticket-detailed-fill"></i></span>',
-            iconSize: [28, 28],
-            iconAnchor: [14, 28],
-            popupAnchor: [0, -26],
-          }),
-          title: point.name,
-        })
-          .bindPopup(checkpointPopup(point))
-          .addTo(checkpointLayer);
-      });
-
-      overlays['Fee checkpoints'] = checkpointLayer;
     }
 
     /*

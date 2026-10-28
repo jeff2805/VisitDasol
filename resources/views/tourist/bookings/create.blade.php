@@ -492,16 +492,6 @@
                                 <x-payment-terms :terms="$terms" class="mt-3"
                                                  heading="How this resort takes payment" />
 
-                                {{-- Outside the price panel on purpose. This is
-                                     the municipality's charge, not the resort's,
-                                     and putting it anywhere near the booking
-                                     total would make it look like one line of
-                                     the same bill. Nothing at all when no fee
-                                     is in force. --}}
-                                <x-environmental-fee-notice :policy="$environmentalFee"
-                                                            :checkpoints="$feeCheckpoints"
-                                                            class="mt-3" />
-
                                 {{-- How the guest means to pay. A choice, not a charge: the
                                      resort can still decline this request, and there is nothing
                                      here that could send money back, so QRPh is offered as the

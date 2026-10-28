@@ -160,8 +160,126 @@
     bootstrap.Offcanvas.getOrCreateInstance(sidebar).toggle();
   });
 
+  /*
+   * Keep the sidebar where it was left.
+   *
+   * Every dashboard link is an ordinary page load, so the menu is built
+   * again from scratch each time and arrives scrolled to the top. An
+   * owner part-way down the list who opens Availability came back to
+   * the top of the menu and had to scroll down again to reach the next
+   * thing — once per click, all day.
+   *
+   * sessionStorage, not localStorage: where somebody had scrolled to is
+   * true for this tab and this sitting, and should not still be true in
+   * a week. The tucked state above is a deliberate preference, which is
+   * why that one is remembered properly.
+   *
+   * Only the menu's own scroll is touched. The page's scroll is the
+   * browser's business and it already restores that on Back.
+   */
+  var SCROLL = 'vd.sidebar.scroll';
+  var sidebarScrollRestored = false;
+
+  function sidebarNav() {
+    return document.querySelector('.vd-sidebar__nav');
+  }
+
+  function restoreSidebarScroll() {
+    var nav = sidebarNav();
+
+    if (!nav) {
+      return;
+    }
+
+    sidebarScrollRestored = true;
+
+    var saved;
+
+    try {
+      saved = window.sessionStorage.getItem(SCROLL);
+    } catch (error) {
+      return; // Private browsing can refuse storage; the menu still works.
+    }
+
+    var top = parseInt(saved, 10);
+
+    if (isNaN(top) || top <= 0) {
+      return;
+    }
+
+    /*
+     * Anything past the end is clamped by the browser, so a page with a
+     * shorter menu simply lands at its bottom rather than nowhere.
+     */
+    nav.scrollTop = top;
+  }
+
+  function watchSidebarScroll() {
+    var nav = sidebarNav();
+
+    if (!nav || nav.dataset.scrollWatched) {
+      return; // One listener, however many times this is reached.
+    }
+
+    nav.dataset.scrollWatched = '1';
+
+    var queued = false;
+
+    nav.addEventListener('scroll', function () {
+      if (queued) {
+        return;
+      }
+
+      // Written once a frame rather than once an event: a scroll fires
+      // far more often than a position needs recording.
+      queued = true;
+
+      window.requestAnimationFrame(function () {
+        queued = false;
+
+        try {
+          window.sessionStorage.setItem(SCROLL, String(nav.scrollTop));
+        } catch (error) {
+          // Nothing to do; the menu works without being remembered.
+        }
+      });
+    }, { passive: true });
+  }
+
+  /*
+   * Now, not on DOMContentLoaded. This file is the last thing in the
+   * body, so the menu is already parsed and laid out, and putting it
+   * back here happens before the first paint — the position is simply
+   * correct rather than visibly jumping up and then down again.
+   */
+  restoreSidebarScroll();
+  watchSidebarScroll();
+
+  /*
+   * Below the large breakpoint the menu is a Bootstrap offcanvas, and a
+   * hidden one has no height to scroll, so the restore above does
+   * nothing there. Put it back as the drawer opens instead.
+   */
+  document.addEventListener('shown.bs.offcanvas', function (event) {
+    if (event.target && event.target.id === 'vdSidebar') {
+      restoreSidebarScroll();
+    }
+  });
+
   document.addEventListener('DOMContentLoaded', function () {
     restoreSidebar();
+
+    /*
+     * A fallback, and only that: if the menu really was not in the
+     * document when this file ran, put it back now. Guarded, because
+     * restoring a second time could otherwise undo a scroll somebody
+     * had already made while the page was still loading.
+     */
+    if (!sidebarScrollRestored) {
+      restoreSidebarScroll();
+    }
+
+    watchSidebarScroll();
 
     // Tooltips
     document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (element) {
@@ -370,34 +488,6 @@
   });
 
   document.addEventListener('DOMContentLoaded', showDepositFields);
-
-  /*
-   * The GCash boxes on the environmental fee form, shown only when the
-   * collector says the visitor paid that way. A reference number means
-   * nothing beside a cash payment.
-   *
-   * Hidden, not removed, and the server ignores them either way:
-   * exclude_unless on the request drops them unless the method is
-   * gcash.
-   */
-  function showFeeGcashFields() {
-    var fields = document.querySelector('[data-fee-gcash-fields]');
-    var chosen = document.querySelector('[data-fee-method]:checked');
-
-    if (!fields || !chosen) {
-      return;
-    }
-
-    fields.hidden = chosen.value !== 'gcash';
-  }
-
-  document.addEventListener('change', function (event) {
-    if (event.target.closest('[data-fee-method]')) {
-      showFeeGcashFields();
-    }
-  });
-
-  document.addEventListener('DOMContentLoaded', showFeeGcashFields);
 
   /*
    * A number of seconds counted down in the page:

@@ -4,12 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Destination;
 use App\Models\DestinationCategory;
-use App\Models\EnvironmentalFeeCheckpoint;
 use App\Models\Resort;
 use App\Services\AvailabilityService;
 use App\Services\BarangayBoundaries;
 use App\Services\BarangayPoints;
-use App\Services\EnvironmentalFeeService;
 use App\Services\FuelStations;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
@@ -30,7 +28,6 @@ class MapController extends Controller
         private readonly AvailabilityService $availability,
         private readonly FuelStations $fuel,
         private readonly BarangayBoundaries $boundaries,
-        private readonly EnvironmentalFeeService $fees,
     ) {}
 
     public function __invoke(): View
@@ -161,45 +158,7 @@ class MapController extends Controller
              */
             'barangayShapes' => $this->boundaries->featureCollection(),
 
-            /*
-             * Environmental fee checkpoints, and ONLY while a fee is
-             * actually in force.
-             *
-             * The module ships switched off with no rate, and a visitor
-             * shown a row of toll points for a charge nobody may collect
-             * would be misled about what Dasol costs. Once a fee is
-             * running, saying where it is taken is the fair thing: a
-             * driver should know before the barrier, not at it.
-             *
-             * Nothing here says what the fee is for whom. That is the
-             * ordinance's business, not a map pin's.
-             */
-            'checkpoints' => $this->fees->isCollectable()
-                ? EnvironmentalFeeCheckpoint::query()
-                    ->active()
-                    ->orderBy('name')
-                    ->get(['id', 'name', 'barangay', 'description', 'latitude', 'longitude'])
-                    ->map(fn (EnvironmentalFeeCheckpoint $checkpoint) => [
-                        'id' => 'checkpoint-'.$checkpoint->id,
-                        'name' => $checkpoint->name,
-                        'barangay' => $checkpoint->barangay,
-                        'note' => $checkpoint->description,
-                        'lat' => $checkpoint->latitude,
-                        'lng' => $checkpoint->longitude,
-                    ])
-                    ->values()
-                : collect(),
-
             'categories' => DestinationCategory::query()->orderBy('name')->pluck('name'),
-
-            /*
-             * The fee in force, for the information panel, and null while
-             * none is. Read-only here in every sense: the map says what
-             * the charge is and where it is taken, and offers no way to
-             * pay it — municipal collections are not made from a map pin,
-             * and they are never added to what a resort charges.
-             */
-            'environmentalFee' => $this->fees->activePolicy(),
 
             /*
              * What the right-hand panel knows about each barangay.

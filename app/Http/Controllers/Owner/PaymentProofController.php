@@ -50,9 +50,8 @@ class PaymentProofController extends Controller
      *
      * Reads the private disk. The upload used to land on the public one,
      * where Apache served it with no authentication whatsoever and this
-     * ownership check guarded nothing. The two guards below are the same
-     * ones EnvironmentalFeeVerificationController::proof() uses: a row
-     * with no file, or a row whose file has gone, is a 404 and not a 500.
+     * ownership check guarded nothing. A row with no file, or a row whose
+     * file has gone, is a 404 and not a 500.
      */
     public function image(PaymentProof $proof)
     {

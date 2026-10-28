@@ -4,11 +4,8 @@ use App\Http\Controllers\Admin\ActivityLogController as AdminActivityLogControll
 use App\Http\Controllers\Admin\AmenityController as AdminAmenityController;
 use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncementController;
 use App\Http\Controllers\Admin\DestinationCategoryController as AdminDestinationCategoryController;
-use App\Http\Controllers\Admin\BarangayOfficialController;
 use App\Http\Controllers\Admin\DestinationController as AdminDestinationController;
 use App\Http\Controllers\Admin\DestinationImageController as AdminDestinationImageController;
-use App\Http\Controllers\Admin\SpotSubmissionController;
-use App\Http\Controllers\Barangay\TouristSpotController as BarangaySpotController;
 use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Admin\MapController as AdminMapController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
@@ -18,15 +15,6 @@ use App\Http\Controllers\Admin\ResortController as AdminResortController;
 use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\DestinationController;
 use App\Http\Controllers\HomeController;
-use App\Http\Controllers\Admin\EnvironmentalFeeAccountController as FeeAccountController;
-use App\Http\Controllers\Admin\EnvironmentalFeeCheckpointController as FeeCheckpointController;
-use App\Http\Controllers\Admin\EnvironmentalFeeController;
-use App\Http\Controllers\Admin\EnvironmentalFeeReportController as FeeReportController;
-use App\Http\Controllers\Admin\EnvironmentalFeeVerificationController as FeeVerificationController;
-use App\Http\Controllers\Admin\EnvironmentalFeeRemittanceController as AdminFeeRemittanceController;
-use App\Http\Controllers\Admin\EnvironmentalFeeStaffController as FeeStaffController;
-use App\Http\Controllers\EnvironmentalFeeCollectionController;
-use App\Http\Controllers\EnvironmentalFeeRemittanceController;
 use App\Http\Controllers\MapController;
 use App\Http\Controllers\MapOccupancyController;
 use App\Http\Controllers\PlaceSearchController;
@@ -138,48 +126,6 @@ Route::get('/map', MapController::class)->name('map');
 Route::get('/map/occupancy', MapOccupancyController::class)
     ->middleware('throttle:60,1')
     ->name('map.occupancy');
-
-/*
-| Recording the municipal environmental fee at a checkpoint.
-|
-| OUTSIDE the admin prefix on purpose: the people who work the gates are
-| not necessarily the tourism office. There is no "collector" role in
-| this system and inventing one would invent a municipal post, so
-| authority comes from an assignment row instead — checked by
-| EnvironmentalFeeCollectionPolicy on every action here, and checked
-| again inside EnvironmentalFeeService before anything is written.
-|
-| The role middleware below is a coarse first gate only. It keeps
-| tourists and resort owners out; it does not decide who may collect.
-*/
-Route::middleware(['auth', 'active', 'verified', 'role:super_admin,barangay_official,fee_collector,cashier'])
-    ->prefix('environmental-fee')
-    ->name('environmental-fee.')
-    ->group(function () {
-        Route::get('/', [EnvironmentalFeeCollectionController::class, 'index'])->name('index');
-        Route::post('/', [EnvironmentalFeeCollectionController::class, 'store'])->name('store');
-
-        /*
-        | Handing a period's takings over to the office.
-        |
-        | Declared here, counted by the office on its own screen. The
-        | two halves are deliberately in different places and behind
-        | different policies: anyone who could do both could hand in a
-        | short envelope and certify it themselves.
-        |
-        | Above the /{collection} routes on purpose. "remittances" would
-        | otherwise be read as a collection reference and 404.
-        */
-        Route::prefix('remittances')->name('remittances.')->group(function () {
-            Route::get('/', [EnvironmentalFeeRemittanceController::class, 'index'])->name('index');
-            Route::get('/expected', [EnvironmentalFeeRemittanceController::class, 'expected'])->name('expected');
-            Route::post('/', [EnvironmentalFeeRemittanceController::class, 'store'])->name('store');
-            Route::get('/{remittance}', [EnvironmentalFeeRemittanceController::class, 'show'])->name('show');
-        });
-
-        Route::get('/{collection}', [EnvironmentalFeeCollectionController::class, 'show'])->name('show');
-        Route::patch('/{collection}/void', [EnvironmentalFeeCollectionController::class, 'void'])->name('void');
-    });
 
 /*
 | Turning a typed place name into a point, for the map's "From" box.
@@ -434,45 +380,17 @@ Route::prefix('owner')
     });
 
 /*
-|--------------------------------------------------------------------------
-| BARANGAY OFFICIAL
-|--------------------------------------------------------------------------
+| The barangay official area stood here: an account tied to one barangay
+| that wrote up the places it knew and sent them to the office to
+| publish. The role has been removed, and with it the review queue under
+| admin/spot-submissions. The Municipal Tourism Office writes up
+| destinations itself, under admin/destinations.
 |
-| Dasol has 18 barangays and one tourism office. The people who know where
-| the waterfalls and viewdecks are live in the barangays, so they write them
-| up here — but nothing they write reaches a visitor until the office has
-| approved it. See DestinationPolicy for who may do what.
+| Dasol's eighteen barangays are untouched by that: they are still what
+| a resort or a destination records as its address, still the layer and
+| the information panel on the map, and still what
+| config('visitdasol.barangays') lists.
 */
-
-Route::prefix('barangay')
-    ->name('barangay.')
-    ->middleware(['auth', 'active', 'verified', 'role:barangay_official'])
-    ->group(function () {
-        Route::get('/dashboard', \App\Http\Controllers\Barangay\DashboardController::class)->name('dashboard');
-
-        Route::get('/tourist-spots', [BarangaySpotController::class, 'index'])->name('spots.index');
-        Route::get('/tourist-spots/create', [BarangaySpotController::class, 'create'])->name('spots.create');
-        Route::post('/tourist-spots', [BarangaySpotController::class, 'store'])
-            ->middleware('throttle:20,1')
-            ->name('spots.store');
-        Route::get('/tourist-spots/{spot}/edit', [BarangaySpotController::class, 'edit'])->name('spots.edit');
-        Route::put('/tourist-spots/{spot}', [BarangaySpotController::class, 'update'])->name('spots.update');
-        Route::patch('/tourist-spots/{spot}/resubmit', [BarangaySpotController::class, 'resubmit'])->name('spots.resubmit');
-        Route::delete('/tourist-spots/{spot}', [BarangaySpotController::class, 'destroy'])->name('spots.destroy');
-
-        /*
-         * Photos. The office's own photo controller, reused as-is: it asks
-         * DestinationPolicy@manageImages, which already knows a barangay may
-         * only touch its own submission while that submission is still theirs.
-         * A second copy of it would be a second place for that rule to drift.
-         */
-        Route::post('/tourist-spots/{destination}/images', [AdminDestinationImageController::class, 'store'])
-            ->name('spots.images.store');
-        Route::patch('/tourist-spots/{destination}/images/{image}/cover', [AdminDestinationImageController::class, 'setCover'])
-            ->scopeBindings()->name('spots.images.cover');
-        Route::delete('/tourist-spots/{destination}/images/{image}', [AdminDestinationImageController::class, 'destroy'])
-            ->scopeBindings()->name('spots.images.destroy');
-    });
 
 /*
 |--------------------------------------------------------------------------
@@ -505,117 +423,15 @@ Route::prefix('admin')
         Route::get('/map', AdminMapController::class)->name('map');
 
         /*
-        | The municipal environmental fee.
+        | The municipal environmental fee stood here, with its own
+        | prefix: the rate and its dates, the checkpoints, the collector
+        | assignments, the municipal GCash account, checking that
+        | transfers arrived, counting what the gates handed in, and the
+        | staff who did all of it. The whole module has been removed.
         |
-        | A SEPARATE COLLECTION, not a booking charge and not resort
-        | income. Nothing under here reads a booking, a room rate or a
-        | payment, and nothing adds a fee to what a guest owes a resort.
-        |
-        | Configuration is the office's alone, which the role middleware
-        | on this whole group already enforces — and every action checks
-        | its policy again on the server, because a hidden menu item is
-        | not authorisation.
+        | Nothing of it touched resort money, which is why none of the
+        | booking, payment or reporting code below needed changing.
         */
-        /*
-        | Cashiers reach these screens too.
-        |
-        | The group around this one is role:super_admin, which is right
-        | for the rest of the office's work. A cashier's job is counting
-        | what the gates hand in and reading the municipal figures, and
-        | both live under here — so this sub-group names its own roles
-        | and drops the outer one.
-        |
-        | WIDER AT THE DOOR, NOT INSIDE. Every action below still calls
-        | $this->authorize(), and the policies refuse a cashier
-        | everything but the two things they are for: configuring the
-        | fee, managing checkpoints, the GCash account and creating
-        | staff all check isSuperAdmin and all fail for a cashier.
-        */
-        Route::withoutMiddleware('role:super_admin')
-            ->middleware('role:super_admin,cashier')
-            ->prefix('environmental-fee')->name('environmental-fee.')->group(function () {
-            Route::get('/', [EnvironmentalFeeController::class, 'index'])->name('index');
-            Route::get('/configure', [EnvironmentalFeeController::class, 'create'])->name('create');
-            Route::post('/configure', [EnvironmentalFeeController::class, 'store'])->name('store');
-
-            // Starting or stopping collection: its own action, logged
-            // with a name against it.
-            Route::patch('/{policy}/toggle', [EnvironmentalFeeController::class, 'toggle'])->name('toggle');
-
-            /*
-            | Changing when a fee stops applying, and only that. The
-            | rate is never editable: receipts have been written at it,
-            | and a changed amount would rewrite what visitors were
-            | charged on days already gone. A new rate is a new policy.
-            */
-            Route::patch('/{policy}/extend', [EnvironmentalFeeController::class, 'extend'])->name('extend');
-
-            Route::get('/checkpoints', [FeeCheckpointController::class, 'index'])->name('checkpoints.index');
-            Route::get('/checkpoints/create', [FeeCheckpointController::class, 'create'])->name('checkpoints.create');
-            Route::post('/checkpoints', [FeeCheckpointController::class, 'store'])->name('checkpoints.store');
-            Route::get('/checkpoints/{checkpoint}', [FeeCheckpointController::class, 'show'])->name('checkpoints.show');
-            Route::get('/checkpoints/{checkpoint}/edit', [FeeCheckpointController::class, 'edit'])->name('checkpoints.edit');
-            Route::put('/checkpoints/{checkpoint}', [FeeCheckpointController::class, 'update'])->name('checkpoints.update');
-            Route::patch('/checkpoints/{checkpoint}/status', [FeeCheckpointController::class, 'status'])->name('checkpoints.status');
-
-            Route::post('/checkpoints/{checkpoint}/collectors', [FeeCheckpointController::class, 'assign'])->name('collectors.assign');
-            Route::delete('/checkpoints/{checkpoint}/collectors/{assignment}', [FeeCheckpointController::class, 'withdraw'])->name('collectors.withdraw');
-
-            /*
-            | The municipal GCash account, and checking that transfers
-            | arrived. NOT a payment gateway: a QR is an instruction to
-            | the payer, and a person confirms every transfer by hand.
-            */
-            Route::get('/gcash', [FeeAccountController::class, 'edit'])->name('gcash.edit');
-            Route::put('/gcash', [FeeAccountController::class, 'update'])->name('gcash.update');
-
-            Route::get('/verify', [FeeVerificationController::class, 'index'])->name('verify');
-            Route::patch('/verify/{collection}', [FeeVerificationController::class, 'settle'])->name('settle');
-            Route::get('/verify/{collection}/proof', [FeeVerificationController::class, 'proof'])->name('proof');
-
-            /*
-            | Counting what the gates handed in.
-            |
-            | The office half of the remittance pair. Only a super
-            | admin reaches this prefix at all, and
-            | EnvironmentalFeeRemittancePolicy::review() narrows it
-            | further: an officer may not sign off an envelope they
-            | handed in themselves.
-            */
-            Route::prefix('remittances')->name('remittances.')->group(function () {
-                Route::get('/', [AdminFeeRemittanceController::class, 'index'])->name('index');
-                Route::get('/export', [AdminFeeRemittanceController::class, 'export'])->name('export');
-                Route::get('/{remittance}', [AdminFeeRemittanceController::class, 'show'])->name('show');
-                Route::patch('/{remittance}/review', [AdminFeeRemittanceController::class, 'review'])->name('review');
-            });
-
-            /*
-            | The people who work the fee.
-            |
-            | Creating an account that may take municipal money at a
-            | barrier is the office's alone. Every action below also
-            | authorizes against UserPolicy on the server; this prefix
-            | being super_admin-only is the coarse gate, not the whole
-            | of it.
-            |
-            | Activating and deactivating are deliberately NOT here —
-            | they already live on the accounts screen and go through
-            | AccountManager, which ends the person's live sessions and
-            | writes the audit entry.
-            */
-            Route::prefix('staff')->name('staff.')->group(function () {
-                Route::get('/', [FeeStaffController::class, 'index'])->name('index');
-                Route::get('/new', [FeeStaffController::class, 'create'])->name('create');
-                Route::post('/', [FeeStaffController::class, 'store'])->name('store');
-                Route::get('/{staff}/edit', [FeeStaffController::class, 'edit'])->name('edit');
-                Route::put('/{staff}', [FeeStaffController::class, 'update'])->name('update');
-                Route::post('/{staff}/invite', [FeeStaffController::class, 'invite'])->name('invite');
-            });
-
-            Route::get('/reports', [FeeReportController::class, 'index'])->name('reports');
-            Route::get('/reports/lookup', [FeeReportController::class, 'lookup'])->name('lookup');
-            Route::get('/reports/export', [FeeReportController::class, 'export'])->name('export');
-        });
 
         Route::get('/activity-logs', [AdminActivityLogController::class, 'index'])->name('activity-logs.index');
 
@@ -629,18 +445,6 @@ Route::prefix('admin')
 
         Route::get('/bookings', [AdminBookingController::class, 'index'])->name('bookings.index');
         Route::get('/bookings/{booking}', [AdminBookingController::class, 'show'])->name('bookings.show');
-
-        // Tourist spots sent in by the barangays, waiting to be read.
-        Route::get('/spot-submissions', [SpotSubmissionController::class, 'index'])->name('spot-submissions.index');
-        Route::get('/spot-submissions/{spot}', [SpotSubmissionController::class, 'show'])->name('spot-submissions.show');
-        Route::patch('/spot-submissions/{spot}/approve', [SpotSubmissionController::class, 'approve'])->name('spot-submissions.approve');
-        Route::patch('/spot-submissions/{spot}/reject', [SpotSubmissionController::class, 'reject'])->name('spot-submissions.reject');
-
-        // The barangay officials who send those in.
-        Route::get('/barangay-officials', [BarangayOfficialController::class, 'index'])->name('barangay-officials.index');
-        Route::get('/barangay-officials/create', [BarangayOfficialController::class, 'create'])->name('barangay-officials.create');
-        Route::post('/barangay-officials', [BarangayOfficialController::class, 'store'])->name('barangay-officials.store');
-        Route::get('/barangay-officials/{official}', [BarangayOfficialController::class, 'show'])->name('barangay-officials.show');
 
         // Tourist destinations
         Route::get('/tourist-spots', [AdminDestinationController::class, 'index'])->name('destinations.index');

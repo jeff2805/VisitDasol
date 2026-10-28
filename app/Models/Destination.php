@@ -14,11 +14,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * A destination. Written by the MTO, or sent in by the barangay it sits in
- * and published only once the MTO has approved it.
+ * A destination, written and published by the MTO.
  *
- * Not mass assignable: status, is_featured, main_image, slug, created_by,
- * submitted_at, reviewed_by, reviewed_at, review_remarks.
+ * Not mass assignable: status, is_featured, main_image, slug, created_by.
  *
  * @property DestinationStatus $status
  * @property-read string $main_image_url
@@ -50,14 +48,7 @@ class Destination extends Model
             'is_featured' => 'boolean',
             'latitude' => 'float',
             'longitude' => 'float',
-            'submitted_at' => 'datetime',
-            'reviewed_at' => 'datetime',
         ];
-    }
-
-    public function reviewer(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'reviewed_by');
     }
 
     public function category(): BelongsTo
@@ -100,13 +91,7 @@ class Destination extends Model
         $query->where('status', $status->value);
     }
 
-    /** Submissions the office has not decided on yet. */
-    public function scopePending(Builder $query): void
-    {
-        $query->withStatus(DestinationStatus::Pending);
-    }
-
-    /** Spots sent in by a given barangay official. */
+    /** Destinations a given account wrote. */
     public function scopeSubmittedBy(Builder $query, User $user): void
     {
         $query->where('created_by', $user->id);

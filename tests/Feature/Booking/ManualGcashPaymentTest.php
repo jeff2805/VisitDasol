@@ -217,7 +217,7 @@ class ManualGcashPaymentTest extends TestCase
          * hands this file to anybody who has the URL, with no session
          * and no ownership check — the authorisation in the image()
          * action would have been guarding a door standing open beside
-         * it. Same rule the environmental fee module already follows.
+         * it.
          */
         Storage::disk('local')->assertExists($proof->proof_image);
         Storage::disk('public')->assertMissing($proof->proof_image);

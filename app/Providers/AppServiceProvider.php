@@ -9,12 +9,7 @@ use App\Models\Booking;
 use App\Models\Destination;
 use App\Models\DestinationCategory;
 use App\Models\DestinationImage;
-use App\Models\EnvironmentalFeeAccount;
-use App\Models\EnvironmentalFeeCheckpoint;
-use App\Models\EnvironmentalFeeCollection;
 use App\Models\BookingExtra;
-use App\Models\EnvironmentalFeePolicy;
-use App\Models\EnvironmentalFeeRemittance;
 use App\Models\OwnerProfile;
 use App\Models\Payment;
 use App\Models\Resort;
@@ -89,19 +84,6 @@ class AppServiceProvider extends ServiceProvider
                 $request->attributes->set($key, [
                     'pendingOwnerCount' => User::pendingOwners()->count(),
                     'pendingResortCount' => Resort::pending()->count(),
-                    'pendingSpotCount' => Destination::pending()->count(),
-
-                    /*
-                     * Unchecked GCash transfers are deliberately NOT
-                     * counted here. A badge on the sidebar costs one
-                     * query on every office page, and the reports page
-                     * was already at the ceiling QueryBudgetTest allows.
-                     *
-                     * Nothing is lost: the figure appears where it can
-                     * be acted on — a "Not yet checked" tile on the
-                     * collections report, linking straight to the
-                     * screen that clears it.
-                     */
                 ]);
             }
 
@@ -114,32 +96,14 @@ class AppServiceProvider extends ServiceProvider
             $minutes = (int) config('auth.passwords.users.expire', 60);
 
             /*
-             * THE SAME LINK, TWO DIFFERENT LETTERS.
-             *
-             * Staff created by the office have never signed in and
-             * have no password to reset — the account was made with a
-             * random secret nobody holds. Telling them "someone asked
-             * to reset your password" would be a puzzle at best and a
-             * phishing scare at worst, so an account that has never
-             * confirmed its address is welcomed instead.
+             * One letter now, not two. The second was an invitation for
+             * environmental fee staff: accounts the office created, with
+             * a random secret nobody held, which had never signed in and
+             * so had no password to "reset". No account is created that
+             * way any more — tourists and owners register themselves and
+             * the office account comes from the seeder — so every
+             * recipient of this link really is resetting a password.
              */
-            $isInvitation = $user->email_verified_at === null
-                && $user->role->isEnvironmentalFeeStaff();
-
-            if ($isInvitation) {
-                return (new MailMessage)
-                    ->subject('Set up your Visit Dasol staff account')
-                    ->greeting('Hello '.$user->first_name.',')
-                    ->line('The Municipal Tourism Office of Dasol has created an account for you as '
-                        .lcfirst($user->role->label()).'.')
-                    ->line('Choose your own password to finish setting it up. Nobody at the office '
-                        .'knows it, and nobody can see it.')
-                    ->action('Set your password', $url)
-                    ->line("This link works for {$minutes} minutes and can only be used once. "
-                        .'If it expires, ask the office to send another.')
-                    ->line('If you were not expecting this, tell the tourism office and do not use the link.');
-            }
-
             return (new MailMessage)
                 ->subject('Reset your Visit Dasol password')
                 ->greeting('Hello '.$user->first_name.',')
@@ -171,17 +135,21 @@ class AppServiceProvider extends ServiceProvider
             'activity_log' => ActivityLog::class,
             'review' => Review::class,
             'payment' => Payment::class,
-
-            // The municipal environmental fee. Its audit entries are the
-            // record of a public collection, so they need the same short,
-            // stable names as everything else here.
-            'environmental_fee_policy' => EnvironmentalFeePolicy::class,
-            'environmental_fee_checkpoint' => EnvironmentalFeeCheckpoint::class,
-            'environmental_fee_collection' => EnvironmentalFeeCollection::class,
-            'environmental_fee_remittance' => EnvironmentalFeeRemittance::class,
             'resort_extra' => ResortExtra::class,
             'booking_extra' => BookingExtra::class,
-            'environmental_fee_account' => EnvironmentalFeeAccount::class,
+
+            /*
+             * The environmental_fee_* names were here. Their models are
+             * gone, and a morph type that names no class is not merely
+             * dead: Eloquent treats the stored string as a class name
+             * and fatals the moment anything reads one.
+             *
+             * The audit rows that carried them are NOT deleted — the
+             * trail is append-only. The migration that retired the
+             * module moved each row's subject into its properties and
+             * cleared the pointer, so what happened is still on the
+             * record and the log viewer still opens.
+             */
         ]);
     }
 }

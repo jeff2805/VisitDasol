@@ -3113,44 +3113,6 @@ th[aria-sort] {
   color: var(--vd-muted);
 }
 
-/* The municipality's environmental fee, told to a guest ----------------
-   Deliberately unlike the price panel beside it. Green and leafy rather
-   than the booking's teal, so it reads at a glance as somebody else's
-   charge and never as one more line of the resort's bill. */
-.vd-envfee {
-  padding: .85rem 1rem;
-  border: 1px solid rgba(46, 107, 78, .35);
-  border-left: 4px solid var(--vd-mangrove);
-  border-radius: var(--vd-radius);
-  background: #F2F8F4;
-}
-
-.vd-envfee__title {
-  margin: 0 0 .4rem;
-  font-size: .9375rem;
-  font-weight: 700;
-  color: var(--vd-mangrove);
-}
-
-.vd-envfee__rate {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: var(--vd-bay);
-  line-height: 1.2;
-}
-
-.vd-envfee__unit {
-  font-size: .8125rem;
-  font-weight: 400;
-  color: var(--vd-muted);
-}
-
-.vd-envfee__line {
-  font-size: .8125rem;
-  line-height: 1.45;
-  color: var(--vd-muted);
-}
-
 /* The nights the map is reporting on ---------------------------------- */
 .vd-mapdates {
   display: flex;
@@ -3199,19 +3161,6 @@ th[aria-sort] {
 
 .vd-pin--fuel .bi {
   font-size: .62rem;
-}
-
-/* Where the municipality collects its environmental fee. A place money
-   is taken, not a place to go, so it is told apart from both. */
-.vd-pin--checkpoint {
-  width: 1.65rem;
-  height: 1.65rem;
-  background: var(--vd-mango-dark);
-}
-
-.vd-pin--checkpoint .bi {
-  font-size: .72rem;
-  color: var(--vd-bay);
 }
 
 /* Where the visitor is standing, told apart from the places they can go. */
@@ -5188,8 +5137,7 @@ th[aria-sort] {
 .vd-gis__stats dd { margin: 0; font-size: 1.25rem; font-weight: 700; }
 
 .vd-gis__brgynote,
-.vd-gis__missing,
-.vd-gis__fee {
+.vd-gis__missing {
   display: flex;
   gap: .45rem;
   margin: var(--vd-space-xs) 0 0;
@@ -5201,10 +5149,8 @@ th[aria-sort] {
 
 .vd-gis__brgynote { background: var(--vd-salt); color: var(--vd-muted); }
 .vd-gis__missing  { background: #FDF6E6; color: var(--vd-bay); }
-.vd-gis__fee      { background: var(--vd-lagoon-tint); color: var(--vd-ink); }
 
 .vd-gis__missing .bi { color: var(--vd-mango-dark); flex-shrink: 0; }
-.vd-gis__fee .bi     { color: var(--vd-lagoon-dark); flex-shrink: 0; }
 
 .vd-gis__trip { margin-bottom: var(--vd-space-xs); }
 
@@ -5421,31 +5367,30 @@ th[aria-sort] {
 /* --- Decluttering the secondary pins --------------------------------- */
 
 /*
- * Filling stations and fee checkpoints are things you pass, not things
- * you set out for, so they are the ones that give way. Shrunk to a dot
- * when the map is far out; full size once there is room. The marker is
- * the same marker throughout — only its drawing changes.
+ * A filling station is something you pass, not something you set out
+ * for, so it is the one that gives way. Shrunk to a dot when the map is
+ * far out; full size once there is room. The marker is the same marker
+ * throughout — only its drawing changes.
+ *
+ * Fee checkpoints shrank alongside it until the environmental fee
+ * module was removed.
  */
-.vd-map.is-zoom-far .vd-pin--fuel,
-.vd-map.is-zoom-far .vd-pin--checkpoint {
+.vd-map.is-zoom-far .vd-pin--fuel {
   width: 13px;
   height: 13px;
   opacity: .78;
 }
 
-.vd-map.is-zoom-far .vd-pin--fuel .bi,
-.vd-map.is-zoom-far .vd-pin--checkpoint .bi {
+.vd-map.is-zoom-far .vd-pin--fuel .bi {
   font-size: 7px;
 }
 
-.vd-map.is-zoom-mid .vd-pin--fuel,
-.vd-map.is-zoom-mid .vd-pin--checkpoint {
+.vd-map.is-zoom-mid .vd-pin--fuel {
   width: 18px;
   height: 18px;
 }
 
-.vd-map.is-zoom-mid .vd-pin--fuel .bi,
-.vd-map.is-zoom-mid .vd-pin--checkpoint .bi {
+.vd-map.is-zoom-mid .vd-pin--fuel .bi {
   font-size: 9px;
 }
 
@@ -5457,249 +5402,9 @@ th[aria-sort] {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .vd-pin--fuel,
-  .vd-pin--checkpoint {
+  .vd-pin--fuel {
     transition: width .15s ease, height .15s ease, opacity .15s ease;
   }
-}
-/* ======================================================================
- * Environmental fee handovers
- *
- * Collected money being turned in and counted. The visual job here is
- * one thing: keep the three figures — expected, declared, counted —
- * visibly separate, because the gap between them is the only reason a
- * reconciliation exists. Merging them into one confident total is the
- * design failure this guards against.
- * ====================================================================== */
-
-/* The status pills. Same tokens as every other badge, so a handover
-   reads like the rest of the office. */
-.vd-badge--submitted  { background: var(--vd-status-pending-bg);   color: var(--vd-status-pending-fg); }
-.vd-badge--reconciled { background: var(--vd-status-active-bg);    color: var(--vd-status-active-fg); }
-.vd-badge--disputed   { background: var(--vd-status-rejected-bg);  color: var(--vd-status-rejected-fg); }
-
-/* A collector's own list of handovers. */
-.vd-remit-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--vd-space-sm);
-  padding: var(--vd-space-sm);
-  border: 1px solid var(--vd-brine);
-  border-radius: var(--vd-radius);
-  margin-bottom: var(--vd-space-xs);
-  color: inherit;
-  text-decoration: none;
-}
-
-.vd-remit-row:hover,
-.vd-remit-row:focus-visible {
-  border-color: var(--vd-lagoon);
-  background: var(--vd-salt);
-}
-
-.vd-remit-row__main { min-width: 0; }
-.vd-remit-row__money { text-align: right; flex-shrink: 0; }
-
-/* The figures, side by side and equally weighted. */
-.vd-remit-figures {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
-  gap: var(--vd-space-xs);
-  margin: 0 0 var(--vd-space-sm);
-}
-
-.vd-remit-figures > div {
-  padding: var(--vd-space-xs) var(--vd-space-sm);
-  border-radius: var(--vd-radius-sm);
-  background: var(--vd-salt);
-}
-
-.vd-remit-figures dt {
-  margin: 0;
-  font-size: .75rem;
-  font-weight: 600;
-  color: var(--vd-muted);
-}
-
-.vd-remit-figures dd {
-  margin: 0;
-  font-size: 1.15rem;
-  font-weight: 700;
-}
-
-.vd-remit-figures__total { background: var(--vd-lagoon-tint); }
-
-/* The slip --------------------------------------------------------- */
-
-.vd-slip {
-  padding: var(--vd-space-lg);
-  border: 1px solid var(--vd-brine);
-  border-radius: var(--vd-radius-lg);
-  background: #FFFFFF;
-}
-
-.vd-slip__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--vd-space-sm);
-  padding-bottom: var(--vd-space-sm);
-  border-bottom: 1px solid var(--vd-brine);
-  margin-bottom: var(--vd-space-sm);
-}
-
-.vd-slip__ref {
-  margin: 0;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 1.25rem;
-}
-
-.vd-slip__where { color: var(--vd-muted); font-size: var(--vd-text-body-sm, .9375rem); }
-
-.vd-slip__meaning {
-  margin: 0 0 var(--vd-space-sm);
-  color: var(--vd-muted);
-  font-size: var(--vd-text-small, .8125rem);
-}
-
-.vd-slip__details { margin-bottom: var(--vd-space-sm); }
-.vd-slip__figures { margin-bottom: var(--vd-space-sm); }
-
-/* A difference is the thing to notice, so it is allowed to shout. */
-.vd-slip__variance {
-  display: flex;
-  gap: .5rem;
-  margin: 0 0 var(--vd-space-xs);
-  padding: var(--vd-space-xs) var(--vd-space-sm);
-  border-radius: var(--vd-radius-sm);
-  font-size: var(--vd-text-small, .8125rem);
-  line-height: 1.5;
-}
-
-.vd-slip__variance .bi { flex-shrink: 0; margin-top: .15rem; }
-
-.vd-slip__variance--declared {
-  background: var(--vd-status-pending-bg);
-  color: var(--vd-status-pending-fg);
-}
-
-.vd-slip__variance--counted {
-  background: var(--vd-status-rejected-bg);
-  color: var(--vd-status-rejected-fg);
-}
-
-.vd-slip__variance--drift {
-  background: var(--vd-status-completed-bg);
-  color: var(--vd-status-completed-fg);
-}
-
-.vd-slip__note {
-  margin: var(--vd-space-xs) 0 0;
-  padding: var(--vd-space-xs) var(--vd-space-sm);
-  border-left: 3px solid var(--vd-brine-dark);
-  background: var(--vd-salt);
-  font-size: var(--vd-text-small, .8125rem);
-}
-
-.vd-slip__note--office { border-left-color: var(--vd-lagoon); }
-
-.vd-slip__subhead {
-  margin: var(--vd-space-lg) 0 var(--vd-space-xs);
-  font-size: var(--vd-text-body-sm, .9375rem);
-  font-weight: 700;
-}
-
-.vd-slip__table th {
-  font-size: .75rem;
-  text-transform: uppercase;
-  letter-spacing: .03em;
-  color: var(--vd-muted);
-}
-
-.vd-slip__disclaimer {
-  margin: var(--vd-space-lg) 0 0;
-  padding-top: var(--vd-space-sm);
-  border-top: 1px dashed var(--vd-brine-dark);
-  color: var(--vd-muted);
-  font-size: var(--vd-text-small, .8125rem);
-  line-height: 1.5;
-}
-
-/* Printed, this is a document somebody files ------------------------ */
-
-@media print {
-  .vd-slip {
-    border: 0;
-    padding: 0;
-  }
-
-  .vd-slip__table { font-size: 11pt; }
-
-  /* A slip torn in half across the receipt list is a slip that has to
-     be reprinted. */
-  .vd-slip__figures,
-  .vd-slip__variance,
-  .vd-slip__note {
-    break-inside: avoid;
-  }
-
-  /* The disclaimer is the half that matters most on paper: it is what
-     stops a printed slip being waved about as a bank receipt. */
-  .vd-slip__disclaimer {
-    break-inside: avoid;
-    color: #000;
-  }
-}
-/* Changing when a fee stops applying, folded away until wanted.
-   The rate is not in this form on purpose: receipts have been written
-   against it, and editing it would rewrite what visitors were charged
-   on days already gone. */
-.vd-fee-extend > summary {
-  display: inline-block;
-  list-style: none;
-  cursor: pointer;
-}
-
-.vd-fee-extend > summary::-webkit-details-marker { display: none; }
-
-.vd-fee-extend__form {
-  margin-top: var(--vd-space-xs);
-  padding: var(--vd-space-sm);
-  border: 1px solid var(--vd-brine);
-  border-radius: var(--vd-radius-sm);
-  background: var(--vd-salt);
-  text-align: left;
-  min-width: 15rem;
-}
-/* Checkpoints a collector is posted to, on the staff form. A grid
-   rather than a list: the office reads them as a set of gates, and a
-   municipality with a dozen makes a very long column. */
-.vd-staff-checkpoints {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-  gap: var(--vd-space-xs);
-}
-
-.vd-staff-checkpoints__item {
-  display: flex;
-  gap: .5rem;
-  align-items: flex-start;
-  padding: var(--vd-space-xs) var(--vd-space-sm);
-  border: 1px solid var(--vd-brine);
-  border-radius: var(--vd-radius-sm);
-  cursor: pointer;
-}
-
-.vd-staff-checkpoints__item:hover {
-  border-color: var(--vd-lagoon);
-  background: var(--vd-salt);
-}
-
-.vd-staff-checkpoints__item:has(input:checked) {
-  border-color: var(--vd-lagoon);
-  background: var(--vd-lagoon-tint);
 }
 /* What a resort offers besides the room ------------------------------
  *

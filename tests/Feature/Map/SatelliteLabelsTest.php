@@ -179,7 +179,11 @@ class SatelliteLabelsTest extends TestCase
 
         // One layer group per kind, created once, as before.
         $this->assertSame(1, substr_count($source, 'var fuelLayer = L.layerGroup()'));
-        $this->assertSame(1, substr_count($source, 'var checkpointLayer = L.layerGroup()'));
+
+        // The fee checkpoint layer was the other one. It went with the
+        // environmental fee module, and nothing in map.js should build
+        // a layer for it any more.
+        $this->assertSame(0, substr_count($source, 'checkpointLayer'));
     }
 
     public function test_the_stylesheet_carries_the_zoom_bands_and_the_satellite_halo(): void

@@ -29,7 +29,6 @@
     'occupancy' => null,
     'fuel' => null,
     'barangayShapes' => null,
-    'checkpoints' => null,
 ])
 
 @once
@@ -52,7 +51,6 @@
      @if (filled($barangays)) data-barangays='@json($barangays)' @endif
      @if (filled($fuel)) data-fuel='@json($fuel)' @endif
      @if (filled($barangayShapes)) data-barangay-shapes='@json($barangayShapes)' @endif
-     @if (filled($checkpoints)) data-checkpoints='@json($checkpoints)' @endif
      @if ($occupancy) data-occupancy-url="{{ $occupancy }}" @endif
      data-center='@json($map['center'])'
      {{-- The municipal box, so the map can tell somebody their browser

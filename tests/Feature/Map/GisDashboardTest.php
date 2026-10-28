@@ -2,11 +2,9 @@
 
 namespace Tests\Feature\Map;
 
-use App\Enums\FeeScope;
 use App\Enums\UserRole;
 use App\Models\Booking;
 use App\Models\Destination;
-use App\Models\EnvironmentalFeePolicy;
 use App\Models\Resort;
 use App\Models\Review;
 use App\Models\Room;
@@ -27,30 +25,6 @@ use Tests\TestCase;
 class GisDashboardTest extends TestCase
 {
     use RefreshDatabase;
-
-    /**
-     * A fee the office has actually put in force, built the way
-     * EnvironmentalFeeTest builds one: there is no factory, because a
-     * live municipal charge should never be one object call away.
-     */
-    private function feeInForce(string $amount): EnvironmentalFeePolicy
-    {
-        $mto = User::factory()->create(['role' => UserRole::SuperAdmin]);
-
-        $policy = new EnvironmentalFeePolicy([
-            'amount' => $amount,
-            'scope' => FeeScope::PerVisitor,
-            'effective_from' => now()->subDay()->toDateString(),
-        ]);
-
-        $policy->createdBy()->associate($mto);
-        $policy->enabled = true;
-        $policy->enabled_by = $mto->id;
-        $policy->enabled_at = now();
-        $policy->save();
-
-        return $policy->refresh();
-    }
 
     private function resort(array $attributes = []): Resort
     {
@@ -293,36 +267,6 @@ class GisDashboardTest extends TestCase
         foreach ($missing as $name) {
             $this->assertContains($name, config('visitdasol.barangays'));
         }
-    }
-
-    /* Environmental fee: read-only, and only when in force ---------------- */
-
-    public function test_no_fee_is_mentioned_while_none_is_in_force(): void
-    {
-        $this->resort();
-
-        $this->assertDatabaseCount('environmental_fee_policies', 0);
-
-        $this->get(route('map'))
-            ->assertOk()
-            ->assertDontSee('Environmental fee');
-    }
-
-    public function test_a_fee_in_force_is_shown_but_cannot_be_paid_here(): void
-    {
-        $this->resort();
-
-        $this->feeInForce('20.00');
-
-        $response = $this->get(route('map'))->assertOk();
-
-        $response->assertSee('Environmental fee')
-            ->assertSee('₱20.00', false)
-            ->assertSee('cannot be paid here');
-
-        // Nothing on this page may take money or record a collection.
-        $response->assertDontSee('Pay now')
-            ->assertDontSee('Record collection');
     }
 
     /* Feature cards -------------------------------------------------------- */

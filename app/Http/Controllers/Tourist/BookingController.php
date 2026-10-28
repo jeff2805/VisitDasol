@@ -9,13 +9,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Tourist\CancelBookingRequest;
 use App\Http\Requests\Tourist\StoreBookingRequest;
 use App\Models\Booking;
-use App\Models\EnvironmentalFeeCheckpoint;
 use App\Models\Room;
 use App\Services\AvailabilityService;
 use App\Services\BookingPricer;
 use App\Services\BookingService;
 use App\Services\BookingStatusManager;
-use App\Services\EnvironmentalFeeService;
 use App\Services\Payments\ManualPaymentService;
 use App\Services\Payments\PaymentPolicyService;
 use App\Services\Payments\PaymentService;
@@ -33,7 +31,6 @@ class BookingController extends Controller
         private readonly PaymentService $payments,
         private readonly BookingPricer $pricer,
         private readonly PaymentPolicyService $policies,
-        private readonly EnvironmentalFeeService $fees,
     ) {}
 
     /**
@@ -223,21 +220,6 @@ class BookingController extends Controller
                     : '0.00',
                 $checkIn ?? CarbonImmutable::today()
             ),
-
-            /*
-             * Dasol's environmental fee, for information only.
-             *
-             * A guest driving in meets a checkpoint whether or not this
-             * page mentions it, and being told at the barrier is worse
-             * than being told here. It is NEVER added to the booking
-             * total: municipal money and resort income are kept apart,
-             * and the notice says so in as many words.
-             *
-             * Null while no fee is in force, which is how the module
-             * ships — and then nothing is shown at all.
-             */
-            'environmentalFee' => $this->fees->activePolicy(),
-            'feeCheckpoints' => $this->feeCheckpoints(),
         ]);
     }
 
@@ -327,11 +309,6 @@ class BookingController extends Controller
             // snapshot rather than from the resort's current policy.
             'terms' => $this->policies->stored($booking),
 
-            // Shown again here, because a reservation page is what a
-            // guest opens the morning they travel.
-            'environmentalFee' => $this->fees->activePolicy(),
-            'feeCheckpoints' => $this->feeCheckpoints(),
-
             'payable' => $this->payments->isPayable($booking),
         ]);
     }
@@ -362,27 +339,6 @@ class BookingController extends Controller
                 'Your reservation has been cancelled and the rooms '
                 . 'are free for other guests.'
             );
-    }
-
-    /**
-     * The barangays where the environmental fee is collected, for the
-     * guest's notice.
-     *
-     * Empty when no fee is in force, so the notice names no checkpoints
-     * for a charge nobody may collect.
-     *
-     * @return \Illuminate\Support\Collection<int, EnvironmentalFeeCheckpoint>
-     */
-    private function feeCheckpoints(): \Illuminate\Support\Collection
-    {
-        if (! $this->fees->isCollectable()) {
-            return collect();
-        }
-
-        return EnvironmentalFeeCheckpoint::query()
-            ->active()
-            ->orderBy('barangay')
-            ->get(['id', 'name', 'barangay']);
     }
 
     /**

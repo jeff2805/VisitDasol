@@ -277,14 +277,6 @@
                     @endif
                 </section>
 
-                {{-- The municipality's own charge, shown again here because
-                     this is the page a guest opens on the morning they
-                     travel. Its own section, never a line in the price
-                     above: the resort does not collect it and must not
-                     appear to. --}}
-                <x-environmental-fee-notice :policy="$environmentalFee"
-                                            :checkpoints="$feeCheckpoints"
-                                            class="mt-4" />
             </div>
 
             <div class="col-lg-5">

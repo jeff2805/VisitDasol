@@ -70,24 +70,6 @@ class UserFactory extends Factory
         });
     }
 
-    /**
-     * A barangay official, who speaks for exactly one barangay.
-     *
-     * Active by default: these accounts are created by the office, which has
-     * already satisfied itself that the person is who they say they are, so
-     * there is no application to approve.
-     */
-    public function barangayOfficial(string $barangay = 'Malacapas', UserStatus $status = UserStatus::Active): static
-    {
-        return $this->state(fn () => [
-            'role' => UserRole::BarangayOfficial,
-            'status' => $status,
-            'barangay' => $barangay,
-            'home_city' => null,
-            'home_country' => null,
-        ]);
-    }
-
     public function superAdmin(): static
     {
         return $this->state(fn () => [

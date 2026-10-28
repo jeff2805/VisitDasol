@@ -17,11 +17,12 @@ class ProfileTest extends TestCase
     /**
      * EVERY role, driven off UserRole::cases() rather than a list.
      *
-     * This test used to name three of them, and the controller picks the
-     * page's layout with a match that has no default arm — so the three
+     * This test used to name a subset, and the controller picks the
+     * page's layout with a match that has no default arm — so the roles
      * it did not name threw UnhandledMatchError. barangay_official was
-     * one: the barangay sidebar linked here, and an official who clicked
-     * Profile got a blank 500 and no way to change their password.
+     * one of them for as long as that role existed: the sidebar linked
+     * here, and an official who clicked Profile got a blank 500 and no
+     * way to change their password.
      *
      * Reading the enum is the point. A role added to UserRole and
      * forgotten in the controller now fails here instead of in front of
@@ -30,14 +31,7 @@ class ProfileTest extends TestCase
     public function test_every_role_sees_its_own_profile_page(): void
     {
         foreach (UserRole::cases() as $role) {
-            $user = User::factory()->create([
-                'role' => $role,
-
-                // Officials speak for one barangay and the page shows it.
-                'barangay' => $role === UserRole::BarangayOfficial ? 'Malacapas' : null,
-            ]);
-
-            $this->actingAs($user)
+            $this->actingAs(User::factory()->create(['role' => $role]))
                 ->get(route('profile.edit'))
                 ->assertOk()
                 ->assertSee('Account details');

@@ -317,7 +317,6 @@
                     <div class="vd-gis__canvaswrap">
                         <x-visit-map :points="$points" :barangays="$barangays"
                                      :fuel="$fuel" :barangay-shapes="$barangayShapes"
-                                     :checkpoints="$checkpoints"
                                      class="vd-gis__canvas" :locate="true"
                                      :occupancy="route('map.occupancy')" />
 
@@ -369,13 +368,6 @@
                                 </li>
                             @endif
 
-                            {{-- Only while a fee is actually being collected. --}}
-                            @if (count($checkpoints))
-                                <li>
-                                    <span class="vd-pin vd-pin--checkpoint"><i class="bi bi-ticket-detailed-fill" aria-hidden="true"></i></span>
-                                    Environmental fee checkpoints
-                                </li>
-                            @endif
                             {{-- What the resort pins' colours mean. Named as well as
                                  coloured, because colour alone is not an answer for a
                                  visitor who cannot tell green from orange. --}}
@@ -466,22 +458,6 @@
                             </p>
                         @endunless
 
-                        {{-- Only while a fee is actually in force, and only
-                             what the ordinance has already made public. No
-                             collection happens here. --}}
-                        @if ($environmentalFee ?? false)
-                            <p class="vd-gis__fee">
-                                <i class="bi bi-ticket-detailed" aria-hidden="true"></i>
-                                <span>
-                                    <strong>Environmental fee</strong>
-                                    @if ($environmentalFee->amount !== null)
-                                        &mdash; @peso($environmentalFee->amount, true) per person,
-                                        collected by the municipality at the checkpoints marked on the map.
-                                        It is not part of what a resort charges, and it cannot be paid here.
-                                    @endif
-                                </span>
-                            </p>
-                        @endif
                     </section>
 
                     {{-- The road between any two places on the map.
@@ -617,13 +593,6 @@
                     <h2>Layers</h2>
                     <p>Turn resorts, spots, barangays and filling stations on and off from the panel on the map.</p>
                 </li>
-                @if (count($checkpoints))
-                    <li>
-                        <span class="vd-gis__feature-no">7</span>
-                        <h2>Fee checkpoints</h2>
-                        <p>Where the municipality collects its environmental fee. Nothing is paid here.</p>
-                    </li>
-                @endif
             </ul>
 
             <p class="vd-gis__credit">

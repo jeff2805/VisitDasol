@@ -82,9 +82,8 @@ class ManualPaymentService
          * door that stood open beside it. The random filename is not a
          * defence; it is one leaked URL from being none.
          *
-         * The environmental fee module already settled this: its own
-         * GCash proofs go on 'local' and are served only through a
-         * controller that authorises first. Same file, same rule.
+         * It is served only through PaymentProofController::image(),
+         * which authorises before it reads a byte.
          */
         $path = $file->store('manual-payment-proofs', 'local');
 
