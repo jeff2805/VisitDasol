@@ -12,9 +12,16 @@
         <div class="alert alert-danger d-flex gap-2" role="status">
             <i class="bi bi-x-octagon-fill mt-1" aria-hidden="true"></i>
             <div>
+                {{-- "Voided@if" does not compile: Blade ignores a
+                     directive that sits against a word character, so
+                     that @if stayed as text while its @endif closed
+                     the @if above — and the @elseif below then had
+                     nothing to belong to. The whole page threw a
+                     syntax error. Keep a space before a directive. --}}
                 <strong class="d-block">
-                    Voided@if ($collection->voided_at) on {{ $collection->voided_at->format('M j, Y g:i A') }}@endif
-                    @if ($collection->voidedBy) by {{ $collection->voidedBy->full_name }}@endif
+                    Voided
+                    @if ($collection->voided_at) on {{ $collection->voided_at->format('M j, Y g:i A') }} @endif
+                    @if ($collection->voidedBy) by {{ $collection->voidedBy->full_name }} @endif
                 </strong>
                 {{ $collection->void_reason }}
                 <span class="d-block mt-1">This no longer counts towards any total.</span>

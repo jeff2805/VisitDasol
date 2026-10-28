@@ -23,10 +23,31 @@ class ProfileController extends Controller
 
         return view('profile.edit', [
             'user' => $user,
+
+            /*
+             * The shell this page sits in, so somebody editing their
+             * profile keeps the menu they arrived with.
+             *
+             * EVERY ROLE MUST APPEAR HERE. A match with no arm for a
+             * role throws UnhandledMatchError, which is a 500 on the
+             * one page every signed-in account is entitled to open.
+             * barangay_official was missing from the day the sidebar
+             * started linking here: an official who clicked Profile got
+             * a blank error page and no way to change their password.
+             *
+             * Hence no default arm either. A role added to UserRole and
+             * forgotten here should break the test suite, loudly, not
+             * quietly inherit somebody else's navigation.
+             */
             'layout' => match ($user->role) {
                 UserRole::Tourist => 'layouts.public',
                 UserRole::ResortOwner => 'layouts.owner',
+                UserRole::BarangayOfficial => 'layouts.barangay',
                 UserRole::SuperAdmin => 'layouts.admin',
+
+                // Collectors and cashiers share the dashboard shell,
+                // which picks their menu from their role.
+                UserRole::FeeCollector, UserRole::Cashier => 'layouts.dashboard',
             },
         ]);
     }

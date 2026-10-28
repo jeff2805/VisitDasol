@@ -87,8 +87,24 @@
                         </div>
 
                         <nav class="vd-sidebar__nav" aria-label="Dashboard">
-                            <p class="vd-sidebar__area" id="vdSidebarArea">@yield('area_label')</p>
-                            @yield('sidebar')
+                            {{-- Both fall back to the signed-in role. Screens shared
+                                 by several roles (the environmental fee ones) extend
+                                 this layout directly and define neither section, and
+                                 an empty navy column with no way out of the page is
+                                 not an acceptable answer to that. --}}
+                            <p class="vd-sidebar__area" id="vdSidebarArea">
+                                @hasSection('area_label')
+                                    @yield('area_label')
+                                @else
+                                    {{ auth()->user()?->role->label() }}
+                                @endif
+                            </p>
+
+                            @hasSection('sidebar')
+                                @yield('sidebar')
+                            @else
+                                @include('partials.sidebar-for-role')
+                            @endif
                         </nav>
 
                         {{-- The tagline, standing on the shoreline at the foot of the menu. --}}

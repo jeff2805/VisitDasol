@@ -71,7 +71,22 @@ class ManualPaymentService
 
     public function submit(Payment $payment, array $data, UploadedFile $file): PaymentProof
     {
-        $path = $file->store('manual-payment-proofs', 'public');
+        /*
+         * THE PRIVATE DISK, NOT THE PUBLIC ONE.
+         *
+         * A GCash receipt screenshot carries the guest's name, their
+         * mobile number, the amount and the reference. On the public
+         * disk Apache serves it straight off storage/app/public with no
+         * authentication at all — the ownership check in
+         * PaymentProofController::image() would have been guarding a
+         * door that stood open beside it. The random filename is not a
+         * defence; it is one leaked URL from being none.
+         *
+         * The environmental fee module already settled this: its own
+         * GCash proofs go on 'local' and are served only through a
+         * controller that authorises first. Same file, same rule.
+         */
+        $path = $file->store('manual-payment-proofs', 'local');
 
         return $payment->proofs()->create([
             'reference_number' => trim((string) ($data['reference_number'] ?? '')),

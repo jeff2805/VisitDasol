@@ -44,10 +44,23 @@ class PaymentProofController extends Controller
         return back()->with('status', 'The guest has been asked to send a new proof.');
     }
 
+    /**
+     * The guest's receipt screenshot, served only to the resort it was
+     * sent to.
+     *
+     * Reads the private disk. The upload used to land on the public one,
+     * where Apache served it with no authentication whatsoever and this
+     * ownership check guarded nothing. The two guards below are the same
+     * ones EnvironmentalFeeVerificationController::proof() uses: a row
+     * with no file, or a row whose file has gone, is a 404 and not a 500.
+     */
     public function image(PaymentProof $proof)
     {
         abort_unless($proof->payment->booking->resort->owner_id === auth()->id(), 403);
 
-        return Storage::disk('public')->response($proof->proof_image);
+        abort_if(blank($proof->proof_image), 404);
+        abort_unless(Storage::disk('local')->exists($proof->proof_image), 404);
+
+        return Storage::disk('local')->response($proof->proof_image);
     }
 }

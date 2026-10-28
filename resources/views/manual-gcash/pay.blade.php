@@ -29,6 +29,24 @@
 
             @if ($payment->isSettled())
                 <div class="alert alert-success">Payment confirmed by the resort. Thank you!</div>
+            @elseif ($account === null)
+                {{-- The resort has no active GCash account on file. The
+                     controller passes null for it, and the page used to
+                     read account_name off that null: three warnings in
+                     the log and, worse, a form asking the guest to
+                     upload proof of a payment they had no number to
+                     send. Say so instead, and offer the resort's phone
+                     number, which is the only thing that can actually
+                     move this along. --}}
+                <div class="alert alert-warning">
+                    <strong class="d-block">This resort has not published its GCash details.</strong>
+                    Nothing has been charged and your reservation is unaffected. Please contact
+                    {{ $booking->resort?->name }}
+                    @if (filled($booking->resort?->contact_number))
+                        on {{ $booking->resort->contact_number }}
+                    @endif
+                    to arrange payment.
+                </div>
             @else
                 <div class="card mb-4">
                     <div class="card-body">
@@ -53,7 +71,13 @@
                         <div class="alert alert-danger">The resort could not find this payment. Reason: {{ $proof->review_note }}</div>
                     @endif
 
-                    <form method="POST" action="{{ route('manual-payments.submit', ['booking' => $booking, 'payment' => $payment]) }}" enctype="multipart/form-data">
+                    {{-- The route is named tourist.manual-payments.submit and
+                         takes the booking alone; the controller finds the
+                         latest manual_gcash payment itself. "manual-payments.submit"
+                         with a payment parameter matched nothing, so route()
+                         threw and the whole page 500'd: no guest could ever
+                         submit GCash proof. --}}
+                    <form method="POST" action="{{ route('tourist.manual-payments.submit', $booking) }}" enctype="multipart/form-data">
                         @csrf
                         <div class="mb-3">
                             <label for="reference_number" class="form-label">GCash reference number</label>
