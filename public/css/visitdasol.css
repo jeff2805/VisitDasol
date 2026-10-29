@@ -891,32 +891,75 @@ a {
 
 .vd-stay-search__field { min-width: 0; }
 
-/* One column on a phone: four controls side by side at 360px are four
-   controls nobody can use. */
+/*
+ * COUNT THE COLUMNS AGAINST THE FORM, EVERY TIME ONE IS ADDED.
+ *
+ * The desktop rule below used to read
+ *   grid-template-columns: 1.6fr 1fr 1fr .7fr auto;
+ * which is five tracks. The form has seven children: where, check-in
+ * date, check-in time, check-out date, check-out time, guests, and the
+ * button. The two time fields were added to the Blade afterwards and
+ * nobody came back here, so grid wrapped the last two onto a second
+ * row — Guests and Search sat underneath, which is not a search bar,
+ * it is two of them.
+ */
+
+/* One control per row on a phone: seven side by side at 360px are seven
+   controls nobody can use. The button goes full width at the foot. */
 @media (min-width: 576px) {
   .vd-stay-search {
     grid-template-columns: 1fr 1fr;
   }
+
+  .vd-stay-search__go {
+    grid-column: 1 / -1;
+  }
 }
 
-/* The whole row once there is room for it. "Where" takes the extra space
-   because a barangay name is longer than a date or a number. */
-@media (min-width: 992px) {
+/* Tablet: three across, still with the button on its own line. */
+@media (min-width: 768px) {
   .vd-stay-search {
-    grid-template-columns: 1.6fr 1fr 1fr .7fr auto;
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/*
+ * The whole thing in one row.
+ *
+ * AT 1200px, NOT 992px. The container is 960px wide between those two,
+ * and seven controls do not go into it: a native date input will not
+ * render below about 140px and a time input below about 110px, so the
+ * row would have overflowed or clipped the pickers rather than fitting.
+ * Three clean columns is the honest answer at that width.
+ *
+ * The tracks are sized by what each control actually holds. "Where"
+ * takes the most because a barangay name is longer than a date; the
+ * times take less than the dates because a clock is shorter than a
+ * calendar; guests is a number up to 30.
+ */
+@media (min-width: 1200px) {
+  .vd-stay-search {
+    grid-template-columns: 1.5fr 1.05fr .85fr 1.05fr .85fr .6fr auto;
     align-items: end;
     gap: var(--vd-space-md);
     padding: var(--vd-space-lg);
   }
 
-  .vd-stay-search__go { align-self: end; }
+  /* Back out of the full-width span the small screens gave it. */
+  .vd-stay-search__go {
+    grid-column: auto;
+    align-self: end;
+  }
 }
 
-/* On the hero the search is the brightest thing on the page, so the buttons
-   under it step back to outlines rather than competing with it. */
-.vd-hero .vd-stay-search {
-  max-width: 58rem;
-}
+/*
+ * No width cap on the hero's copy any more.
+ *
+ * It was max-width: 58rem, which is 928px — narrower than the seven
+ * columns need, so the row could never have formed on the public home
+ * however wide the window was. It now fills its container, the same as
+ * the one on the signed-in guest's page, and the two match.
+ */
 
 /* Availability, on a room card, once the visitor has named dates. */
 .vd-card__free {
@@ -1687,12 +1730,58 @@ th[aria-sort] {
  * shore curve so the dashboard reads as the same place as the home page,
  * but it is shorter: the guest came here to do something, not to be sold to.
  */
+/*
+ * The signed-in guest's banner.
+ *
+ * THE PHOTOGRAPH HAS TO BE FITTED AND THEN DARKENED, in that order.
+ *
+ * Every colour below it — the seafoam eyebrow, the white title, the
+ * lead at .88 opacity, and the translucent border on .btn-outline-salt
+ * — was chosen against deep navy. Dropped straight onto a sunrise over
+ * the salt beds they all but vanish: the eyebrow is pale teal on
+ * orange, and the two buttons under the search read as empty outlines.
+ *
+ * background-size, -position and -repeat were missing too, so the
+ * 2048x768 photograph sat at its natural size anchored top left and
+ * tiled from there rather than covering the section.
+ *
+ * The scrim is the same one .vd-hero was built with: strong across the
+ * text column on the left, dropping away to the right so the bay is
+ * still worth looking at.
+ */
 .vd-welcome {
   position: relative;
   overflow: hidden;
   background-image: url('/images/image1.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   color: var(--vd-on-bay);
-  padding: clamp(2.5rem, 5vw, 4rem) 0 clamp(4rem, 7vw, 5.5rem);
+
+  /*
+   * The foot has to clear .vd-shore, which hangs at bottom: -1px and
+   * stands clamp(2.5rem, 6vw, 4.5rem) tall. The old 7vw left barely a
+   * vw of daylight, and the "Browse every room" and "Open the map"
+   * buttons sat in exactly that band with the curve drawn through them.
+   */
+  padding: clamp(2.5rem, 5vw, 4rem) 0 clamp(5.5rem, 10vw, 8rem);
+}
+
+.vd-welcome::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(95deg,
+      rgba(13, 59, 71, .92) 0%,
+      rgba(13, 59, 71, .86) 55%,
+      rgba(13, 59, 71, .45) 80%,
+      rgba(13, 59, 71, .22) 100%),
+    linear-gradient(180deg,
+      rgba(13, 59, 71, .50) 0%,
+      rgba(13, 59, 71, .20) 45%,
+      rgba(11, 48, 58, .58) 100%);
+  pointer-events: none;
 }
 
 .vd-welcome__eyebrow {
