@@ -1687,58 +1687,12 @@ th[aria-sort] {
  * shore curve so the dashboard reads as the same place as the home page,
  * but it is shorter: the guest came here to do something, not to be sold to.
  */
-/*
- * The signed-in guest's banner.
- *
- * THE PHOTOGRAPH HAS TO BE FITTED AND THEN DARKENED, in that order.
- *
- * Every colour below it — the seafoam eyebrow, the white title, the
- * lead at .88 opacity, and the translucent border on .btn-outline-salt
- * — was chosen against deep navy. Dropped straight onto a sunrise over
- * the salt beds they all but vanish: the eyebrow is pale teal on
- * orange, and the two buttons under the search read as empty outlines.
- *
- * background-size, -position and -repeat were missing too, so the
- * 2048x768 photograph sat at its natural size anchored top left and
- * tiled from there rather than covering the section.
- *
- * The scrim is the same one .vd-hero was built with: strong across the
- * text column on the left, dropping away to the right so the bay is
- * still worth looking at.
- */
 .vd-welcome {
   position: relative;
   overflow: hidden;
   background-image: url('/images/image1.png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
   color: var(--vd-on-bay);
-
-  /*
-   * The foot has to clear .vd-shore, which hangs at bottom: -1px and
-   * stands clamp(2.5rem, 6vw, 4.5rem) tall. The old 7vw left barely a
-   * vw of daylight, and the "Browse every room" and "Open the map"
-   * buttons sat in exactly that band with the curve drawn through them.
-   */
-  padding: clamp(2.5rem, 5vw, 4rem) 0 clamp(5.5rem, 10vw, 8rem);
-}
-
-.vd-welcome::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(95deg,
-      rgba(13, 59, 71, .92) 0%,
-      rgba(13, 59, 71, .86) 55%,
-      rgba(13, 59, 71, .45) 80%,
-      rgba(13, 59, 71, .22) 100%),
-    linear-gradient(180deg,
-      rgba(13, 59, 71, .50) 0%,
-      rgba(13, 59, 71, .20) 45%,
-      rgba(11, 48, 58, .58) 100%);
-  pointer-events: none;
+  padding: clamp(2.5rem, 5vw, 4rem) 0 clamp(4rem, 7vw, 5.5rem);
 }
 
 .vd-welcome__eyebrow {
