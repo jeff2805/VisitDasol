@@ -5,6 +5,7 @@ namespace App\Http\Requests\Tourist;
 use App\Enums\BookingType;
 use App\Enums\PaymentPreference;
 use App\Enums\VisitorOrigin;
+use App\Models\ResortManualPaymentAccount;
 use App\Models\Room;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Validation\Validator;
@@ -37,6 +38,21 @@ class StoreBookingRequest extends FormRequest
         }
 
         return $this->room;
+    }
+
+    /**
+     * The selected resort's GCash account, if it has a live one.
+     *
+     * Goes through room(), which is loaded once per request, so this
+     * costs a single query and only where a resort has an account to
+     * find. What it is for is in the payment_preference rule below.
+     */
+    private function manualAccount(): ?ResortManualPaymentAccount
+    {
+        return $this->room()?->resort
+            ?->manualAccount()
+            ->where('active', true)
+            ->first();
     }
 
     protected function prepareForValidation(): void
@@ -352,15 +368,43 @@ class StoreBookingRequest extends FormRequest
              * another resort is dropped rather than refusing the
              * booking, because a guest should not lose a room over a
              * kayak.
+             *
+             * SAYING NO HAS TO BE POSSIBLE, AND IT WAS NOT.
+             *
+             * The form sends a box for every extra the resort offers.
+             * An untouched one posts an empty string, which the global
+             * ConvertEmptyStringsToNull turns into null — and null with
+             * no "nullable" here failed "integer". Typing the 0 that
+             * the placeholder shows failed "min:1". Either way a guest
+             * at a resort with two extras collected two errors they
+             * never asked for and could not submit at all.
+             *
+             * Worse, both landed on keys like "extras.7", which no
+             * @error block on the page matched, so the banner counted
+             * fields that nothing on the screen marked.
+             *
+             * nullable for the empty box, min:0 for the typed zero.
+             * BookingExtraService drops both rather than booking a
+             * kayak nobody wanted.
              */
             'extras' => ['nullable', 'array', 'max:20'],
-            'extras.*' => ['integer', 'min:1', 'max:100'],
+            'extras.*' => ['nullable', 'integer', 'min:0', 'max:100'],
 
+            /*
+             * THE SAME QUESTION THE FORM ASKED.
+             *
+             * BookingController::create() offers whatever
+             * PaymentPreference::available($manualGcashAccount) returns.
+             * This asked available() with no account at all, so Manual
+             * GCash was never on the accepted list — a resort that had
+             * set up GCash showed the guest an option the server then
+             * refused. Pass the same account and the two agree.
+             */
             'payment_preference' => [
                 'nullable',
                 Rule::in(
                     array_column(
-                        PaymentPreference::available(),
+                        PaymentPreference::available($this->manualAccount()),
                         'value'
                     )
                 ),
@@ -523,6 +567,25 @@ class StoreBookingRequest extends FormRequest
 
             'origin.required' =>
                 'Choose where you are travelling from.',
+
+            /*
+             * The key here is "extras.7", an id nobody outside the
+             * database recognises, so the default wording named a field
+             * the guest has never heard of. These say what to do
+             * instead. 0 and blank are both fine now, which is why
+             * neither message asks for a minimum of one.
+             */
+            'extras.*.integer' =>
+                'Say how many you would like as a whole number, '
+                . 'or leave the box empty.',
+
+            'extras.*.min' =>
+                'That cannot be less than nothing. Leave the box empty, '
+                . 'or put 0.',
+
+            'extras.*.max' =>
+                'That is more than a resort can offer of one thing. '
+                . 'Ask them directly for a large group.',
         ];
     }
 

@@ -31,17 +31,9 @@
         </div>
     @endif
 
-    {{-- Validation errors --}}
-    @if ($errors->any())
-        <div class="alert alert-danger" role="alert">
-            <strong>Please check the following:</strong>
-            <ul class="mb-0 mt-2">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
+    {{-- Validation errors were listed here as well as in partials.flash,
+         which the dashboard layout already includes above this page.
+         One list, in the shared partial. --}}
 
     <div class="alert alert-warning d-flex align-items-start gap-2">
         <i class="bi bi-shield-exclamation fs-5"></i>

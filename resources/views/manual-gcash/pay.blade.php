@@ -12,15 +12,9 @@
                 <div class="alert alert-success">{{ session('status') }}</div>
             @endif
 
-            @if ($errors->any())
-                <div class="alert alert-danger">
-                    <ul class="mb-0">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
+            {{-- The errors were listed here as well as in partials.flash,
+                 which the public layout already includes above this page.
+                 One list, in the shared partial. --}}
 
             <div class="mb-4">
                 <p class="text-muted mb-1">Reservation {{ $booking->booking_reference }}</p>

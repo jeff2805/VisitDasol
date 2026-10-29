@@ -214,7 +214,13 @@
                                         </p>
 
                                         @foreach ($extras as $extra)
-                                            @php($asked = (int) old('extras.'.$extra->id, 0))
+                                            {{-- What they actually typed, kept exactly.
+                                                 This used to be (int) and then blanked
+                                                 unless it was above zero, so a guest who
+                                                 typed 0 got the box back empty — the
+                                                 answer that caused the error erased
+                                                 itself, and they had nothing to correct. --}}
+                                            @php($asked = old('extras.'.$extra->id))
                                             <div class="vd-extras__item">
                                                 <span class="vd-extras__what">
                                                     <span class="d-block fw-semibold">{{ $extra->name }}</span>
@@ -231,12 +237,21 @@
                                                            for="field-extra-{{ $extra->id }}">
                                                         {{ $extra->price_unit->quantityLabel() }}
                                                     </label>
-                                                    <input type="number" class="form-control form-control-sm"
+                                                    <input type="number"
+                                                           class="form-control form-control-sm @error('extras.'.$extra->id) is-invalid @enderror"
                                                            id="field-extra-{{ $extra->id }}"
                                                            name="extras[{{ $extra->id }}]"
                                                            min="0" max="{{ $extra->max_quantity }}" step="1"
-                                                           value="{{ $asked > 0 ? $asked : '' }}"
+                                                           value="{{ $asked }}"
                                                            placeholder="0">
+                                                    {{-- The error for THIS box. Laravel files it
+                                                         under "extras.7", and $errors->has('extras')
+                                                         is false for that, so the one message below
+                                                         the fieldset could never fire: the banner
+                                                         counted a field nothing on the page marked. --}}
+                                                    @error('extras.'.$extra->id)
+                                                        <div class="invalid-feedback">{{ $message }}</div>
+                                                    @enderror
                                                 </span>
                                             </div>
                                         @endforeach

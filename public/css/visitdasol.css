@@ -1690,7 +1690,7 @@ th[aria-sort] {
 .vd-welcome {
   position: relative;
   overflow: hidden;
-  background: var(--vd-bay);
+  background-image: url('/images/image1.png');
   color: var(--vd-on-bay);
   padding: clamp(2.5rem, 5vw, 4rem) 0 clamp(4rem, 7vw, 5.5rem);
 }

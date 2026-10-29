@@ -36,6 +36,21 @@ class BookingExtraService
      */
     public function request(Booking $booking, array $wanted): void
     {
+        /*
+         * NOTHING MEANS NOTHING.
+         *
+         * The form sends a box for every extra the resort offers, and
+         * the ones the guest does not want arrive as 0 or as an empty
+         * string. Those are an answer — "no kayak" — not a request for
+         * one, and the clamp below would read 0 as 1 and book a guest
+         * a boat they declined. Dropped here, before anything is
+         * looked up.
+         */
+        $wanted = array_filter(
+            $wanted,
+            fn ($quantity) => is_numeric($quantity) && (int) $quantity > 0
+        );
+
         if ($wanted === []) {
             return;
         }

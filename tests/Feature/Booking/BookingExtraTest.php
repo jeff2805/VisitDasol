@@ -221,6 +221,116 @@ class BookingExtraTest extends TestCase
         $this->assertSame(ExtraStatus::Requested, $line->status);
     }
 
+    /* Saying no ------------------------------------------------------------ */
+
+    /**
+     * ZERO IS AN ANSWER.
+     *
+     * The form sends a box for every extra the resort offers, and the
+     * ones the guest does not want come back as 0 or as an empty
+     * string. That used to fail validation — extras.* required min:1 —
+     * and the message landed on the key "extras.7", which no @error
+     * block on the page matches. The guest was told to fix four fields,
+     * saw none of them marked, and could not send the booking at all.
+     *
+     * A guest declining a kayak must simply get a booking with no kayak
+     * on it.
+     */
+    public function test_a_quantity_of_zero_books_the_room_and_asks_for_nothing(): void
+    {
+        $boat = $this->extra(['name' => 'Banana boat', 'price' => 500]);
+        $kayak = $this->extra(['name' => 'Kayak hire', 'price' => 100]);
+
+        $booking = $this->book([
+            'extras' => [$boat->id => 0, $kayak->id => 0],
+        ]);
+
+        $this->assertSame(0, $booking->extras()->count());
+        $this->assertSame(0, BookingExtra::query()->count());
+    }
+
+    /**
+     * AN UNTOUCHED BOX, which is the commonest case of all.
+     *
+     * It posts an empty string, and the global
+     * ConvertEmptyStringsToNull turns that into null before the rules
+     * ever see it. Without "nullable" on extras.*, null failed
+     * "integer" — so a guest who simply did not want a kayak could not
+     * book a room. Every booking at a resort offering extras was
+     * blocked, with the errors filed under keys the page could not show.
+     */
+    public function test_an_untouched_box_asks_for_nothing(): void
+    {
+        $boat = $this->extra(['name' => 'Banana boat']);
+        $kayak = $this->extra(['name' => 'Kayak hire']);
+
+        $booking = $this->book([
+            'extras' => [$boat->id => '', $kayak->id => ''],
+        ]);
+
+        $this->assertSame(0, $booking->extras()->count());
+    }
+
+    /**
+     * Whatever goes wrong with an extra, the guest has to be able to
+     * SEE it. The message is filed under "extras.7" and the fieldset's
+     * @error('extras') never matched that, so the banner counted a
+     * field the page left unmarked.
+     */
+    public function test_a_bad_quantity_is_shown_against_the_box_it_belongs_to(): void
+    {
+        $kayak = $this->extra(['name' => 'Kayak hire']);
+
+        $this->actingAs($this->tourist)
+            ->post(route('tourist.bookings.store'), $this->payload([
+                'extras' => [$kayak->id => 'three'],
+            ]))
+            ->assertSessionHasErrors('extras.'.$kayak->id);
+
+        /*
+         * The dates are needed to see it: create.blade.php hides the
+         * whole form behind @if ($nights < 1) and shows a "pick your
+         * dates" panel instead.
+         */
+        $page = $this->actingAs($this->tourist)
+            ->get(route('tourist.bookings.create', [
+                'room' => $this->room->id,
+                'check_in' => '2030-07-10',
+                'check_out' => '2030-07-12',
+            ]))
+            ->assertOk();
+
+        // Named in the banner at the top...
+        $page->assertSee('whole number');
+
+        // ...and marked on the box itself, which is the part that was
+        // missing: @error('extras') never matched the key "extras.7".
+        $page->assertSee('id="field-extra-'.$kayak->id.'"', false);
+        $page->assertSee('invalid-feedback', false);
+    }
+
+    /**
+     * The one they wanted, and only that one.
+     *
+     * The clamp in the service reads a quantity of 0 as 1, so a zero
+     * that reached it would book a guest a boat they had declined.
+     * They are dropped before anything is looked up.
+     */
+    public function test_declining_one_thing_does_not_decline_the_other(): void
+    {
+        $boat = $this->extra(['name' => 'Banana boat', 'price' => 500]);
+        $kayak = $this->extra(['name' => 'Kayak hire', 'price' => 100]);
+
+        $booking = $this->book([
+            'extras' => [$boat->id => 0, $kayak->id => 2],
+        ]);
+
+        $line = $booking->extras()->sole();
+
+        $this->assertSame('Kayak hire', $line->name);
+        $this->assertSame(2, $line->quantity);
+    }
+
     /**
      * THE RULE AT THE HEART OF THIS. Whatever the form posts, the price
      * comes from the resort's own listing.
