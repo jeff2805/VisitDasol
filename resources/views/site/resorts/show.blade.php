@@ -28,25 +28,93 @@
     <div class="container py-5">
         <div class="row g-4">
             <div class="col-lg-8">
-                {{-- Resort gallery --}}
-                <img
-                    class="vd-gallery__main"
-                    src="{{ $resort->main_image_url }}"
-                    alt="{{ $resort->name }}"
-                >
+                {{-- Resort photo gallery / slideshow --}}
+                @php
+                    $galleryImages = collect();
 
-                @if ($resort->images->isNotEmpty())
-                    <ul class="vd-gallery__strip">
-                        @foreach ($resort->images as $image)
-                            <li>
+                    if (filled($resort->main_image_url)) {
+                        $galleryImages->push([
+                            'url' => $resort->main_image_url,
+                            'alt' => $resort->name,
+                        ]);
+                    }
+
+                    $galleryImages = $galleryImages
+                        ->concat($resort->images->map(fn ($image) => [
+                            'url' => $image->url,
+                            'alt' => $image->caption ?? $resort->name,
+                        ]))
+                        ->filter(fn ($image) => filled($image['url']))
+                        ->unique('url')
+                        ->values();
+                @endphp
+
+                @if ($galleryImages->isNotEmpty())
+                    <section
+                        class="vd-resort-gallery"
+                        data-resort-gallery
+                        aria-label="{{ $resort->name }} photo gallery"
+                    >
+                        <div class="vd-gallery__stage">
+                            @foreach ($galleryImages as $index => $image)
                                 <img
-                                    src="{{ $image->url }}"
-                                    alt="{{ $image->caption ?? $resort->name }}"
-                                    loading="lazy"
+                                    src="{{ $image['url'] }}"
+                                    alt="{{ $image['alt'] }}"
+                                    class="vd-gallery__slide {{ $index === 0 ? 'is-active' : '' }}"
+                                    data-gallery-slide
+                                    data-index="{{ $index }}"
+                                    @if ($index !== 0) loading="lazy" @else fetchpriority="high" @endif
                                 >
-                            </li>
-                        @endforeach
-                    </ul>
+                            @endforeach
+
+                            @if ($galleryImages->count() > 1)
+                                <span class="vd-gallery__counter" data-gallery-counter aria-live="polite">
+                                    1 / {{ $galleryImages->count() }}
+                                </span>
+
+                                <button type="button"
+                                        class="vd-gallery__nav vd-gallery__prev"
+                                        data-gallery-prev
+                                        aria-label="Previous photo">
+                                    <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                                </button>
+
+                                <button type="button"
+                                        class="vd-gallery__nav vd-gallery__next"
+                                        data-gallery-next
+                                        aria-label="Next photo">
+                                    <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                                </button>
+
+                                <div class="vd-gallery__indicators" data-gallery-indicators>
+                                    @foreach ($galleryImages as $index => $image)
+                                        <button type="button"
+                                                class="vd-gallery__indicator {{ $index === 0 ? 'is-active' : '' }}"
+                                                data-gallery-indicator="{{ $index }}"
+                                                aria-label="Show photo {{ $index + 1 }}"
+                                                aria-pressed="{{ $index === 0 ? 'true' : 'false' }}">
+                                        </button>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
+
+                        @if ($galleryImages->count() > 1)
+                            <div class="vd-gallery__thumbnails" aria-label="Choose a photo">
+                                @foreach ($galleryImages as $index => $image)
+                                    <button type="button"
+                                            class="vd-gallery__thumbnail {{ $index === 0 ? 'is-active' : '' }}"
+                                            data-gallery-thumbnail="{{ $index }}"
+                                            aria-label="View photo {{ $index + 1 }}"
+                                            aria-pressed="{{ $index === 0 ? 'true' : 'false' }}">
+                                        <img src="{{ $image['url'] }}"
+                                             alt="{{ $image['alt'] }}"
+                                             loading="lazy">
+                                    </button>
+                                @endforeach
+                            </div>
+                        @endif
+                    </section>
                 @endif
 
                 {{-- Resort information --}}
@@ -462,16 +530,8 @@
                 <aside class="vd-panel p-4 mb-4">
                     <h2 class="h5 mb-3">Good to know</h2>
 
-                    <dl class="row mb-0 small">
-                        <dt class="col-5 text-muted-vd fw-normal">Check-in</dt>
-                        <dd class="col-7">
-                            {{ \Illuminate\Support\Carbon::parse($resort->check_in_time)->format('g:i A') }}
-                        </dd>
-
-                        <dt class="col-5 text-muted-vd fw-normal">Check-out</dt>
-                        <dd class="col-7">
-                            {{ \Illuminate\Support\Carbon::parse($resort->check_out_time)->format('g:i A') }}
-                        </dd>
+                   
+                    
 
                         <dt class="col-5 text-muted-vd fw-normal">Contact</dt>
                         <dd class="col-7">{{ $resort->contact_number }}</dd>

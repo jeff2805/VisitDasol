@@ -94,8 +94,8 @@
                         {{-- The tagline, standing on the shoreline at the foot of the menu. --}}
                         <div class="vd-sidebar__sign" aria-hidden="true">
                             <x-palm-fronds side="left" />
-                            <p class="vd-sidebar__sign-words">Explore<br>Discover<br>Experience</p>
-                            <p class="vd-sidebar__sign-place">{{ config('visitdasol.municipality') }}, {{ config('visitdasol.province') }}</p>
+
+
                             <div class="vd-saltbeds vd-sidebar__beds"></div>
                         </div>
                     </div>

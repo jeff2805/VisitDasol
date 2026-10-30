@@ -12,116 +12,138 @@
 
         {{-- The same search as the home page, carrying what was asked there,
              so dates chosen on the way in can be changed without going back. --}}
-        <x-stay-search class="mb-4"
-                       :barangays="$barangays"
-                       :values="[
-                           'barangay' => $filters['barangay'],
-                           'check_in' => $filters['check_in']?->toDateString(),
-                           'check_out' => $filters['check_out']?->toDateString(),
-                           'guests' => $filters['guests'],
-                       ]" />
+       {{-- Combined Stay Search and Room Filters: One Visual Container --}}
+        {{-- Stay Search ONLY --}}
+<div class="vd-rooms-search-panel mb-4">
 
-        @if ($filters['error'])
-            <div class="alert alert-warning" role="status">{{ $filters['error'] }}</div>
-        @elseif ($filters['nights'] > 0)
-            <p class="text-muted-vd">
-                Showing what is free for
-                {{ $filters['check_in']->format('M j') }} to {{ $filters['check_out']->format('M j, Y') }}
-                ({{ $filters['nights'] }} {{ Str::plural('night', $filters['nights']) }}).
-            </p>
-        @endif
+    <x-stay-search
+        :barangays="$barangays"
+        :values="[
+            'barangay' => $filters['barangay'],
+            'check_in' => $filters['check_in']?->toDateString(),
+            'check_out' => $filters['check_out']?->toDateString(),
+            'guests' => $filters['guests'],
+        ]"
+    />
+    
+{{-- Room Filters --}}
+<form method="GET"
+      action="{{ route('resorts.index') }}"
+      class="vd-filterbar p-3 p-lg-4 mb-0">
 
-        {{-- The filters run across the top rather than down one side.
+    @if(request('category'))
+        <input type="hidden" name="category" value="{{ request('category') }}">
+    @endif
 
-             A narrow column squeezed every control to about a third of the
-             page width and pushed the rooms — the thing people came for —
-             into the remaining two thirds. Across the top, each field gets
-             room to be read and the rooms below get the full width, which is
-             one more card per row on a wide screen. --}}
-        <form method="GET" action="{{ route('resorts.index') }}" class="vd-panel p-3 p-lg-4 vd-filterbar mb-4">
-            <div class="row g-3 align-items-end">
-                <div class="col-12 col-lg-4 col-xl-3">
-                    <label class="form-label" for="filter-q">Search</label>
-                    <input type="search" class="form-control" id="filter-q" name="q"
-                           value="{{ $filters['q'] }}" placeholder="Room, resort, or barangay">
-                </div>
+    <div class="row g-3 align-items-end">
 
-                <div class="col-sm-6 col-lg-4 col-xl-2">
-                    <label class="form-label" for="filter-barangay">Barangay</label>
-                    <select class="form-select" id="filter-barangay" name="barangay">
-                        <option value="">Anywhere in Dasol</option>
-                        @foreach ($barangays as $barangay)
-                            <option value="{{ $barangay }}" @selected($filters['barangay'] === $barangay)>{{ $barangay }}</option>
-                        @endforeach
-                    </select>
-                </div>
+        {{-- Search --}}
+        <div class="col-12 col-lg-4 col-xl-3">
+            <label class="form-label" for="filter-q">Search</label>
+            <input type="search"
+                   class="form-control"
+                   id="filter-q"
+                   name="q"
+                   value="{{ $filters['q'] }}"
+                   placeholder="Room, resort, or barangay">
+        </div>
 
-                <div class="col-sm-6 col-lg-4 col-xl-2">
-                    <label class="form-label" for="filter-type">Room category</label>
-                    <select class="form-select" id="filter-type" name="type">
-                        <option value="">Any kind</option>
-                        @foreach ($roomTypes as $value => $label)
-                            <option value="{{ $value }}" @selected($filters['type'] === $value)>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                </div>
+        {{-- Room Category --}}
+        <div class="col-sm-6 col-lg-4 col-xl-2">
+            <label class="form-label" for="filter-type">Room category</label>
+            <select class="form-select" id="filter-type" name="type">
+                <option value="">Any kind</option>
+                @foreach ($roomTypes as $value => $label)
+                    <option value="{{ $value }}" @selected($filters['type'] === $value)>
+                        {{ $label }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
 
-                <div class="col-6 col-lg-3 col-xl-1">
-                    <label class="form-label" for="filter-guests">Guests</label>
-                    <input type="number" class="form-control" id="filter-guests" name="guests" min="1" max="30"
-                           value="{{ $filters['guests'] }}" placeholder="Any">
-                </div>
+        {{-- Guests --}}
+        <div class="col-6 col-lg-3 col-xl-1">
+            <label class="form-label" for="filter-guests">Guests</label>
+            <input type="number"
+                   class="form-control"
+                   id="filter-guests"
+                   name="guests"
+                   min="1"
+                   max="30"
+                   value="{{ $filters['guests'] }}"
+                   placeholder="Any">
+        </div>
 
-                <div class="col-6 col-lg-3 col-xl-2">
-                    <label class="form-label" for="filter-price">Max ₱/night</label>
-                    <input type="number" class="form-control" id="filter-price" name="max_price" min="0" step="100"
-                           value="{{ $filters['max_price'] }}" placeholder="Any">
-                </div>
+        {{-- Maximum Price --}}
+        <div class="col-6 col-lg-3 col-xl-2">
+            <label class="form-label" for="filter-price">Max ₱/night</label>
+            <input type="number"
+                   class="form-control"
+                   id="filter-price"
+                   name="max_price"
+                   min="0"
+                   step="100"
+                   value="{{ $filters['max_price'] }}"
+                   placeholder="Any">
+        </div>
 
-                <div class="col-sm-6 col-lg-3 col-xl-2">
-                    <label class="form-label" for="filter-sort">Sort by</label>
-                    <select class="form-select" id="filter-sort" name="sort">
-                        @foreach ($sorts as $value => $label)
-                            <option value="{{ $value }}" @selected($filters['sort'] === $value)>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                </div>
-            </div>
+        {{-- Sorting --}}
+        <div class="col-sm-6 col-lg-3 col-xl-2">
+            <label class="form-label" for="filter-sort">Sort by</label>
+            <select class="form-select" id="filter-sort" name="sort">
+                @foreach ($sorts as $value => $label)
+                    <option value="{{ $value }}" @selected($filters['sort'] === $value)>
+                        {{ $label }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
 
-            @if ($amenities->isNotEmpty())
-                @php($chosen = count($filters['amenities']))
+    </div>
 
-                {{-- Folded away, because a dozen checkboxes across the top
-                     would be taller than the filters they belong to. Open
-                     whenever any are in use: a filter nobody can see is a
-                     filter nobody can undo. --}}
-                <details class="vd-filterbar__more"{{ $chosen ? ' open' : '' }}>
-                    <summary>
-                        Amenities
-                        @if ($chosen)
-                            <span class="vd-filterbar__count">{{ $chosen }} chosen</span>
-                        @endif
-                    </summary>
+    {{-- Actions --}}
+    <div class="vd-filterbar__actions">
+        <button type="submit" class="btn btn-primary">
+            Apply filters
+        </button>
 
-                    <fieldset class="vd-filterbar__amenities">
-                        <legend class="visually-hidden">Amenities</legend>
+        <a class="btn btn-light border"
+           href="{{ route('resorts.index') }}">
+            Clear
+        </a>
+    </div>
 
-                        @foreach ($amenities as $amenity)
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="amenities[]" value="{{ $amenity->id }}"
-                                       id="amenity-{{ $amenity->id }}" @checked(in_array($amenity->id, $filters['amenities'], true))>
-                                <label class="form-check-label" for="amenity-{{ $amenity->id }}">{{ $amenity->name }}</label>
-                            </div>
-                        @endforeach
-                    </fieldset>
-                </details>
-            @endif
+</form>
 
-            <div class="vd-filterbar__actions">
-                <button type="submit" class="btn btn-primary">Apply filters</button>
-                <a class="btn btn-light border" href="{{ route('resorts.index') }}">Clear</a>
-            </div>
-        </form>
+</div>
+
+{{-- Accommodation Category: COMPLETELY SEPARATE --}}
+<div class="vd-accommodation-category mb-4">
+
+    <h3>Accommodation Category</h3>
+
+    <div class="vd-accommodation-category__buttons">
+        @foreach (['All', 'Budget', 'Premium', 'Cottage'] as $category)
+            <a href="{{ route('resorts.index', array_merge(
+                request()->except('page', 'category'),
+                ['category' => $category === 'All' ? null : $category]
+            )) }}"
+               class="vd-category-btn {{ request('category', 'All') === $category ? 'active' : '' }}">
+                {{ $category }}
+            </a>
+        @endforeach
+    </div>
+
+</div>
+
+{{-- Room Filters: Separate --}}
+<form method="GET"
+      action="{{ route('resorts.index') }}"
+      class="vd-filterbar p-3 p-lg-4 mb-4">
+
+    {{-- KEEP ALL YOUR EXISTING ROOM FILTER CONTENTS HERE --}}
+
+</form>
 
         @if ($rooms->isEmpty())
             <x-empty-state icon="search" title="No rooms match your filters"

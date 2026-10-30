@@ -615,3 +615,67 @@
     });
   });
 })();
+
+
+
+
+
+
+/* VisitDasol resort photo slideshow: 4.5-second autoplay */
+document.querySelectorAll('[data-resort-gallery]').forEach((gallery) => {
+    if (gallery.dataset.initialized === 'true') return;
+    gallery.dataset.initialized = 'true';
+
+    const slides = [...gallery.querySelectorAll('[data-gallery-slide]')];
+    const thumbnails = [...gallery.querySelectorAll('[data-gallery-thumbnail]')];
+    const indicators = [...gallery.querySelectorAll('[data-gallery-indicator]')];
+    const counter = gallery.querySelector('[data-gallery-counter]');
+    const previous = gallery.querySelector('[data-gallery-prev]');
+    const next = gallery.querySelector('[data-gallery-next]');
+    if (slides.length < 2) return;
+
+    let currentIndex = 0;
+    let timer = null;
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const showSlide = (index) => {
+        currentIndex = (index + slides.length) % slides.length;
+        slides.forEach((slide, i) => {
+            const active = i === currentIndex;
+            slide.classList.toggle('is-active', active);
+            slide.setAttribute('aria-hidden', String(!active));
+        });
+        thumbnails.forEach((button, i) => {
+            const active = i === currentIndex;
+            button.classList.toggle('is-active', active);
+            button.setAttribute('aria-pressed', String(active));
+        });
+        indicators.forEach((button, i) => {
+            const active = i === currentIndex;
+            button.classList.toggle('is-active', active);
+            button.setAttribute('aria-pressed', String(active));
+        });
+        if (counter) counter.textContent = `${currentIndex + 1} / ${slides.length}`;
+    };
+
+    const stop = () => { if (timer !== null) { clearInterval(timer); timer = null; } };
+    const start = () => {
+        stop();
+        if (!reducedMotion && !document.hidden && !gallery.matches(':hover') && !gallery.contains(document.activeElement)) {
+            timer = setInterval(() => showSlide(currentIndex + 1), 4500);
+        }
+    };
+
+    previous?.addEventListener('click', () => { showSlide(currentIndex - 1); start(); });
+    next?.addEventListener('click', () => { showSlide(currentIndex + 1); start(); });
+    thumbnails.forEach(button => button.addEventListener('click', () => { showSlide(Number(button.dataset.galleryThumbnail)); start(); }));
+    indicators.forEach(button => button.addEventListener('click', () => { showSlide(Number(button.dataset.galleryIndicator)); start(); }));
+    gallery.addEventListener('mouseenter', stop);
+    gallery.addEventListener('mouseleave', start);
+    gallery.addEventListener('focusin', stop);
+    gallery.addEventListener('focusout', event => { if (!gallery.contains(event.relatedTarget)) start(); });
+    document.addEventListener('visibilitychange', () => document.hidden ? stop() : start());
+    showSlide(0);
+    start();
+});
+

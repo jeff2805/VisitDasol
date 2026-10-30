@@ -2428,6 +2428,7 @@ th[aria-sort] {
   top: auto;
   -webkit-mask-image: linear-gradient(to top, #000, transparent);
   mask-image: linear-gradient(to top, #000, transparent);
+  display: none !important;
 }
 
 /* The tagline standing on the shoreline at the foot of the menu. */
@@ -5581,3 +5582,121 @@ th[aria-sort] {
   padding-top: var(--vd-space-xs);
   border-top: 1px solid var(--vd-brine);
 }
+
+.vd-sidebar__inner {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
+}
+
+.vd-sidebar__nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.vd-rooms-search-panel {
+    background: #fff;
+    border: 1px solid #dce8e7;
+    border-radius: 20px;
+    box-shadow: 0 8px 28px rgba(20, 60, 60, 0.08);
+    overflow: hidden;
+}
+
+.vd-rooms-search-panel .vd-stay-search,
+.vd-rooms-search-panel .vd-filterbar {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.vd-rooms-search-panel .vd-filterbar {
+    border-top: 1px solid #dce8e7;
+}
+
+.vd-category-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 22px;
+    border: 1px solid #dce7e5;
+    border-radius: 8px;
+    background: #fff;
+    color: #24434a;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: .2s ease;
+}
+
+.vd-category-btn:hover,
+.vd-category-btn.active {
+    background: #087f80;
+    border-color: #087f80;
+    color: #fff;
+}
+/* Fix excessive space between category and room cards */
+.vd-accommodation-category {
+    margin-bottom: 24px;
+    padding-bottom: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+}
+
+/* Remove extra spacing before room cards */
+.vd-accommodation-category ~ .row.g-4 {
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+/* Keep hidden heading from adding layout space */
+h2.visually-hidden {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* VisitDasol - Compact Accommodation Layout */
+
+.vd-accommodation-category {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+}
+
+.vd-room-results {
+    margin-top: 24px !important;
+    padding-top: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+}
+
+.vd-room-results > .row {
+    margin-top: 0 !important;
+}
+
+
+/* VisitDasol resort photo slideshow */
+.vd-resort-gallery { width: 100%; min-width: 0; }
+.vd-gallery__stage { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 14px; background: #e8eeee; }
+.vd-gallery__slide { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .65s ease-in-out; pointer-events: none; }
+.vd-gallery__slide.is-active { opacity: 1; pointer-events: auto; }
+.vd-gallery__counter { position: absolute; top: 16px; right: 16px; z-index: 3; padding: 8px 15px; border-radius: 30px; background: rgba(0,40,55,.78); color: #fff; font-size: 14px; font-weight: 700; }
+.vd-gallery__nav { position: absolute; top: 50%; z-index: 3; display: grid; place-items: center; width: 48px; height: 48px; padding: 0; transform: translateY(-50%); border: 0; border-radius: 50%; background: rgba(0,35,48,.75); color: #fff; font-size: 23px; cursor: pointer; transition: background .2s, transform .2s; }
+.vd-gallery__nav:hover { background: #087f80; transform: translateY(-50%) scale(1.08); }
+.vd-gallery__prev { left: 16px; }
+.vd-gallery__next { right: 16px; }
+.vd-gallery__indicators { position: absolute; bottom: 18px; left: 50%; z-index: 3; display: flex; gap: 10px; transform: translateX(-50%); }
+.vd-gallery__indicator { width: 11px; height: 11px; padding: 0; border: 0; border-radius: 50%; background: rgba(255,255,255,.55); cursor: pointer; }
+.vd-gallery__indicator.is-active { background: #fff; transform: scale(1.2); }
+.vd-gallery__thumbnails { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 10px; margin-top: 12px; }
+.vd-gallery__thumbnail { min-width: 0; padding: 0; overflow: hidden; aspect-ratio: 5 / 4; border: 3px solid transparent; border-radius: 10px; background: transparent; cursor: pointer; transition: border-color .2s, opacity .2s; }
+.vd-gallery__thumbnail img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.vd-gallery__thumbnail:hover { opacity: .85; }
+.vd-gallery__thumbnail.is-active { border-color: #078fda; }
+@media (max-width: 767.98px) { .vd-gallery__stage { aspect-ratio: 4 / 3; } .vd-gallery__thumbnails { grid-template-columns: repeat(4,minmax(0,1fr)); gap: 7px; } .vd-gallery__nav { width: 38px; height: 38px; font-size: 18px; } .vd-gallery__prev { left: 9px; } .vd-gallery__next { right: 9px; } }
+@media (prefers-reduced-motion: reduce) { .vd-gallery__slide, .vd-gallery__nav, .vd-gallery__thumbnail { transition: none; } }
+
+
