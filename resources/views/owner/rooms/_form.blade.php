@@ -40,7 +40,7 @@
             <h2 class="h5 mb-3">Rate and capacity</h2>
 
             <div class="mb-3">
-                <label class="form-label" for="field-price-per-night">Rate per night</label>
+                <label class="form-label" for="field-price-per-night">Overnight rate</label>
                 <div class="input-group has-validation">
                     <span class="input-group-text">₱</span>
                     <input type="number" class="form-control @error('price_per_night') is-invalid @enderror"
@@ -60,7 +60,7 @@
                 <div class="col-sm-6">
                     <div class="mb-3">
                         <label class="form-label" for="field-day-tour-price">
-                            Day tour <span class="text-muted-vd fw-normal small">(optional)</span>
+                            Day tour <span class="text-muted-vd fw-normal small"></span>
                         </label>
                         <div class="input-group has-validation">
                             <span class="input-group-text">₱</span>
@@ -76,7 +76,7 @@
                 <div class="col-sm-6">
                     <div class="mb-3">
                         <label class="form-label" for="field-night-tour-price">
-                            Night tour <span class="text-muted-vd fw-normal small">(optional)</span>
+                            Night tour <span class="text-muted-vd fw-normal small"></span>
                         </label>
                         <div class="input-group has-validation">
                             <span class="input-group-text">₱</span>
