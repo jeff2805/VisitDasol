@@ -120,7 +120,7 @@
 {{-- Accommodation Category: COMPLETELY SEPARATE --}}
 <div class="vd-accommodation-category mb-4">
 
-    <h3>Accommodation Category</h3>
+    <h2>Accommodation Category</h2>
 
     <div class="vd-accommodation-category__buttons">
         @foreach (['All', 'Budget', 'Premium', 'Cottage'] as $category)

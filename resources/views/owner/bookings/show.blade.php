@@ -139,20 +139,18 @@
                                     @endif
                                 </dl>
 
-                                <a href="{{ route('owner.payment-proofs.image', $proof) }}"
-                                   target="_blank" rel="noopener"
-                                   class="d-inline-block">
-                                    <img src="{{ route('owner.payment-proofs.image', $proof) }}"
-                                         alt="Payment receipt for {{ $booking->booking_reference }}"
-                                         class="img-thumbnail"
-                                         loading="lazy"
-                                         style="max-width: min(360px, 100%); max-height: 420px; object-fit: contain;">
-                                </a>
+                              <x-external-link :href="route('owner.payment-proofs.image', $proof)"
+                 class="d-inline-block">
+    <img src="{{ route('owner.payment-proofs.image', $proof) }}"
+         alt="Payment receipt for {{ $booking->booking_reference }}"
+         class="img-thumbnail"
+         loading="lazy"
+         style="max-width: min(360px, 100%); max-height: 420px; object-fit: contain;">
+</x-external-link>
 
                                 @if ($proof->status === \App\Models\PaymentProof::SUBMITTED)
                                     <div class="d-flex flex-wrap gap-2 mt-3">
-                                        <form method="POST" action="{{ route('owner.payment-proofs.approve', $proof) }}"
-                                              onsubmit="return confirm('Verify this payment proof and mark this payment as paid?');">
+                                        <form method="POST" action="{{ route('owner.payment-proofs.approve', $proof) }}"></form>
                                             @csrf
                                             <button type="submit" class="btn btn-success btn-sm">
                                                 <i class="bi bi-check-circle me-1" aria-hidden="true"></i> Approve payment
