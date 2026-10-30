@@ -82,7 +82,17 @@
 
         <section class="vd-panel p-4">
             <h2 class="h5 mb-2">Amenities</h2>
-            <p class="form-text mt-0">Tick everything guests can use. The tourism office keeps this list.</p>
+            <p class="form-text mt-0">
+                Tick everything guests can use.
+                {{-- The office used to keep this list and no longer does, so
+                     the owner is told where the missing ones come from now.
+                     A separate page rather than a form here: a second form
+                     cannot sit inside this one, and sending it would throw
+                     away whatever else had been typed and not yet saved. --}}
+                Missing something?
+                <a href="{{ route('owner.amenities.index') }}">Add it to the list</a>,
+                then come back and tick it.
+            </p>
 
             @error('amenities')
                 <div class="alert alert-danger py-2" role="alert">{{ $message }}</div>

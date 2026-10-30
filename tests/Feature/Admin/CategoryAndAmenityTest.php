@@ -73,77 +73,88 @@ class CategoryAndAmenityTest extends TestCase
 
     /* Amenities ----------------------------------------------------------- */
 
-    public function test_an_amenity_can_be_added_and_switched_off(): void
-    {
-        $this->actingAs($this->mto)->post(route('admin.amenities.store'), [
-            'name' => 'Beach volleyball', 'icon' => 'trophy',
-        ])->assertRedirect();
+    /*
+     * THE OFFICE NO LONGER MANAGES THIS LIST.
+     *
+     * admin/amenities — add, rename, switch off, delete — has been
+     * removed, so the tests that posted to those routes have gone with
+     * them. What stayed is everything amenities still do: owners tick
+     * them, visitors filter by them, and is_active still decides who
+     * sees which. Those are driven off the model here rather than off
+     * a screen, because the behaviour is what matters and the screen
+     * is what went.
+     */
 
-        $amenity = Amenity::sole();
+    public function test_an_amenity_switched_off_leaves_the_owner_form_and_the_public_filter(): void
+    {
+        $amenity = Amenity::factory()->create(['name' => 'Beach volleyball']);
+
         $this->assertTrue($amenity->is_active);
 
-        $this->actingAs($this->mto)->patch(route('admin.amenities.toggle', $amenity));
-        $this->assertFalse($amenity->fresh()->is_active);
-
-        // Switched-off amenities disappear from the owner's form and the public filter.
-        // The session is flushed first so the flash message about this amenity
-        // (which names it) cannot be mistaken for the checkbox itself.
         $owner = User::factory()->resortOwner()->create();
         Resort::factory()->for($owner, 'owner')->create();
         $checkbox = 'id="amenity-'.$amenity->id.'"';
 
+        // On, so both places offer it.
+        $this->actingAs($owner)->get(route('owner.resort.edit'))->assertOk()->assertSee($checkbox, false);
+        $this->get(route('resorts.index'))->assertOk()->assertSee('Beach volleyball');
+
+        $amenity->forceFill(['is_active' => false])->save();
+
         $this->flushSession();
+
+        // Off, so neither does.
         $this->actingAs($owner)->get(route('owner.resort.edit'))->assertOk()->assertDontSee($checkbox, false);
         $this->get(route('resorts.index'))->assertOk()->assertDontSee($checkbox, false);
-
-        $this->actingAs($this->mto)->patch(route('admin.amenities.toggle', $amenity));
-        $this->assertTrue($amenity->fresh()->is_active);
-
-        $this->flushSession();
-        $this->actingAs($owner)->get(route('owner.resort.edit'))->assertSee($checkbox, false);
-        $this->get(route('resorts.index'))->assertSee('Beach volleyball');
     }
 
-    public function test_an_amenity_in_use_cannot_be_deleted(): void
-    {
-        $amenity = Amenity::factory()->create(['name' => 'Wi-Fi']);
-        Resort::factory()->create()->amenities()->attach($amenity);
-
-        $this->actingAs($this->mto)->delete(route('admin.amenities.destroy', $amenity))->assertSessionHas('error');
-        $this->assertSame(1, Amenity::count());
-    }
-
-    public function test_an_unused_amenity_can_be_deleted(): void
-    {
-        $amenity = Amenity::factory()->create();
-
-        $this->actingAs($this->mto)->delete(route('admin.amenities.destroy', $amenity))->assertSessionHas('success');
-        $this->assertSame(0, Amenity::count());
-    }
-
+    /**
+     * Switching one off hides it from the pickers; it does not strip it
+     * from resorts that already said they have it. A resort does not
+     * lose its videoke because the office stopped offering the tickbox.
+     */
     public function test_switching_an_amenity_off_keeps_it_on_resorts_that_use_it(): void
     {
         $amenity = Amenity::factory()->create(['name' => 'Videoke']);
         $resort = Resort::factory()->active()->create();
         $resort->amenities()->attach($amenity);
 
-        $this->actingAs($this->mto)->patch(route('admin.amenities.toggle', $amenity));
+        $amenity->forceFill(['is_active' => false])->save();
 
         $this->assertSame(1, $resort->fresh()->amenities()->count());
-        $this->post(route('logout'));
         $this->get(route('resorts.show', $resort))->assertOk()->assertSee('Videoke');
     }
 
+    /** The category list is still the office's alone. */
     public function test_owners_cannot_manage_these_lists(): void
     {
         $owner = User::factory()->resortOwner()->create();
-        $amenity = Amenity::factory()->create();
 
-        $this->actingAs($owner)->get(route('admin.amenities.index'))->assertForbidden();
-        $this->actingAs($owner)->post(route('admin.amenities.store'), ['name' => 'Free everything'])->assertForbidden();
-        $this->actingAs($owner)->delete(route('admin.amenities.destroy', $amenity))->assertForbidden();
         $this->actingAs($owner)->get(route('admin.destination-categories.index'))->assertForbidden();
+    }
 
-        $this->assertSame(1, Amenity::count());
+    /**
+     * The office's amenity screens are gone, not merely hidden.
+     *
+     * A removed menu item is not a removed feature: the routes have to
+     * be gone too, or the page is still there for anyone who types the
+     * address.
+     */
+    public function test_the_office_has_no_amenity_screens_any_more(): void
+    {
+        foreach ([
+            'admin.amenities.index',
+            'admin.amenities.store',
+            'admin.amenities.update',
+            'admin.amenities.toggle',
+            'admin.amenities.destroy',
+        ] as $name) {
+            $this->assertFalse(
+                \Illuminate\Support\Facades\Route::has($name),
+                "The route {$name} should have been removed with the screens."
+            );
+        }
+
+        $this->actingAs($this->mto)->get('/admin/amenities')->assertNotFound();
     }
 }

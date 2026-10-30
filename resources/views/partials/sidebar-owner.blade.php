@@ -29,6 +29,15 @@
         icon="water">
         Extras
     </x-sidebar-link>
+
+    {{-- The shared list every resort picks from. Here rather than under
+         Account because it is about the listing, not the person. --}}
+    <x-sidebar-link
+        route="owner.amenities.index"
+        match="owner.amenities.*"
+        icon="stars">
+        Amenities
+    </x-sidebar-link>
 </ul>
 
 <p class="vd-sidebar__group">Guests</p>

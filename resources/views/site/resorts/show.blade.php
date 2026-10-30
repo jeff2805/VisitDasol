@@ -26,21 +26,6 @@
 
 @section('content')
     <div class="container py-5">
-        {{-- Breadcrumb --}}
-        <nav aria-label="Breadcrumb" class="mb-3">
-            <ol class="breadcrumb small">
-                <li class="breadcrumb-item">
-                    <a href="{{ route('home') }}">Home</a>
-                </li>
-                <li class="breadcrumb-item">
-                    <a href="{{ route('resorts.index') }}">Resorts</a>
-                </li>
-                <li class="breadcrumb-item active" aria-current="page">
-                    {{ $resort->name }}
-                </li>
-            </ol>
-        </nav>
-
         <div class="row g-4">
             <div class="col-lg-8">
                 {{-- Resort gallery --}}

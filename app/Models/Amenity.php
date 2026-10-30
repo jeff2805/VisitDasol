@@ -8,7 +8,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
- * An amenity from the MTO-managed master list.
+ * One entry on the shared amenity list.
+ *
+ * SHARED, which is the whole point: every resort picks from this one
+ * table, and that is what lets a visitor filter the search by amenity
+ * across the municipality. Resort owners may add to it; nothing in the
+ * application renames, switches off or deletes an entry, because each
+ * of those reaches into other people's listings.
+ *
+ * Which amenities a given resort HAS is the amenity_resort pivot, not
+ * this.
+ *
  * icon is a Bootstrap Icons name without the "bi-" prefix.
  */
 class Amenity extends Model

@@ -20,7 +20,6 @@
 <ul class="vd-sidebar__list">
     <x-sidebar-link route="admin.destinations.index" match="admin.destinations.*" icon="signpost-2">Destinations</x-sidebar-link>
     <x-sidebar-link route="admin.destination-categories.index" match="admin.destination-categories.*" icon="tags">Destination categories</x-sidebar-link>
-    <x-sidebar-link route="admin.amenities.index" match="admin.amenities.*" icon="stars">Amenities</x-sidebar-link>
     <x-sidebar-link route="admin.announcements.index" match="admin.announcements.*" icon="megaphone">Announcements</x-sidebar-link>
 </ul>
 

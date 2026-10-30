@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Admin\ActivityLogController as AdminActivityLogController;
-use App\Http\Controllers\Admin\AmenityController as AdminAmenityController;
 use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncementController;
 use App\Http\Controllers\Admin\DestinationCategoryController as AdminDestinationCategoryController;
 use App\Http\Controllers\Admin\DestinationController as AdminDestinationController;
@@ -33,6 +32,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\SocialLoginController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Owner\AmenityController as OwnerAmenityController;
 use App\Http\Controllers\Owner\AvailabilityController as OwnerAvailabilityController;
 use App\Http\Controllers\Owner\BookingController as OwnerBookingController;
 use App\Http\Controllers\Owner\ManualGcashController;
@@ -309,6 +309,21 @@ Route::prefix('owner')
         Route::put('/resort', [OwnerResortController::class, 'update'])->name('resort.update');
         Route::patch('/resort/resubmit', [OwnerResortController::class, 'resubmit'])->name('resort.resubmit');
 
+        /*
+        | The shared amenity list.
+        |
+        | ADD ONLY. Which amenities a resort HAS is settled by the
+        | tickboxes on the resort form above; this is for putting
+        | something on the list that is not there yet. There is no
+        | update, toggle or destroy on purpose — one table serves every
+        | resort and the public filter, so an owner renaming or deleting
+        | an entry would be reaching into other people's listings.
+        */
+        Route::get('/amenities', [OwnerAmenityController::class, 'index'])->name('amenities.index');
+        Route::post('/amenities', [OwnerAmenityController::class, 'store'])
+            ->middleware('throttle:20,1')
+            ->name('amenities.store');
+
         // Room types
         /*
         | What the resort offers besides the room: kayak hire, a banana
@@ -479,12 +494,17 @@ Route::prefix('admin')
         Route::patch('/announcements/{announcement}/feature', [AdminAnnouncementController::class, 'feature'])->name('announcements.feature');
         Route::delete('/announcements/{announcement}', [AdminAnnouncementController::class, 'destroy'])->name('announcements.destroy');
 
-        // Amenity master list
-        Route::get('/amenities', [AdminAmenityController::class, 'index'])->name('amenities.index');
-        Route::post('/amenities', [AdminAmenityController::class, 'store'])->name('amenities.store');
-        Route::put('/amenities/{amenity}', [AdminAmenityController::class, 'update'])->name('amenities.update');
-        Route::patch('/amenities/{amenity}/toggle', [AdminAmenityController::class, 'toggle'])->name('amenities.toggle');
-        Route::delete('/amenities/{amenity}', [AdminAmenityController::class, 'destroy'])->name('amenities.destroy');
+        /*
+        | The amenity master list was managed here. The screens have
+        | been removed from the office.
+        |
+        | THE AMENITIES THEMSELVES ARE UNTOUCHED. Resort owners still
+        | tick them when describing a resort, visitors still filter by
+        | them, and both pages still read the amenities table. What is
+        | gone is the only way to add, rename, switch off or delete an
+        | entry in that list — it is now whatever AmenitySeeder put
+        | there, changeable only in the database.
+        */
 
         // Resort listings waiting for review
         Route::get('/resort-applications', [ResortApplicationController::class, 'index'])->name('resort-applications.index');
