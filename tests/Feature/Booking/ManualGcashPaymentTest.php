@@ -302,6 +302,22 @@ class ManualGcashPaymentTest extends TestCase
             ->assertOk();
     }
 
+
+    public function test_the_owner_sees_uploaded_payment_proof_inside_booking_details(): void
+    {
+        $proof = $this->submittedProof();
+        $booking = $proof->payment->booking;
+
+        $this->actingAs($this->owner)
+            ->get(route('owner.bookings.show', $booking))
+            ->assertOk()
+            ->assertSee('Payment proof')
+            ->assertSee('0123456789012')
+            ->assertSee('Bea Santos')
+            ->assertSee('Approve payment')
+            ->assertSee(route('owner.payment-proofs.image', $proof));
+    }
+
     public function test_the_screenshot_is_not_served_to_anybody_else(): void
     {
         $proof = $this->submittedProof();

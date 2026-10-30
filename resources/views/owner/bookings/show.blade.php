@@ -85,6 +85,106 @@
                     @endif
                 </p>
             </section>
+
+            {{-- Payment receipts are attached to their exact payment attempt.
+                 Images are served through the owner-authorized private route. --}}
+            <section class="vd-panel p-4 mb-4" aria-labelledby="payment-proofs-heading">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <h2 class="h5 mb-0" id="payment-proofs-heading">Payment proof</h2>
+                    <a class="btn btn-sm btn-outline-primary" href="{{ route('owner.payment-proofs.index') }}">
+                        Payment verification
+                    </a>
+                </div>
+
+                @php
+                    $proofs = $booking->payments->flatMap(fn ($payment) => $payment->proofs);
+                @endphp
+
+                @if ($proofs->isNotEmpty())
+                    @foreach ($booking->payments as $payment)
+                        @foreach ($payment->proofs as $proof)
+                            <article class="border rounded-3 p-3 mb-3">
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                                    <strong>Payment {{ $payment->payment_reference }}</strong>
+                                    <span class="badge {{ $proof->status === \App\Models\PaymentProof::APPROVED ? 'text-bg-success' : ($proof->status === \App\Models\PaymentProof::REJECTED ? 'text-bg-danger' : 'text-bg-warning') }}">
+                                        {{ ucfirst($proof->status) }}
+                                    </span>
+                                </div>
+
+                                <dl class="row small mb-3">
+                                    <dt class="col-sm-5 text-muted-vd fw-normal">Reference number</dt>
+                                    <dd class="col-sm-7 text-break">{{ $proof->reference_number }}</dd>
+
+                                    <dt class="col-sm-5 text-muted-vd fw-normal">Sender name</dt>
+                                    <dd class="col-sm-7">{{ $proof->sender_name }}</dd>
+
+                                    <dt class="col-sm-5 text-muted-vd fw-normal">Amount sent</dt>
+                                    <dd class="col-sm-7">₱{{ number_format((float) $proof->amount_sent, 2) }}</dd>
+
+                                    <dt class="col-sm-5 text-muted-vd fw-normal">Submitted</dt>
+                                    <dd class="col-sm-7">{{ $proof->created_at?->format('M j, Y g:i A') ?? '—' }}</dd>
+
+                                    @if ($proof->reviewed_at)
+                                        <dt class="col-sm-5 text-muted-vd fw-normal">Reviewed</dt>
+                                        <dd class="col-sm-7">{{ $proof->reviewed_at->format('M j, Y g:i A') }}
+                                            @if ($proof->reviewer)
+                                                by {{ $proof->reviewer->full_name ?? $proof->reviewer->name }}
+                                            @endif
+                                        </dd>
+                                    @endif
+
+                                    @if (filled($proof->review_note))
+                                        <dt class="col-sm-5 text-muted-vd fw-normal">Review note</dt>
+                                        <dd class="col-sm-7">{{ $proof->review_note }}</dd>
+                                    @endif
+                                </dl>
+
+                                <a href="{{ route('owner.payment-proofs.image', $proof) }}"
+                                   target="_blank" rel="noopener"
+                                   class="d-inline-block">
+                                    <img src="{{ route('owner.payment-proofs.image', $proof) }}"
+                                         alt="Payment receipt for {{ $booking->booking_reference }}"
+                                         class="img-thumbnail"
+                                         loading="lazy"
+                                         style="max-width: min(360px, 100%); max-height: 420px; object-fit: contain;">
+                                </a>
+
+                                @if ($proof->status === \App\Models\PaymentProof::SUBMITTED)
+                                    <div class="d-flex flex-wrap gap-2 mt-3">
+                                        <form method="POST" action="{{ route('owner.payment-proofs.approve', $proof) }}"
+                                              onsubmit="return confirm('Verify this payment proof and mark this payment as paid?');">
+                                            @csrf
+                                            <button type="submit" class="btn btn-success btn-sm">
+                                                <i class="bi bi-check-circle me-1" aria-hidden="true"></i> Approve payment
+                                            </button>
+                                        </form>
+
+                                        <form method="POST" action="{{ route('owner.payment-proofs.reject', $proof) }}"
+                                              class="d-flex flex-wrap gap-2">
+                                            @csrf
+                                            <label class="visually-hidden" for="review-note-{{ $proof->id }}">Reason for rejection</label>
+                                            <input id="review-note-{{ $proof->id }}" type="text" name="review_note"
+                                                   required maxlength="250" class="form-control form-control-sm"
+                                                   placeholder="Reason for rejection">
+                                            <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                Reject proof
+                                            </button>
+                                        </form>
+                                    </div>
+                                @endif
+                            </article>
+                        @endforeach
+                    @endforeach
+                @else
+                    <div class="alert alert-light border mb-0" role="status">
+                        <strong>No payment proof submitted.</strong>
+                        <div class="small text-muted mt-1">
+                            The guest has not uploaded a receipt for this reservation yet.
+                            A payment preference or booking confirmation does not mean the payment has been received.
+                        </div>
+                    </div>
+                @endif
+            </section>
         </div>
 
         <div class="col-lg-5">

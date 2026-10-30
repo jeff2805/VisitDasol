@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Owner;
 
 use App\Http\Controllers\Controller;
 use App\Models\PaymentProof;
+use App\Enums\PaymentStatus;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class PaymentProofController extends Controller
@@ -26,10 +28,27 @@ class PaymentProofController extends Controller
     {
         $this->authorize('approve', $proof);
 
-        $proof->payment->booking->resort->id === $request->user()->resort()->value('id') ?: abort(403);
+        DB::transaction(function () use ($proof, $request): void {
+            $lockedProof = PaymentProof::query()->whereKey($proof->getKey())->lockForUpdate()->firstOrFail();
+            abort_unless($lockedProof->status === PaymentProof::SUBMITTED, 409, 'This proof has already been reviewed.');
 
-        $proof->payment->booking->payments()->where('provider', 'manual_gcash')->where('status', 'pending')->update(['status' => 'paid', 'method' => 'gcash', 'paid_at' => now()]);
-        $proof->update(['status' => PaymentProof::APPROVED, 'review_note' => null, 'reviewed_by' => $request->user()->id, 'reviewed_at' => now()]);
+            $payment = $lockedProof->payment()->lockForUpdate()->firstOrFail();
+            abort_unless($payment->provider->value === 'manual_gcash', 422, 'This proof is not attached to a manual GCash payment.');
+            abort_unless($payment->status === PaymentStatus::Pending, 409, 'This payment is no longer awaiting verification.');
+
+            $payment->forceFill([
+                'status' => PaymentStatus::Paid,
+                'method' => 'gcash',
+                'paid_at' => now(),
+            ])->save();
+
+            $lockedProof->forceFill([
+                'status' => PaymentProof::APPROVED,
+                'review_note' => null,
+                'reviewed_by' => $request->user()->id,
+                'reviewed_at' => now(),
+            ])->save();
+        });
 
         return back()->with('status', 'Payment approved. The guest will see it as paid.');
     }
@@ -38,8 +57,19 @@ class PaymentProofController extends Controller
     {
         $this->authorize('reject', $proof);
 
-        $request->validate(['review_note' => ['required', 'string', 'max:250']]);
-        $proof->update(['status' => PaymentProof::REJECTED, 'review_note' => trim($request->string('review_note')->value()), 'reviewed_by' => $request->user()->id, 'reviewed_at' => now()]);
+        $data = $request->validate(['review_note' => ['required', 'string', 'max:250']]);
+
+        DB::transaction(function () use ($proof, $request, $data): void {
+            $lockedProof = PaymentProof::query()->whereKey($proof->getKey())->lockForUpdate()->firstOrFail();
+            abort_unless($lockedProof->status === PaymentProof::SUBMITTED, 409, 'This proof has already been reviewed.');
+
+            $lockedProof->forceFill([
+                'status' => PaymentProof::REJECTED,
+                'review_note' => trim($data['review_note']),
+                'reviewed_by' => $request->user()->id,
+                'reviewed_at' => now(),
+            ])->save();
+        });
 
         return back()->with('status', 'The guest has been asked to send a new proof.');
     }
@@ -55,7 +85,7 @@ class PaymentProofController extends Controller
      */
     public function image(PaymentProof $proof)
     {
-        abort_unless($proof->payment->booking->resort->owner_id === auth()->id(), 403);
+        $this->authorize('view', $proof);
 
         abort_if(blank($proof->proof_image), 404);
         abort_unless(Storage::disk('local')->exists($proof->proof_image), 404);

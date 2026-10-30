@@ -82,7 +82,7 @@ class BookingController extends Controller
     {
         $this->authorize('view', $booking);
 
-        $booking->load(['room.images', 'tourist', 'resort', 'cancelledBy', 'payments']);
+        $booking->load(['room.images', 'tourist', 'resort', 'cancelledBy', 'payments.proofs.reviewer']);
 
         $payments = app(\App\Services\Payments\PaymentService::class);
 
