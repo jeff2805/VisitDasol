@@ -490,6 +490,120 @@
   document.addEventListener('DOMContentLoaded', showDepositFields);
 
   /*
+   * Check room availability without navigating away from the room card.
+   *
+   * The link still has a normal GET URL, so it works without JavaScript and
+   * can be copied/bookmarked. When JavaScript is available, fetch the same
+   * page in the background and replace only the Rooms section. The section
+   * stays in the same place in the document, so the browser does not send
+   * the visitor back to the top while availability is being calculated.
+   */
+  document.addEventListener('click', function (event) {
+    var link = event.target.closest('.js-check-room-availability');
+
+    if (!link || event.defaultPrevented || event.button !== 0
+      || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
+
+    var section = link.closest('[data-room-availability-section]');
+
+    if (!section || link.dataset.loading === 'true') {
+      return;
+    }
+
+    event.preventDefault();
+
+    var originalHtml = link.innerHTML;
+    var originalLabel = link.getAttribute('aria-label');
+    var scrollTop = window.scrollY;
+    var loadingLabel = link.dataset.loadingLabel || 'Checking availability...';
+
+    link.dataset.loading = 'true';
+    link.setAttribute('aria-disabled', 'true');
+    link.setAttribute('aria-busy', 'true');
+    link.classList.add('disabled');
+    link.innerHTML = '<span class="spinner-border spinner-border-sm me-1" aria-hidden="true"></span>'
+      + loadingLabel;
+
+    fetch(link.href, {
+      method: 'GET',
+      credentials: 'same-origin',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'text/html'
+      }
+    })
+      .then(function (response) {
+        if (!response.ok) {
+          throw new Error('Availability could not be loaded.');
+        }
+
+        return response.text();
+      })
+      .then(function (html) {
+        var parsed = new DOMParser().parseFromString(html, 'text/html');
+        var updatedSection = parsed.querySelector('[data-room-availability-section]');
+
+        if (!updatedSection) {
+          throw new Error('The availability section was not found in the response.');
+        }
+
+        // Keep the original section element in place; only its contents change.
+        section.innerHTML = updatedSection.innerHTML;
+
+        // Keep the selected dates in the address bar without reloading the page.
+        var nextUrl = new URL(link.href, window.location.href);
+        window.history.pushState({}, '', nextUrl.pathname + nextUrl.search);
+
+        // Reapply the check-in/check-out relationship to the newly rendered form.
+        var checkIn = section.querySelector('[data-stay-check-in]');
+        var checkOut = section.querySelector('[data-stay-check-out]');
+
+        if (checkIn && checkOut) {
+          var syncCheckOut = function () {
+            if (!checkIn.value) {
+              checkOut.min = '';
+              return;
+            }
+
+            var nextDay = new Date(checkIn.value + 'T00:00:00');
+            if (isNaN(nextDay.getTime())) return;
+            nextDay.setDate(nextDay.getDate() + 1);
+            var minimum = nextDay.getFullYear() + '-'
+              + String(nextDay.getMonth() + 1).padStart(2, '0') + '-'
+              + String(nextDay.getDate()).padStart(2, '0');
+            checkOut.min = minimum;
+            if (checkOut.value && checkOut.value < minimum) {
+              checkOut.value = minimum;
+            }
+          };
+
+          checkIn.addEventListener('change', syncCheckOut);
+          syncCheckOut();
+        }
+
+        // The result may change the section's height. Preserve the visitor's
+        // exact viewport position rather than allowing a jump to the page top.
+        window.scrollTo(0, scrollTop);
+      })
+      .catch(function (error) {
+        console.error(error);
+        link.innerHTML = originalHtml;
+        link.removeAttribute('aria-disabled');
+        link.removeAttribute('aria-busy');
+        link.classList.remove('disabled');
+        delete link.dataset.loading;
+        if (originalLabel === null) {
+          link.removeAttribute('aria-label');
+        } else {
+          link.setAttribute('aria-label', originalLabel);
+        }
+        window.scrollTo(0, scrollTop);
+      });
+  });
+
+  /*
    * A number of seconds counted down in the page:
    *
    *   <p data-countdown="52" data-countdown-enables="resend-button">

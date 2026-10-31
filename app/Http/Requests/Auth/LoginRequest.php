@@ -11,13 +11,15 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Checks the email and password, with at most 5 failed attempts per
- * email + IP address per minute. Does NOT sign the user in; the
- * controller first checks the account status.
+ * Checks email and password with a maximum of 3 failed attempts.
+ * Tracks attempts per email and IP address.
+ * Does NOT sign the user in; the controller first checks account status.
  */
 class LoginRequest extends FormRequest
 {
-    private const MAX_ATTEMPTS = 5;
+    private const MAX_ATTEMPTS = 3;
+
+    private const DECAY_SECONDS = 900;
 
     public function authorize(): bool
     {
@@ -27,7 +29,9 @@ class LoginRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         if (is_string($this->input('email'))) {
-            $this->merge(['email' => Str::lower(trim($this->input('email')))]);
+            $this->merge([
+                'email' => Str::lower(trim($this->input('email'))),
+            ]);
         }
     }
 
@@ -53,8 +57,19 @@ class LoginRequest extends FormRequest
         $this->ensureIsNotRateLimited();
 
         if (! Auth::validate($this->only('email', 'password'))) {
-            RateLimiter::hit($this->throttleKey(), 60);
+            RateLimiter::hit(
+                $this->throttleKey(),
+                self::DECAY_SECONDS
+            );
 
+            throw ValidationException::withMessages([
+                'email' => 'The email or password is incorrect.',
+            ]);
+        }
+
+        $user = Auth::getLastAttempted();
+
+        if (! $user instanceof User) {
             throw ValidationException::withMessages([
                 'email' => 'The email or password is incorrect.',
             ]);
@@ -62,13 +77,15 @@ class LoginRequest extends FormRequest
 
         RateLimiter::clear($this->throttleKey());
 
-        /** @var User */
-        return Auth::getLastAttempted();
+        return $user;
     }
 
     private function ensureIsNotRateLimited(): void
     {
-        if (! RateLimiter::tooManyAttempts($this->throttleKey(), self::MAX_ATTEMPTS)) {
+        if (! RateLimiter::tooManyAttempts(
+            $this->throttleKey(),
+            self::MAX_ATTEMPTS
+        )) {
             return;
         }
 
@@ -83,6 +100,8 @@ class LoginRequest extends FormRequest
 
     private function throttleKey(): string
     {
-        return Str::transliterate(Str::lower((string) $this->input('email')).'|'.$this->ip());
+        return Str::transliterate(
+            Str::lower((string) $this->input('email')) . '|' . $this->ip()
+        );
     }
 }

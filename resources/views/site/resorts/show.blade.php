@@ -149,7 +149,7 @@
                 @endif
 
                 {{-- Rooms and availability --}}
-                <section class="mt-5" aria-labelledby="rooms-title">
+                <section class="mt-5" aria-labelledby="rooms-title" data-room-availability-section>
                     <h2 id="rooms-title" class="h4 mb-2">Rooms</h2>
 
                     <p class="text-muted-vd small">
@@ -421,7 +421,8 @@
                                             </p>
 
                                             <a
-                                                class="btn btn-outline-primary btn-sm"
+                                                class="btn btn-outline-primary btn-sm js-check-room-availability"
+                                                data-loading-label="Checking availability..."
                                                 href="{{ route('resorts.show', [
                                                     $resort,
                                                     'check_in' => now()->addDay()->toDateString(),
