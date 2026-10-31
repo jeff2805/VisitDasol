@@ -16,10 +16,60 @@
                  which the public layout already includes above this page.
                  One list, in the shared partial. --}}
 
-            <div class="mb-4">
-                <p class="text-muted mb-1">Reservation {{ $booking->booking_reference }}</p>
-                <h2 class="display-6 mb-0">₱{{ number_format((float) $payment->amount, 2) }}</h2>
-            </div>
+                 
+<div class="mb-4">
+    <p class="text-muted mb-1">
+        Reservation {{ $booking->booking_reference }}
+    </p>
+
+    <h2 class="display-6 mb-0">
+        ₱{{ number_format((float) $payment->amount, 2) }}
+    </h2>
+
+    <p class="text-muted mb-0">Amount to pay now</p>
+</div>
+
+{{-- Payment Terms --}}
+<div class="card mb-4">
+    <div class="card-body">
+        <h3 class="h5 mb-3">Payment Terms</h3>
+
+        <div class="d-flex justify-content-between mb-2">
+            <span>Total booking amount</span>
+            <strong>
+                ₱{{ number_format((float) $booking->total_amount, 2) }}
+            </strong>
+        </div>
+
+        <div class="d-flex justify-content-between mb-2">
+            <span>Required payment now</span>
+            <strong>
+                ₱{{ number_format((float) $payment->amount, 2) }}
+            </strong>
+        </div>
+
+        <div class="d-flex justify-content-between mb-2">
+            <span>Remaining balance</span>
+            <strong>
+                ₱{{ number_format(
+                    max(0, (float) $booking->total_amount - (float) $booking->payments()
+                        ->where('provider', 'manual_gcash')
+                        ->where('status', \App\Enums\PaymentStatus::Paid->value)
+                        ->sum('amount')),
+                    2
+                ) }}
+            </strong>
+        </div>
+
+        <hr>
+
+        <p class="small text-muted mb-0">
+            Please follow the payment arrangement configured by the resort.
+            Your payment will be subject to verification by the resort owner.
+        </p>
+    </div>
+</div>
+
 
             @if ($payment->isSettled())
                 <div class="alert alert-success">Payment confirmed by the resort. Thank you!</div>

@@ -150,12 +150,16 @@
 
                                 @if ($proof->status === \App\Models\PaymentProof::SUBMITTED)
                                     <div class="d-flex flex-wrap gap-2 mt-3">
-                                        <form method="POST" action="{{ route('owner.payment-proofs.approve', $proof) }}"></form>
-                                            @csrf
-                                            <button type="submit" class="btn btn-success btn-sm">
-                                                <i class="bi bi-check-circle me-1" aria-hidden="true"></i> Approve payment
-                                            </button>
-                                        </form>
+                                      <form method="POST"
+      action="{{ route('owner.payment-proofs.approve', $proof) }}"
+      onsubmit="return confirm('Are you sure you want to approve this payment?');">
+    @csrf
+
+    <button type="submit" class="btn btn-success btn-sm">
+        <i class="bi bi-check-circle me-1" aria-hidden="true"></i>
+        Approve payment
+    </button>
+</form>
 
                                         <form method="POST" action="{{ route('owner.payment-proofs.reject', $proof) }}"
                                               class="d-flex flex-wrap gap-2">

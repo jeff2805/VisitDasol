@@ -38,7 +38,13 @@
                 </header>
 
                 <form method="POST" action="{{ route('tourist.bookings.store') }}"
-                      enctype="multipart/form-data" novalidate data-submit-once>
+                      enctype="multipart/form-data" novalidate data-submit-once
+                      {{-- The route is declared inside a group with ->name('tourist.'),
+                           so its full name carries that prefix. Without it route()
+                           threw "Route [bookings.payment-terms-preview] not defined"
+                           and the whole booking form was a 500 — no guest without an
+                           existing reservation could book at all. --}}
+                      data-payment-terms-preview-url="{{ route('tourist.bookings.payment-terms-preview') }}">
                     @csrf
                     <input type="hidden" name="room" value="{{ $room->id }}" data-booking-room-id>
 
@@ -489,7 +495,8 @@
 
                                     <div class="vd-booking__row vd-booking__row--total">
                                         <span>Total</span>
-                                        <strong data-booking-total>@peso($price->total, true)</strong>
+                                        <strong data-booking-total
+                                                data-booking-total-amount="{{ $price->total }}">@peso($price->total, true)</strong>
                                     </div>
                                     <p class="form-text mt-2 mb-0" data-booking-discount-note></p>
                                 </div>
@@ -504,8 +511,11 @@
                                      which the browser changes above, so this is the
                                      terms rather than the arithmetic: the exact
                                      amounts are confirmed on the next screen. --}}
-                                <x-payment-terms :terms="$terms" class="mt-3"
-                                                 heading="How this resort takes payment" />
+                                <div class="mt-3" data-payment-terms-preview aria-live="polite"
+                                     aria-busy="false">
+                                    <x-payment-terms :terms="$terms"
+                                                     heading="How this resort takes payment" />
+                                </div>
 
                                 {{-- How the guest means to pay. A choice, not a charge: the
                                      resort can still decline this request, and there is nothing

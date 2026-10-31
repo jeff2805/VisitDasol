@@ -245,6 +245,181 @@
     updateGcashDetails();
   }
 
+  /*
+   * What this resort asks for up front, kept in step with the form.
+   *
+   * THE BROWSER WORKS OUT NOTHING HERE. It sends the room, the arrival
+   * date and the total it is showing, and writes back whatever the
+   * server says. No deposit percentage, no deadline and no last-minute
+   * window appears in this file — those live in the resort's saved
+   * policy, and PaymentPolicyService is the only thing that reads them.
+   *
+   * The figures it sends are for DISPLAY ONLY. BookingService prices
+   * the stay again and asks the policy again when the request is
+   * actually submitted, so a total edited in the console changes what
+   * this panel says and nothing whatsoever about what is charged.
+   */
+  function setUpPaymentTermsPreview(form) {
+    var url = form.dataset.paymentTermsPreviewUrl;
+    var panel = form.querySelector('[data-payment-terms-preview]');
+
+    if (!url || !panel || typeof window.fetch !== 'function') {
+      return null;
+    }
+
+    var out = {
+      total: panel.querySelector('[data-terms-total]'),
+      dueLabel: panel.querySelector('[data-terms-due-label]'),
+      due: panel.querySelector('[data-terms-due]'),
+      balanceLabel: panel.querySelector('[data-terms-balance-label]'),
+      balance: panel.querySelector('[data-terms-balance]'),
+      nothingLabel: panel.querySelector('[data-terms-nothing-label]'),
+      nothing: panel.querySelector('[data-terms-nothing]'),
+      sentence: panel.querySelector('[data-terms-sentence]'),
+      lastMinute: panel.querySelector('[data-terms-lastminute]'),
+      onSite: panel.querySelector('[data-terms-onsite]'),
+      error: panel.querySelector('[data-terms-error]')
+    };
+
+    var token = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+
+    var timer = null;
+    var inFlight = null;
+
+    /*
+     * Answers can come back in a different order from the questions —
+     * a guest changing the party quickly sends several. Each request
+     * takes a number and only the newest is allowed to write, so a slow
+     * answer to an old question cannot overwrite a fast answer to the
+     * current one. The abort is the tidy-up; the counter is the rule.
+     */
+    var sequence = 0;
+    var written = 0;
+
+    function show(element, visible) {
+      if (element) {
+        element.hidden = !visible;
+      }
+    }
+
+    function text(element, value) {
+      if (element && typeof value === 'string') {
+        element.textContent = value;
+      }
+    }
+
+    function apply(terms) {
+      var money = terms.formatted || {};
+      var due = Boolean(terms.needs_advance_payment);
+      var balance = due && Boolean(terms.has_balance);
+
+      text(out.total, money.total);
+      text(out.dueLabel, money.due_label);
+      text(out.due, money.due_now);
+      text(out.balance, money.balance);
+      text(out.sentence, terms.sentence);
+
+      show(out.dueLabel, due);
+      show(out.due, due);
+      show(out.balanceLabel, balance);
+      show(out.balance, balance);
+
+      show(out.nothingLabel, !due);
+      show(out.nothing, !due);
+
+      show(out.lastMinute, due && Boolean(terms.last_minute));
+      show(out.onSite, !due && Boolean(terms.on_site_allowed));
+      show(out.error, false);
+    }
+
+    /*
+     * A failure leaves the last good figures where they are and says so
+     * underneath. Blanking them would turn a moment without a network
+     * into a booking form that looks like it has lost the price.
+     */
+    function failed() {
+      panel.setAttribute('aria-busy', 'false');
+      show(out.error, true);
+    }
+
+    function send(totalCentavos, checkInDate) {
+      if (!checkInDate) {
+        return;
+      }
+
+      var mine = ++sequence;
+
+      if (inFlight) {
+        inFlight.abort();
+      }
+
+      inFlight = typeof window.AbortController === 'function'
+        ? new window.AbortController()
+        : null;
+
+      panel.setAttribute('aria-busy', 'true');
+
+      window.fetch(url, {
+        method: 'POST',
+        credentials: 'same-origin',
+        signal: inFlight ? inFlight.signal : undefined,
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRF-TOKEN': token
+        },
+        body: JSON.stringify({
+          room: form.querySelector('[data-booking-room-id]')
+            ? form.querySelector('[data-booking-room-id]').value
+            : null,
+          check_in_date: checkInDate,
+          total: (totalCentavos / 100).toFixed(2)
+        })
+      }).then(function (response) {
+        if (!response.ok) {
+          throw new Error('HTTP ' + response.status);
+        }
+
+        return response.json();
+      }).then(function (terms) {
+        // Older than something already on the screen: drop it.
+        if (mine < written) {
+          return;
+        }
+
+        written = mine;
+        panel.setAttribute('aria-busy', 'false');
+        apply(terms);
+      }).catch(function (error) {
+        // An abort is this code's own doing, not a failure to report.
+        if (error && error.name === 'AbortError') {
+          return;
+        }
+
+        if (mine < written) {
+          return;
+        }
+
+        failed();
+      });
+    }
+
+    /*
+     * Waited out rather than sent per keystroke. Typing "12" in the
+     * adults box is two changes and one intention.
+     */
+    return function request(totalCentavos, checkInDate) {
+      if (timer) {
+        window.clearTimeout(timer);
+      }
+
+      timer = window.setTimeout(function () {
+        send(totalCentavos, checkInDate);
+      }, 350);
+    };
+  }
+
   function setUp(form) {
     var roomSelect = form.querySelector(
       '[data-booking-room]'
@@ -289,6 +464,13 @@
     var femaleField = form.querySelector(
       '[data-booking-female]'
     );
+
+    /*
+     * Null on a page with no preview panel, or in a browser without
+     * fetch. refresh() checks before calling, so the rest of the form
+     * works exactly as it did either way.
+     */
+    var askPaymentTerms = setUpPaymentTermsPreview(form);
 
     var out = {
       roomName: form.querySelector(
@@ -807,6 +989,17 @@
 
       if (out.total) {
         out.total.textContent = money(bill.total);
+      }
+
+      /*
+       * Ask the server what this resort wants up front for the figure
+       * just worked out. Here rather than on each field's own handler
+       * so it follows every change at once — room, dates, kind, rooms,
+       * adults, children, PWD guests — and uses the same total the
+       * guest can see above it.
+       */
+      if (askPaymentTerms) {
+        askPaymentTerms(bill.total, checkIn ? checkIn.value : null);
       }
 
       showDiscounts(bill, option);

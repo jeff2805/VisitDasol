@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Tourist;
 
 use App\Enums\PaymentPreference;
 use App\Enums\PaymentProvider;
+use App\Enums\PaymentRequirement;
 use App\Exceptions\BookingException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tourist\CancelBookingRequest;
@@ -17,8 +18,10 @@ use App\Services\BookingStatusManager;
 use App\Services\Payments\ManualPaymentService;
 use App\Services\Payments\PaymentPolicyService;
 use App\Services\Payments\PaymentService;
+use App\Support\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -220,6 +223,65 @@ class BookingController extends Controller
                     : '0.00',
                 $checkIn ?? CarbonImmutable::today()
             ),
+        ]);
+    }
+
+    /**
+     * Preview the selected resort's saved payment terms for the live form.
+     * This endpoint is display-only; BookingService recalculates everything
+     * again when the booking is submitted.
+     */
+    public function previewPaymentTerms(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'room' => ['required', 'integer', 'exists:rooms,id'],
+            'check_in_date' => ['required', 'date_format:Y-m-d'],
+            'total' => ['required', 'numeric', 'min:0', 'max:99999999'],
+        ]);
+
+        $room = Room::query()
+            ->with('resort')
+            ->findOrFail($validated['room']);
+
+        abort_unless($room->isBookable(), 422, 'This room is not available for booking.');
+
+        $terms = $this->policies->terms(
+            $room->resort->paymentTerms(),
+            (string) $validated['total'],
+            CarbonImmutable::createFromFormat('!Y-m-d', $validated['check_in_date'])
+        );
+
+        return response()->json([
+            'requirement' => $terms->requirement->value,
+            'deposit_percent' => $terms->depositPercent,
+            'total' => $terms->total,
+            'due_now' => $terms->dueNow,
+            'balance' => $terms->balance,
+            'due_at' => $terms->dueAt?->format('M j, Y g:i A'),
+            'sentence' => $terms->sentence(),
+            'last_minute' => $terms->lastMinute,
+            'on_site_allowed' => $terms->onSiteAllowed,
+            'needs_advance_payment' => $terms->needsAdvancePayment(),
+            'has_balance' => $terms->balance !== '0.00',
+
+            /*
+             * THE MONEY, ALREADY WRITTEN OUT, and the label that goes
+             * above it.
+             *
+             * The browser never formats a peso and never decides what
+             * to call the amount. If it did there would be two places
+             * that know "₱1,500.00" and two that know when a deposit
+             * stops being a deposit, and they would drift. Money::peso
+             * writes these, the same helper the Blade uses.
+             */
+            'formatted' => [
+                'total' => Money::peso($terms->total, true),
+                'due_now' => Money::peso($terms->dueNow, true),
+                'balance' => Money::peso($terms->balance, true),
+                'due_label' => $terms->requirement === PaymentRequirement::Full
+                    ? 'To pay before arrival'
+                    : 'Deposit to pay ('.$terms->depositPercent.'%)',
+            ],
         ]);
     }
 

@@ -257,6 +257,9 @@ Route::prefix('tourist')
         // Reservations
         Route::get('/bookings', [TouristBookingController::class, 'index'])->name('bookings.index');
         Route::get('/bookings/create', [TouristBookingController::class, 'create'])->name('bookings.create');
+        Route::post('/bookings/payment-terms-preview', [TouristBookingController::class, 'previewPaymentTerms'])
+            ->middleware('throttle:60,1')
+            ->name('bookings.payment-terms-preview');
         Route::post('/bookings', [TouristBookingController::class, 'store'])
             ->middleware('throttle:10,1')
             ->name('bookings.store');
