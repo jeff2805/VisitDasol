@@ -52,7 +52,10 @@ class ResortController extends Controller
             ->bookable()
             ->join('resorts', 'resorts.id', '=', 'rooms.resort_id')
             ->select('rooms.*')
-            ->with(['resort', 'images'])
+            ->with([
+    'resort' => fn ($query) => $query->withRating(),
+    'images',
+])
             ->when($filters['q'] !== '', function (Builder $query) use ($filters) {
                 $query->where(function (Builder $match) use ($filters) {
                     $match->where('rooms.name', 'like', "%{$filters['q']}%")

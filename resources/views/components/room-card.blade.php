@@ -44,6 +44,15 @@
             <i class="bi bi-geo-alt" aria-hidden="true"></i>
             Brgy. {{ $resort?->barangay }}, {{ $resort?->municipality }}
         </p>
+        {{-- Resort rating and review count --}}
+@if ($resort)
+    <div class="mt-2 mb-2">
+        <x-stars
+            :rating="$resort->rating_average"
+            :count="$resort->rating_count"
+        />
+    </div>
+@endif
 
         <ul class="vd-card__tags">
             <li><i class="bi bi-door-open" aria-hidden="true"></i> {{ $room->room_type->label() }}</li>
