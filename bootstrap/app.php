@@ -12,6 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Vercel sits in front of the app, so trust its proxy headers.
+        // Without this, Laravel thinks requests are plain http.
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             // Signs out accounts that are no longer active. Use after "auth".
             'active' => \App\Http\Middleware\EnsureAccountIsActive::class,
