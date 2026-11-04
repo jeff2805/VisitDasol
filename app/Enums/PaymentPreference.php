@@ -99,9 +99,9 @@ enum PaymentPreference: string
              */
             self::OnArrival => false,
 
-            self::ManualGcash => (bool) (
-                $manualAccount && $manualAccount->active
-            ) && $prepaidWanted,
+           self::ManualGcash => (bool) (
+    $manualAccount && $manualAccount->active
+),
         };
     }
 

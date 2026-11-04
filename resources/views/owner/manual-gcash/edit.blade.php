@@ -1,4 +1,3 @@
-```blade
 @extends('layouts.owner')
 
 @section('title', 'GCash Payment Settings')
