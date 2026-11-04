@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Enums\BookingStatus;
+use App\Enums\IdVerificationStatus;
 use App\Models\Booking;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -115,6 +116,87 @@ class BookingPolicy
         return $this->ownsResort($user, $booking)
             && $booking->status === BookingStatus::Confirmed
             && $booking->check_in_date->gt(CarbonImmutable::today());
+    }
+
+    /* The valid ID, and the two desk moments ------------------------------
+     *
+     * EVERY ONE OF THESE IS THE WHOLE OF THE ACCESS CONTROL.
+     *
+     * The document is on the private disk, so there is no second gate behind
+     * these: no web server path reaches the file, and a route that forgot to
+     * ask here would be the only way in. They are written to be read.
+     */
+
+    /** The guest sends their own ID, for their own booking, while it is live. */
+    public function uploadId(User $user, Booking $booking): bool
+    {
+        return $user->isTourist()
+            && (int) $booking->user_id === (int) $user->id
+            && $booking->acceptsIdDocument();
+    }
+
+    /**
+     * Who may look at the document itself.
+     *
+     * The guest who sent it, and the owner of the resort it was sent to.
+     * NOT the tourism office: it has no desk to check anybody in at, and a
+     * government ID is not theirs to hold. NOT a super admin either, for the
+     * same reason — an account being powerful is not a reason to see
+     * somebody's passport.
+     *
+     * An owner sees it only through their own resort, so the ownsResort()
+     * query is what keeps one resort out of another's documents.
+     */
+    public function viewId(User $user, Booking $booking): bool
+    {
+        if (! $booking->hasIdDocument()) {
+            return false;
+        }
+
+        if ($user->isTourist()) {
+            return (int) $booking->user_id === (int) $user->id;
+        }
+
+        return $this->ownsResort($user, $booking);
+    }
+
+    /**
+     * Approve or reject a submitted ID. The resort's own staff only, and
+     * only while there is a submission waiting on them.
+     *
+     * A decided ID is refused here rather than deeper in, so pressing
+     * approve twice cannot overwrite who decided it the first time and when.
+     * IdentityVerificationService checks the same thing again under a row
+     * lock, which is what catches two staff deciding at the same instant.
+     */
+    public function verifyId(User $user, Booking $booking): bool
+    {
+        return $this->ownsResort($user, $booking)
+            && $booking->hasIdDocument()
+            && $booking->id_document_status === IdVerificationStatus::Pending;
+    }
+
+    /**
+     * Check the party in.
+     *
+     * Allowed only on a confirmed stay that has not been checked in. The
+     * ID condition is NOT asked here: a desk that cannot see the button has
+     * no way to learn why, so the button stays and
+     * IdentityVerificationService refuses with the reason.
+     */
+    public function checkIn(User $user, Booking $booking): bool
+    {
+        return $this->ownsResort($user, $booking)
+            && $booking->status === BookingStatus::Confirmed
+            && ! $booking->isCheckedIn();
+    }
+
+    /** Close the stay. Same reasoning as checkIn() about the conditions. */
+    public function checkOut(User $user, Booking $booking): bool
+    {
+        return $this->ownsResort($user, $booking)
+            && $booking->status === BookingStatus::Confirmed
+            && ! $booking->isCheckedOut();
     }
 
     /**

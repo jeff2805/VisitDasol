@@ -40,8 +40,34 @@
                         :note="$resort->rooms_count.' '.Str::plural('room type', $resort->rooms_count).' in total'" />
             </div>
             <div class="col-sm-6 col-xl-4">
-                <x-stat :value="$waitingCount" label="Requests waiting for you" icon="hourglass-split"
-                        note="A request holds the rooms until you answer." />
+                {{-- The one tile on this row that is a job rather than a
+                     reading, so it is the way through to that job: the whole
+                     card is a link to the requests list, already filtered to
+                     the ones waiting.
+
+                     Red only while somebody is actually waiting. A tile that
+                     is red at zero teaches the owner to stop seeing it. --}}
+                <x-stat :value="$waitingCount" icon="hourglass-split"
+                        :alert="$waitingCount > 0"
+                        :href="route('owner.bookings.index', ['status' => 'pending'])"
+                        :note="$waitingCount > 0
+                            ? 'A request holds the rooms until you answer.'
+                            : 'Nothing to answer. New requests appear here.'">
+                    {{-- The label is a slot so the count can carry a badge.
+                         The badge repeats the figure in words because the red
+                         is the only other thing saying this is urgent, and
+                         colour on its own says nothing to a reader who
+                         cannot see it. --}}
+                    <x-slot:label>
+                        Requests waiting for you
+                        @if ($waitingCount > 0)
+                            <span class="vd-stat__badge">
+                                <i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i>
+                                {{ $waitingCount }} pending
+                            </span>
+                        @endif
+                    </x-slot:label>
+                </x-stat>
             </div>
             <div class="col-xl-4">
                 {{-- Money at the owner's own listed rates, over confirmed

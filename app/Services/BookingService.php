@@ -195,9 +195,26 @@ class BookingService
                 throw BookingException::typeNotOffered($type->label());
             }
 
-            if ($guests > $room->capacity * $roomsBooked) {
-                throw BookingException::tooManyGuests(
-                    $room->capacity,
+            /*
+             * BOTH ENDS OF THE PARTY SIZE, from the room itself.
+             *
+             * This used to be an inline `$guests > $room->capacity *
+             * $roomsBooked`, which is the ceiling only and was the second
+             * copy of a sum the form already did. Room::partyProblem() owns
+             * it now, so the form's refusal and this one are the same rule.
+             */
+            if ($problem = $room->partyProblem($guests, $roomsBooked)) {
+                throw BookingException::partyDoesNotFit($problem);
+            }
+
+            /*
+             * More units than the room type has at all. Cheap, and it
+             * catches a request for ten of a room there are three of before
+             * the dated sweep below has to.
+             */
+            if ($roomsBooked > (int) $room->total_rooms) {
+                throw BookingException::unavailable(
+                    (int) $room->total_rooms,
                     $roomsBooked
                 );
             }

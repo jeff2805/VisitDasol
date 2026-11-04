@@ -6,10 +6,12 @@ use App\Enums\BookingStatus;
 
 use App\Exceptions\BookingException;
 use App\Models\Booking;
+use App\Models\Room;
 use App\Models\User;
 use App\Notifications\BookingDecided;
 use App\Services\Payments\PaymentPolicyService;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Central service for reservation status changes.
@@ -24,10 +26,25 @@ class BookingStatusManager
     public function __construct(
         private readonly ActivityLogger $logger,
         private readonly Notifier $notifier,
+        private readonly AvailabilityService $availability,
     ) {}
 
     /**
      * Confirm a pending reservation before its arrival date.
+     *
+     * A REQUEST IS CHECKED AGAIN AT THE MOMENT IT IS ANSWERED.
+     *
+     * Days can pass between a guest asking and an owner replying, and in
+     * that time the owner can have lowered the room's unit count or its
+     * capacity, or another stay can have taken the nights. Confirming used
+     * to check only the calendar date and the status transition, so a
+     * request could be accepted into inventory that was no longer there and
+     * the overbooking surfaced at the gate.
+     *
+     * The whole thing runs in one transaction with the room row locked, so
+     * two owners confirming two requests for the last unit at the same
+     * instant are serialized and the second is refused rather than both
+     * being told yes.
      */
     public function confirm(Booking $booking): void
     {
@@ -44,31 +61,83 @@ class BookingStatusManager
             );
         }
 
-        /*
-         * A deadline counted from confirmation could not be worked out
-         * when the request was sent, because this is the moment it counts
-         * from. Filled in now, and only if it is still blank: a date the
-         * guest has already been given is a date they are working to.
-         */
-        $changes = ['confirmed_at' => now()];
+        DB::transaction(function () use ($booking): void {
+            $this->guardStillAvailable($booking);
 
-        $dueAt = app(PaymentPolicyService::class)
-            ->deadlineOnConfirmation($booking);
+            /*
+             * A deadline counted from confirmation could not be worked out
+             * when the request was sent, because this is the moment it counts
+             * from. Filled in now, and only if it is still blank: a date the
+             * guest has already been given is a date they are working to.
+             */
+            $changes = ['confirmed_at' => now()];
 
-        if ($dueAt !== null) {
-            $changes['payment_due_at'] = $dueAt;
+            $dueAt = app(PaymentPolicyService::class)
+                ->deadlineOnConfirmation($booking);
+
+            if ($dueAt !== null) {
+                $changes['payment_due_at'] = $dueAt;
+            }
+
+            $this->apply(
+                $booking,
+                BookingStatus::Confirmed,
+                $changes,
+                'booking.confirmed',
+                "Confirmed {$booking->booking_reference}",
+                $dueAt !== null
+                    ? ['payment_due_at' => $dueAt->toDateTimeString()]
+                    : []
+            );
+        });
+    }
+
+    /**
+     * Refuse the confirmation if the room can no longer take this party.
+     *
+     * Called inside confirm()'s transaction, and it is what takes the lock:
+     * every later read in that transaction sees a room nobody else can
+     * change until this one commits.
+     *
+     * availableUnits() is asked to EXCLUDE this booking. A pending request
+     * already counts towards the units in use (see Booking::scopeBlocking),
+     * so without that the request would be measured against itself and a
+     * resort with one unit could never confirm anything.
+     */
+    private function guardStillAvailable(Booking $booking): void
+    {
+        $room = Room::query()
+            ->whereKey($booking->room_id)
+            ->lockForUpdate()
+            ->first();
+
+        if ($room === null) {
+            throw new BookingException(
+                'The room this request is for no longer exists, so it can only be declined.'
+            );
         }
 
-        $this->apply(
-            $booking,
-            BookingStatus::Confirmed,
-            $changes,
-            'booking.confirmed',
-            "Confirmed {$booking->booking_reference}",
-            $dueAt !== null
-                ? ['payment_due_at' => $dueAt->toDateTimeString()]
-                : []
+        // The party against the room as it stands NOW, not as it stood when
+        // the guest asked: an owner may have changed the capacity since.
+        if ($problem = $room->partyProblem((int) $booking->guests, (int) $booking->rooms_booked)) {
+            throw new BookingException(
+                'This request no longer fits the room. '.$problem
+            );
+        }
+
+        $available = $this->availability->availableUnits(
+            $room,
+            $booking->check_in_date,
+            $booking->check_out_date,
+            $booking->getKey(),
         );
+
+        if ($available < (int) $booking->rooms_booked) {
+            throw BookingException::availabilityChanged(
+                $available,
+                (int) $booking->rooms_booked
+            );
+        }
     }
 
     /**

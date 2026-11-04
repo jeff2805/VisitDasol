@@ -241,13 +241,25 @@ class ResortController extends Controller
      * Cleans the query string. Unknown values are dropped rather than
      * rejected, so a hand-edited URL can never break the page or the query.
      *
-     * @return array{q: string, barangay: ?string, type: ?string, guests: ?int, max_price: ?int, amenities: list<int>, sort: string, check_in: ?CarbonImmutable, check_out: ?CarbonImmutable, nights: int, error: ?string}
+     * @return array{q: string, barangay: ?string, type: ?string, guests: ?int, max_price: ?int, amenities: list<int>, sort: string, check_in: ?CarbonImmutable, check_out: ?CarbonImmutable, check_in_time: string, check_out_time: string, nights: int, error: ?string}
      */
     private function filters(Request $request): array
     {
         $barangay = $request->query('barangay');
         $type = $request->query('type');
         $sort = (string) $request->query('sort', 'recommended');
+
+        /*
+         * Arrival and departure times. They narrow no part of the query:
+         * availability is counted in nights, and changing that would change
+         * what every existing booking means. They are read here so the search
+         * form can show back what was asked for, and so the booking form the
+         * visitor lands on starts from their answer instead of the default.
+         */
+        $time = fn (string $key, string $fallback): string =>
+            preg_match('/^([01]\d|2[0-3]):[0-5]\d$/', (string) $request->query($key))
+                ? (string) $request->query($key)
+                : $fallback;
 
         // The same reading of check_in / check_out / guests the resort page
         // uses, so a search made on one works unchanged on the other.
@@ -276,6 +288,8 @@ class ResortController extends Controller
 
             'check_in' => $stay['check_in'],
             'check_out' => $stay['check_out'],
+            'check_in_time' => $time('check_in_time', '14:00'),
+            'check_out_time' => $time('check_out_time', '12:00'),
             'nights' => $stay['nights'],
             'error' => $stay['error'],
         ];

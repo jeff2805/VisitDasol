@@ -277,6 +277,82 @@
                     @endif
                 </section>
 
+                {{-- The valid ID the resort checks at the desk.
+                     Below the payment panel, because it is the other thing
+                     a guest has to do before they travel, and because a
+                     rejected ID is the one that will stop them at the gate. --}}
+                <section class="vd-panel p-4 mt-4" aria-labelledby="valid-id-title">
+                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                        <h2 class="h5 mb-0" id="valid-id-title">Your valid ID</h2>
+                        <x-status-badge :status="$booking->id_document_status" />
+                    </div>
+
+                    @if ($booking->idIsVerified())
+                        <p class="mb-0">
+                            {{ $booking->resort?->name ?? 'The resort' }} has verified your ID.
+                            Nothing else is needed — just bring the same ID with you, as they will
+                            ask to see it when you arrive.
+                        </p>
+                    @else
+                        @if ($booking->id_document_status === \App\Enums\IdVerificationStatus::Pending)
+                            <p class="text-muted-vd">
+                                Your ID is with the resort and is waiting to be checked.
+                                You do not need to do anything else for now.
+                            </p>
+                        @elseif (filled($booking->id_document_rejection_reason))
+                            <div class="alert alert-warning small" role="status">
+                                <strong>The resort could not accept the ID you sent.</strong>
+                                <div class="mt-1">{{ $booking->id_document_rejection_reason }}</div>
+                                <div class="mt-1">Please send another government-issued ID below.</div>
+                            </div>
+                        @else
+                            <p class="text-muted-vd">
+                                The resort checks a government-issued ID at the desk.
+                                Sending it now means they can verify it before you travel.
+                            </p>
+                        @endif
+
+                        @if ($booking->hasIdDocument())
+                            <x-external-link :href="route('tourist.bookings.id-document.show', $booking)"
+                                             class="btn btn-sm btn-light border mb-3">
+                                <i class="bi bi-file-earmark-person me-1" aria-hidden="true"></i>
+                                See what you sent
+                            </x-external-link>
+                        @endif
+
+                        @can('uploadId', $booking)
+                            <form method="POST" action="{{ route('tourist.bookings.id-document.store', $booking) }}"
+                                  enctype="multipart/form-data">
+                                @csrf
+
+                                <label class="form-label" for="id_document">
+                                    {{ $booking->hasIdDocument() ? 'Send another ID' : 'Upload your valid ID' }}
+                                </label>
+
+                                <input class="form-control @error('id_document') is-invalid @enderror"
+                                       type="file" id="id_document" name="id_document"
+                                       accept=".jpg,.jpeg,.png,.pdf" required>
+
+                                @error('id_document')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+
+                                <p class="form-text">
+                                    A photo or PDF of a government-issued ID — passport, driver's licence,
+                                    PhilID, postal ID. JPG, PNG or PDF, up to
+                                    {{ round(config('visitdasol.uploads.document_max_kb') / 1024, 1) }} MB.
+                                    Only this resort can open it, and it is never published.
+                                </p>
+
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-upload me-1" aria-hidden="true"></i>
+                                    Send to the resort
+                                </button>
+                            </form>
+                        @endcan
+                    @endif
+                </section>
+
             </div>
 
             <div class="col-lg-5">

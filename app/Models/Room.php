@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 /**
  * A room TYPE within a resort, with total_rooms identical units.
@@ -31,6 +32,10 @@ class Room extends Model
         'room_type',
         'description',
         'capacity',
+
+        // The floor, where the owner set one. Null means no minimum.
+        'min_capacity',
+
         'bed_count',
         'price_per_night',
 
@@ -69,6 +74,7 @@ class Room extends Model
             'status' => RoomStatus::class,
 
             'capacity' => 'integer',
+            'min_capacity' => 'integer',
             'bed_count' => 'integer',
             'total_rooms' => 'integer',
             'price_per_night' => 'decimal:2',
@@ -167,6 +173,72 @@ class Room extends Model
             BookingType::cases(),
             fn (BookingType $type) => $this->offers($type)
         ));
+    }
+
+    /* How big a party this room takes ------------------------------------ */
+
+    /**
+     * The smallest party one unit will take. 1 when the owner set no floor.
+     *
+     * Clamped to the ceiling as well: an owner who lowered capacity below a
+     * minimum they set earlier would otherwise leave a room that no party
+     * size at all can satisfy, and every booking of it would be refused
+     * with a message that made no sense.
+     */
+    public function minimumGuestsPerRoom(): int
+    {
+        $floor = max(1, (int) ($this->min_capacity ?? 1));
+
+        return min($floor, max(1, (int) $this->capacity));
+    }
+
+    /** The smallest party for a booking of this many units. */
+    public function minimumGuestsFor(int $roomsBooked): int
+    {
+        return $this->minimumGuestsPerRoom() * max(1, $roomsBooked);
+    }
+
+    /** The largest party for a booking of this many units. */
+    public function maximumGuestsFor(int $roomsBooked): int
+    {
+        return max(0, (int) $this->capacity) * max(1, $roomsBooked);
+    }
+
+    /**
+     * Why this party does not fit, or null when it does.
+     *
+     * ONE ANSWER, ASKED FROM THREE PLACES: the booking form, the service
+     * that writes the booking, and the owner confirming it days later. They
+     * used to each carry their own arithmetic, and the day those drift is
+     * the day a guest is refused by one and accepted by another.
+     */
+    public function partyProblem(int $guests, int $roomsBooked): ?string
+    {
+        $capacity = (int) $this->capacity;
+
+        if ($capacity < 1) {
+            return 'This room does not have a valid guest capacity.';
+        }
+
+        $max = $this->maximumGuestsFor($roomsBooked);
+        $min = $this->minimumGuestsFor($roomsBooked);
+
+        if ($guests > $max) {
+            return "The selected number of guests exceeds this room's maximum capacity. "
+                ."It takes {$capacity} ".Str::plural('guest', $capacity)
+                ." per room, so {$roomsBooked} ".Str::plural('room', $roomsBooked)
+                ." fits up to {$max}. Book another room or choose a larger type.";
+        }
+
+        if ($guests < $min) {
+            return 'The minimum number of guests for this room is not satisfied. '
+                ."It is booked for at least {$this->minimumGuestsPerRoom()} "
+                .Str::plural('guest', $this->minimumGuestsPerRoom())
+                ." per room, so {$roomsBooked} ".Str::plural('room', $roomsBooked)
+                ." needs at least {$min}.";
+        }
+
+        return null;
     }
 
     public function resort(): BelongsTo

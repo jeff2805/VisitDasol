@@ -1,16 +1,28 @@
+
 {{--
-    "Where, when, how many" — VisitDasol stay search.
-    Includes barangay, check-in/check-out dates and times, and guests.
+    VisitDasol Stay Search
+
+    The Rooms page wraps this in its own GET form, so that the orange Search
+    button and the filter bar below it submit as one request; it passes
+    :standalone="false" and this renders a plain <div>, never a nested <form>.
+
+    Everywhere else (the home hero, the tourist dashboard) there is no parent
+    form, so the component supplies its own. Without it the Search button is a
+    submit button with nothing to submit and the hero search does nothing.
 --}}
 @props([
     'barangays' => [],
     'action' => null,
     'values' => [],
+    'standalone' => true,
 ])
 
 @php
     $tomorrow = now()->addDay();
-    $dayAfter = now()->addDays(3);
+
+    // Same element and class either way, so the layout is identical whether
+    // this page owns the form or the Rooms page does.
+    $tag = $standalone ? 'form' : 'div';
 
     $checkIn = $values['check_in'] ?? request('check_in', '');
     $checkOut = $values['check_out'] ?? request('check_out', '');
@@ -19,29 +31,12 @@
     $checkOutTime = $values['check_out_time'] ?? request('check_out_time', '12:00');
 @endphp
 
-<form class="vd-stay-search" method="GET"
-      action="{{ $action ?? route('resorts.index') }}">
-
-    {{-- Barangay --}}
-    <div class="vd-stay-search__field vd-stay-search__field--where">
-        <label class="form-label" for="stay-barangay">Where</label>
-
-        <select class="form-select" id="stay-barangay" name="barangay">
-            <option value="">Anywhere in {{ config('visitdasol.municipality') }}</option>
-
-            @foreach ($barangays as $barangay)
-                <option value="{{ $barangay }}"
-                    @selected(($values['barangay'] ?? request('barangay')) === $barangay)>
-                    Brgy. {{ $barangay }}
-                </option>
-            @endforeach
-        </select>
-    </div>
+<{{ $tag }} class="vd-stay-search"
+    @if ($standalone) method="GET" action="{{ $action ?? route('resorts.index') }}" @endif>
 
     {{-- Check-in date --}}
     <div class="vd-stay-search__field">
         <label class="form-label" for="stay-check-in">Check-in Date</label>
-
         <input
             class="form-control"
             type="date"
@@ -56,7 +51,6 @@
     {{-- Check-in time --}}
     <div class="vd-stay-search__field">
         <label class="form-label" for="stay-check-in-time">Check-in Time</label>
-
         <input
             class="form-control"
             type="time"
@@ -70,7 +64,6 @@
     {{-- Check-out date --}}
     <div class="vd-stay-search__field">
         <label class="form-label" for="stay-check-out">Check-out Date</label>
-
         <input
             class="form-control"
             type="date"
@@ -85,7 +78,6 @@
     {{-- Check-out time --}}
     <div class="vd-stay-search__field">
         <label class="form-label" for="stay-check-out-time">Check-out Time</label>
-
         <input
             class="form-control"
             type="time"
@@ -96,23 +88,6 @@
         >
     </div>
 
-    {{-- Guest capacity --}}
-    <div class="vd-stay-search__field vd-stay-search__field--guests">
-        <label class="form-label" for="stay-guests">Guests</label>
-
-        <input
-            class="form-control"
-            type="number"
-            id="stay-guests"
-            name="guests"
-            min="1"
-            max="30"
-            inputmode="numeric"
-            value="{{ $values['guests'] ?? request('guests', '') }}"
-            placeholder="Any"
-        >
-    </div>
-
     {{-- Search --}}
     <div class="vd-stay-search__go">
         <button type="submit" class="btn btn-accent btn-lg w-100">
@@ -120,10 +95,5 @@
             Search
         </button>
     </div>
-</form>
 
-{{-- The check-out minimum follows the check-in date. That used to be an
-     inline <script> here, which the Content Security Policy blocks
-     outright — so it never ran for a single real visitor, and a guest
-     could ask for a check-out before their arrival. It lives in app.js
-     now, hung off the two data attributes above. --}}
+</{{ $tag }}>

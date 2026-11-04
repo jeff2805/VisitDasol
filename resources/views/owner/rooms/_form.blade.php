@@ -101,6 +101,12 @@
             <x-form.input name="capacity" type="number" label="Guests per room" :value="$room->capacity" required
                           min="1" max="30" help="The most people who can sleep in one of these rooms." />
 
+            {{-- The floor, for a room let as a whole. Optional, because most
+                 rooms have none and a required minimum of 1 would be noise. --}}
+            <x-form.input name="min_capacity" type="number" label="Smallest party (optional)"
+                          :value="$room->min_capacity" min="1" max="30"
+                          help="Leave blank if anyone may book this room. Set it for a cottage you only let to a group, and a smaller party will be told before they book instead of being declined after." />
+
             <x-form.input name="bed_count" type="number" label="Beds per room" :value="$room->bed_count ?? 1" required
                           min="1" max="30"
                           help="Shown to guests on the booking form, and multiplied by the rooms they take." />

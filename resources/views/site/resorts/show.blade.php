@@ -168,9 +168,17 @@
                         action="{{ route('resorts.show', $resort) }}"
                         class="vd-panel p-3 mb-4"
                     >
-                        <div class="row g-3 align-items-end">
+                        {{-- One grid, laid out in visitdasol.css.
+
+                             It was a .row.g-3.align-items-end, which
+                             bottom-aligned every column in a line — so the
+                             four fields with no helper text were pushed down
+                             by the height of the helper under the two that
+                             have one, and nothing on a row lined up. See
+                             .vd-availability in the stylesheet. --}}
+                        <div class="vd-availability">
                             {{-- Check-in date --}}
-                            <div class="col-sm-6 col-lg-4">
+                            <div class="vd-availability__field">
                                 <label class="form-label" for="check_in">
                                     Check-in Date
                                 </label>
@@ -188,7 +196,7 @@
                             </div>
 
                             {{-- Check-in time --}}
-                            <div class="col-sm-6 col-lg-4">
+                            <div class="vd-availability__field">
                                 <label class="form-label" for="check_in_time">
                                     Check-in Time
                                 </label>
@@ -202,13 +210,13 @@
                                     required
                                 >
 
-                                <small class="text-muted-vd">
+                                <small class="vd-availability__hint">
                                     Resort's usual check-in: {{ \Illuminate\Support\Carbon::parse($resort->check_in_time)->format('g:i A') }}
                                 </small>
                             </div>
 
                             {{-- Check-out date --}}
-                            <div class="col-sm-6 col-lg-4">
+                            <div class="vd-availability__field">
                                 <label class="form-label" for="check_out">
                                     Check-out Date
                                 </label>
@@ -228,7 +236,7 @@
                             </div>
 
                             {{-- Check-out time --}}
-                            <div class="col-sm-6 col-lg-4">
+                            <div class="vd-availability__field">
                                 <label class="form-label" for="check_out_time">
                                     Check-out Time
                                 </label>
@@ -242,13 +250,13 @@
                                     required
                                 >
 
-                                <small class="text-muted-vd">
+                                <small class="vd-availability__hint">
                                     Resort's usual check-out: {{ \Illuminate\Support\Carbon::parse($resort->check_out_time)->format('g:i A') }}
                                 </small>
                             </div>
 
                             {{-- Guests --}}
-                            <div class="col-sm-6 col-lg-4">
+                            <div class="vd-availability__field">
                                 <label class="form-label" for="guests">
                                     Guests
                                 </label>
@@ -265,8 +273,11 @@
                                 >
                             </div>
 
-                            {{-- Submit --}}
-                            <div class="col-sm-6 col-lg-4 d-grid">
+                            {{-- Submit. No label of its own, so the cell is
+                                 offset by one label block in the stylesheet
+                                 and the button meets the top of the Guests
+                                 input beside it. --}}
+                            <div class="vd-availability__field vd-availability__go">
                                 <button type="submit" class="btn btn-primary">
                                     <i class="bi bi-calendar-check me-1" aria-hidden="true"></i>
                                     Check Availability

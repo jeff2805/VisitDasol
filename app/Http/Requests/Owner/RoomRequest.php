@@ -61,6 +61,17 @@ class RoomRequest extends FormRequest
             'room_type' => ['required', Rule::in(RoomType::values())],
             'description' => ['nullable', 'string', 'max:2000'],
             'capacity' => ['required', 'integer', 'min:1', 'max:30'],
+
+            /*
+             * The floor, where the owner wants one. Blank means none, which
+             * is what every room had before this existed.
+             *
+             * lte:capacity, because a minimum above the ceiling describes a
+             * room no party can book — and the owner would only find that
+             * out from a guest who could not.
+             */
+            'min_capacity' => ['nullable', 'integer', 'min:1', 'max:30', 'lte:capacity'],
+
             'bed_count' => ['required', 'integer', 'min:1', 'max:30'],
             'price_per_night' => ['required', 'numeric', 'min:1', 'max:1000000'],
 
@@ -170,6 +181,9 @@ class RoomRequest extends FormRequest
         return [
             'name.unique' => 'You already have a room type with this name.',
             'capacity.min' => 'A room must take at least one guest.',
+
+            'min_capacity.lte' => 'The smallest party cannot be larger than the guests '
+                .'per room, or nobody could book this room at all.',
             'bed_count.required' => 'Enter how many beds are in one of these rooms.',
             'bed_count.min' => 'A room must have at least one bed.',
             'price_per_night.min' => 'Enter the nightly rate in pesos.',

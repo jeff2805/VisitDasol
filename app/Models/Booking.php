@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\BookingStatus;
 use App\Enums\BookingType;
+use App\Enums\IdVerificationStatus;
 use App\Enums\PaymentDeadlineReference;
 use App\Enums\PaymentPreference;
 use App\Enums\PaymentRequirement;
@@ -80,6 +81,9 @@ class Booking extends Model
         // The rates those amounts came from
         'child_discount_percent' => 0,
         'pwd_discount_percent' => 0,
+
+        // Nobody has sent an ID for this stay yet.
+        'id_document_status' => 'not_submitted',
     ];
 
     protected function casts(): array
@@ -133,6 +137,13 @@ class Booking extends Model
             'rejected_at' => 'datetime',
             'cancelled_at' => 'datetime',
             'completed_at' => 'datetime',
+
+            // The guest's valid ID, and the two moments it is checked
+            'id_document_status' => IdVerificationStatus::class,
+            'id_document_submitted_at' => 'datetime',
+            'id_document_verified_at' => 'datetime',
+            'checked_in_at' => 'datetime',
+            'checked_out_at' => 'datetime',
         ];
     }
 
@@ -216,6 +227,64 @@ class Booking extends Model
     public function cancelledBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cancelled_by');
+    }
+
+    /* Who handled the ID and the two desk moments ------------------------- */
+
+    public function idVerifiedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'id_document_verified_by');
+    }
+
+    public function checkedInBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'checked_in_by');
+    }
+
+    public function checkedOutBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'checked_out_by');
+    }
+
+    /* The valid ID ---------------------------------------------------------
+     *
+     * Three questions the front desk, the guest's own page and the policy
+     * all ask, answered once here so they cannot give different answers.
+     */
+
+    public function hasIdDocument(): bool
+    {
+        return filled($this->id_document_path);
+    }
+
+    public function idIsVerified(): bool
+    {
+        return $this->id_document_status === IdVerificationStatus::Verified;
+    }
+
+    public function isCheckedIn(): bool
+    {
+        return $this->checked_in_at !== null;
+    }
+
+    public function isCheckedOut(): bool
+    {
+        return $this->checked_out_at !== null;
+    }
+
+    /**
+     * May the guest send an ID for this stay?
+     *
+     * Only while the stay is still live, and never once the party has
+     * already left: a document arriving after check-out is of no use to
+     * anybody and is one more copy of somebody's licence to look after.
+     * A rejected ID may be replaced, which is the whole point of saying why.
+     */
+    public function acceptsIdDocument(): bool
+    {
+        return in_array($this->status, [BookingStatus::Pending, BookingStatus::Confirmed], true)
+            && ! $this->isCheckedOut()
+            && $this->id_document_status !== IdVerificationStatus::Verified;
     }
 
     /** At most one, because reviews.booking_id is unique. */

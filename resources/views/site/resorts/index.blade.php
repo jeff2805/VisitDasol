@@ -75,17 +75,7 @@
         </div>
 
         {{-- Maximum Price --}}
-        <div class="col-6 col-lg-3 col-xl-2">
-            <label class="form-label" for="filter-price">Max ₱/night</label>
-            <input type="number"
-                   class="form-control"
-                   id="filter-price"
-                   name="max_price"
-                   min="0"
-                   step="100"
-                   value="{{ $filters['max_price'] }}"
-                   placeholder="Any">
-        </div>
+            
 
         {{-- Sorting --}}
         <div class="col-sm-6 col-lg-3 col-xl-2">
@@ -94,23 +84,20 @@
                 @foreach ($sorts as $value => $label)
                     <option value="{{ $value }}" @selected($filters['sort'] === $value)>
                         {{ $label }}
+                        @endforeach
                     </option>
-                @endforeach
             </select>
         </div>
+           {{-- Clear --}}
+        <div class="col-auto">
+            <div class="vd-filterbar__actions">
+                <a class="btn btn-light border"
+                   href="{{ route('resorts.index') }}">
+                    Clear
+                </a>
+            </div>
+        </div>
 
-    </div>
-
-    {{-- Actions --}}
-    <div class="vd-filterbar__actions">
-        <button type="submit" class="btn btn-primary">
-            Apply filters
-        </button>
-
-        <a class="btn btn-light border"
-           href="{{ route('resorts.index') }}">
-            Clear
-        </a>
     </div>
 
 </form>

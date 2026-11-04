@@ -306,6 +306,138 @@
                     @endif
                 @endif
             </section>
+
+            {{-- The valid ID, and the desk ---------------------------------
+                 Added beside the decision rather than inside it: the ID is
+                 reviewed before the guest arrives, and arrival is a separate
+                 day's work from accepting the request. --}}
+            <section class="vd-panel p-4 mt-4" aria-labelledby="identity-title">
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                    <h2 class="h5 mb-0" id="identity-title">Valid ID and arrival</h2>
+                    <x-status-badge :status="$booking->id_document_status" />
+                </div>
+
+                @if ($booking->hasIdDocument())
+                    <p class="small text-muted-vd">
+                        Sent {{ $booking->id_document_submitted_at?->format('M j, Y \a\t g:i A') }}.
+                        Open it in a new tab; it is never published and only this resort can read it.
+                    </p>
+
+                    <x-external-link :href="route('owner.bookings.id-document', $booking)"
+                                     class="btn btn-sm btn-light border mb-3">
+                        <i class="bi bi-file-earmark-person me-1" aria-hidden="true"></i>
+                        Open the guest's ID
+                    </x-external-link>
+
+                    @if ($booking->id_document_status === \App\Enums\IdVerificationStatus::Pending)
+                        @can('verifyId', $booking)
+                            <div class="d-flex flex-wrap gap-2">
+                                <x-confirm-form id="approve-id"
+                                                :action="route('owner.bookings.id-document.approve', $booking)"
+                                                title="Verify this guest's ID?"
+                                                message="Check the name matches the booking and the document is readable. The guest is told, and can then be checked in."
+                                                trigger="Verify ID"
+                                                confirm="Yes, it is valid"
+                                                icon="patch-check"
+                                                variant="primary" />
+
+                                <x-confirm-form id="reject-id"
+                                                :action="route('owner.bookings.id-document.reject', $booking)"
+                                                title="Reject this ID?"
+                                                message="The guest is asked to send another, with your reason."
+                                                trigger="Reject ID"
+                                                confirm="Reject it"
+                                                icon="x-lg"
+                                                variant="danger"
+                                                trigger-class="btn btn-outline-danger">
+                                    <div class="mt-3">
+                                        <label class="form-label" for="reason">What was wrong?</label>
+                                        <textarea class="form-control @error('reason') is-invalid @enderror"
+                                                  id="reason" name="reason" rows="3" required
+                                                  placeholder="For example: the photo is too blurred to read the name.">{{ old('reason') }}</textarea>
+                                        @error('reason')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </x-confirm-form>
+                            </div>
+                        @endcan
+                    @elseif ($booking->idIsVerified())
+                        <p class="small text-muted-vd mb-0">
+                            Verified{{ $booking->idVerifiedBy ? ' by '.$booking->idVerifiedBy->full_name : '' }}
+                            on {{ $booking->id_document_verified_at?->format('M j, Y') }}.
+                        </p>
+                    @elseif (filled($booking->id_document_rejection_reason))
+                        <p class="small text-muted-vd mb-0">
+                            <strong>You rejected this ID:</strong> {{ $booking->id_document_rejection_reason }}
+                            The guest has been asked to send another.
+                        </p>
+                    @endif
+                @else
+                    <div class="alert alert-light border small mb-0" role="status">
+                        <strong>No valid ID submitted.</strong>
+                        <div class="text-muted-vd mt-1">
+                            The guest uploads one from their own reservation page.
+                            @if (config('visitdasol.booking.require_id_for_check_in'))
+                                They cannot be checked in until you have verified it.
+                            @endif
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Arrival and departure. Shown on a confirmed stay only:
+                     there is nothing to check somebody into before that. --}}
+                @if ($booking->status === \App\Enums\BookingStatus::Confirmed)
+                    <hr class="my-3">
+
+                    <dl class="row mb-0 small">
+                        <dt class="col-5 text-muted-vd fw-normal">Checked in</dt>
+                        <dd class="col-7">
+                            @if ($booking->isCheckedIn())
+                                {{ $booking->checked_in_at->format('M j, Y g:i A') }}
+                                <span class="d-block text-muted-vd">{{ $booking->checkedInBy?->full_name }}</span>
+                            @else
+                                <span class="text-muted-vd">Not yet</span>
+                            @endif
+                        </dd>
+
+                        <dt class="col-5 text-muted-vd fw-normal">Checked out</dt>
+                        <dd class="col-7">
+                            @if ($booking->isCheckedOut())
+                                {{ $booking->checked_out_at->format('M j, Y g:i A') }}
+                                <span class="d-block text-muted-vd">{{ $booking->checkedOutBy?->full_name }}</span>
+                            @else
+                                <span class="text-muted-vd">Not yet</span>
+                            @endif
+                        </dd>
+                    </dl>
+
+                    <div class="d-flex flex-wrap gap-2 mt-3">
+                        @can('checkIn', $booking)
+                            <x-confirm-form id="check-in-booking"
+                                            :action="route('owner.bookings.check-in', $booking)"
+                                            title="Check this party in?"
+                                            message="Records the arrival against your account and the time now. It cannot be undone here."
+                                            trigger="Check in"
+                                            confirm="Yes, check in"
+                                            icon="box-arrow-in-right"
+                                            variant="primary" />
+                        @endcan
+
+                        @can('checkOut', $booking)
+                            <x-confirm-form id="check-out-booking"
+                                            :action="route('owner.bookings.check-out', $booking)"
+                                            title="Check this party out?"
+                                            message="Records the departure against your account and the time now. It cannot be undone here."
+                                            trigger="Check out"
+                                            confirm="Yes, check out"
+                                            icon="box-arrow-right"
+                                            variant="primary"
+                                            trigger-class="btn btn-light border" />
+                        @endcan
+                    </div>
+                @endif
+            </section>
         </div>
     </div>
 @endsection

@@ -477,24 +477,44 @@ class StoreBookingRequest extends FormRequest
                 return;
             }
 
-            $capacityPerRoom = (int) $room->capacity;
-            $totalCapacity = $capacityPerRoom * $roomsBooked;
-
-            if ($capacityPerRoom < 1) {
+            /*
+             * BOTH ENDS OF THE RANGE, AND NOT WORKED OUT HERE.
+             *
+             * Room::partyProblem() is the one place that knows what a party
+             * has to be for a room: the ceiling from rooms.capacity, the
+             * floor from rooms.min_capacity where the owner set one. The
+             * form asked only the ceiling, and did its own multiplication to
+             * get it — so a room let as a whole could be booked by one
+             * person, and the arithmetic sat in a second place waiting to
+             * disagree with BookingService's.
+             *
+             * Both now call the model. Neither carries a capacity figure of
+             * its own.
+             */
+            if ($capacityProblem = $room->partyProblem($guests, $roomsBooked)) {
                 $validator->errors()->add(
-                    'room',
-                    'This room does not have a valid guest capacity.'
+                    (int) $room->capacity < 1 ? 'room' : 'guests',
+                    $capacityProblem
                 );
-
-                return;
             }
 
-            if ($guests > $totalCapacity) {
+            /*
+             * More units than the resort has of this type, whatever the
+             * dates. "max:20" above is a sanity bound on the form; this is
+             * the real ceiling, and it names the room the guest picked.
+             *
+             * The dated check — how many are free on THOSE nights — stays in
+             * BookingService, under the row lock, where it is the only
+             * answer that can be trusted.
+             */
+            $units = (int) $room->total_rooms;
+
+            if ($units > 0 && $roomsBooked > $units) {
                 $validator->errors()->add(
-                    'guests',
-                    "This booking accommodates up to {$totalCapacity} guests "
-                    . "for {$roomsBooked} selected room(s). "
-                    . 'Choose more rooms or reduce the guest count.'
+                    'rooms_booked',
+                    'The requested number of rooms exceeds available inventory. '
+                    . "This resort has {$units} " . Str::plural('unit', $units)
+                    . ' of this room type in total.'
                 );
             }
         });

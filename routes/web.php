@@ -21,6 +21,7 @@ use App\Http\Controllers\RouteProfileController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ResortController;
 use App\Http\Controllers\Tourist\BookingController as TouristBookingController;
+use App\Http\Controllers\Tourist\IdDocumentController as TouristIdDocumentController;
 use App\Http\Controllers\Tourist\PaymentController as TouristPaymentController;
 use App\Http\Controllers\Tourist\ReviewController as TouristReviewController;
 use App\Http\Controllers\Owner\ReviewController as OwnerReviewController;
@@ -37,6 +38,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Owner\AmenityController as OwnerAmenityController;
 use App\Http\Controllers\Owner\AvailabilityController as OwnerAvailabilityController;
 use App\Http\Controllers\Owner\BookingController as OwnerBookingController;
+use App\Http\Controllers\Owner\GuestIdentityController;
 use App\Http\Controllers\Owner\ManualGcashController;
 use App\Http\Controllers\Owner\PaymentPolicyController;
 use App\Http\Controllers\Owner\PaymentProofController;
@@ -332,6 +334,20 @@ Route::prefix('tourist')
         Route::get('/bookings/{booking}', [TouristBookingController::class, 'show'])->name('bookings.show');
         Route::patch('/bookings/{booking}/cancel', [TouristBookingController::class, 'cancel'])->name('bookings.cancel');
 
+        /*
+        | The guest's government-issued ID.
+        |
+        | The file goes to the PRIVATE disk, so the GET below is the only
+        | way to it and BookingPolicy::viewId is the whole of the gate.
+        | Throttled because an upload route that is not costs disk.
+        */
+        Route::post('/bookings/{booking}/id-document', [TouristIdDocumentController::class, 'store'])
+            ->middleware('throttle:10,1')
+            ->name('bookings.id-document.store');
+
+        Route::get('/bookings/{booking}/id-document', [TouristIdDocumentController::class, 'show'])
+            ->name('bookings.id-document.show');
+
         // Paying for a confirmed reservation. The gateway takes the payment on
         // its own pages; these routes only open a checkout and read the answer.
         Route::post('/bookings/{booking}/pay', [TouristPaymentController::class, 'start'])
@@ -430,6 +446,26 @@ Route::prefix('owner')
         Route::patch('/bookings/{booking}/reject', [OwnerBookingController::class, 'reject'])->name('bookings.reject');
         Route::patch('/bookings/{booking}/complete', [OwnerBookingController::class, 'complete'])->name('bookings.complete');
         Route::patch('/bookings/{booking}/cancel', [OwnerBookingController::class, 'cancel'])->name('bookings.cancel');
+
+        /*
+        | THE VALID ID, AND THE DESK.
+        |
+        | Every action here authorises against BookingPolicy, which asks
+        | whether this owner owns the resort the reservation is at. One
+        | resort can never reach another's documents, and the GET reads the
+        | private disk only after the policy has allowed it.
+        */
+        Route::get('/bookings/{booking}/id-document', [GuestIdentityController::class, 'document'])
+            ->name('bookings.id-document');
+        Route::patch('/bookings/{booking}/id-document/approve', [GuestIdentityController::class, 'approve'])
+            ->name('bookings.id-document.approve');
+        Route::patch('/bookings/{booking}/id-document/reject', [GuestIdentityController::class, 'reject'])
+            ->name('bookings.id-document.reject');
+
+        Route::patch('/bookings/{booking}/check-in', [GuestIdentityController::class, 'checkIn'])
+            ->name('bookings.check-in');
+        Route::patch('/bookings/{booking}/check-out', [GuestIdentityController::class, 'checkOut'])
+            ->name('bookings.check-out');
 
         Route::get('/availability', OwnerAvailabilityController::class)->name('availability');
         Route::get('/statistics', OwnerStatisticsController::class)->name('statistics');

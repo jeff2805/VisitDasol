@@ -64,6 +64,43 @@ class BookingException extends RuntimeException
     }
 
     /**
+     * The party is too small for a room that is let as a whole.
+     *
+     * Room::partyProblem() words both ends of the range, so this takes the
+     * sentence rather than composing a second one that could disagree with
+     * the form's.
+     */
+    public static function partyDoesNotFit(string $reason): self
+    {
+        return new self($reason);
+    }
+
+    /**
+     * The units are no longer there, at the moment an owner tried to
+     * confirm a request that has been waiting.
+     *
+     * Different wording from unavailable(), which a guest reads while
+     * booking. This one is read by the owner, about somebody else's
+     * request, and has to say what to do with it.
+     */
+    public static function availabilityChanged(
+        int $available,
+        int $requested
+    ): self {
+        return new self(
+            'Room availability has changed. Please review this booking request. '
+                . ($available === 0
+                    ? 'There are no units of this room type left for those dates.'
+                    : "Only {$available} "
+                        . str('unit')->plural($available)
+                        . ' of this room type '
+                        . ($available === 1 ? 'is' : 'are')
+                        . " still free for those dates, and the request is for {$requested}.")
+                . ' Decline it, or free up the dates before confirming.'
+        );
+    }
+
+    /**
      * Legacy exception retained for existing booking-limit logic.
      */
     public static function tooManyPending(int $limit): self

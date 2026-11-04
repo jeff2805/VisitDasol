@@ -99,9 +99,25 @@ enum PaymentPreference: string
              */
             self::OnArrival => false,
 
-           self::ManualGcash => (bool) (
-    $manualAccount && $manualAccount->active
-),
+            /*
+             * TWO QUESTIONS, the same as QRPh above.
+             *
+             * Has the resort an account switched on — and is there an
+             * amount for it to collect. The second had been dropped, so
+             * a resort asking for nothing in advance still offered a way
+             * to pay in advance: the guest was sent to produce a
+             * reference number and a screenshot for a payment nobody had
+             * asked for, against a Payment row ManualPaymentService
+             * refuses to open (see its start(), which throws
+             * nothingToPay). The option led to a dead end.
+             *
+             * isUsable() rather than ->active alone: an account with the
+             * switch on but no name or number on it cannot be paid, and
+             * offering it is the same dead end by a different route.
+             */
+            self::ManualGcash => $manualAccount !== null
+                && $manualAccount->isUsable()
+                && $prepaidWanted,
         };
     }
 

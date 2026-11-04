@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers\Tourist;
 
+use App\Enums\PaymentStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
 use App\Models\Payment;
+use App\Models\PaymentProof;
 use App\Services\Payments\ManualPaymentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -63,9 +64,9 @@ class ManualPaymentController extends Controller
             ? $payment->proofs()->first()
             : null;
 
-            $qrUrl = $account?->qr_image
-    ? asset('storage/' . $account->qr_image)
-    : null;
+        // Built by the model, so a remote public disk (Supabase Storage)
+        // and a file that has gone are both handled in one place.
+        $qrUrl = $account?->qr_url;
 
         return view('manual-gcash.pay', [
             'booking' => $booking,
@@ -116,6 +117,40 @@ class ManualPaymentController extends Controller
                 'max:4096',
             ],
         ]);
+
+        /*
+         * ONE RECEIPT AT A TIME, AND NONE ONCE IT IS SETTLED.
+         *
+         * Nothing stopped a guest sending a second receipt while the
+         * first was still with the resort, or another after it had been
+         * approved. The unique rule on reference_number above only stops
+         * the SAME reference twice; a different one went straight
+         * through, and the owner's queue filled with receipts for one
+         * payment with no way to tell which was the real one.
+         *
+         * AFTER VALIDATION, NOT BEFORE. A resent duplicate reference is a
+         * more specific complaint than "one at a time", and it belongs on
+         * the field the guest typed it into — checking this first would
+         * have replaced that message with a vaguer one.
+         *
+         * A rejected receipt is deliberately not caught: sending a
+         * corrected one is the whole point of giving a reason.
+         */
+        if ($payment->status === PaymentStatus::Paid) {
+            return back()->with('error', 'This payment has already been verified by the resort.');
+        }
+
+        $waiting = $payment->proofs()
+            ->where('status', PaymentProof::SUBMITTED)
+            ->exists();
+
+        if ($waiting) {
+            return back()->with(
+                'error',
+                'You have already sent a receipt for this payment, and the resort is still checking it. '
+                .'They will let you know once it has been reviewed.'
+            );
+        }
 
         $this->manualPayments->submit(
             $payment,

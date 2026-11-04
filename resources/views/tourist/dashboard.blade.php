@@ -28,11 +28,6 @@
                  arrived somewhere with fewer ways to find a room than a
                  stranger, and had to go back out to the public pages to start. --}}
             <x-stay-search :barangays="config('visitdasol.barangays')" class="mt-4" />
-
-            <div class="d-flex flex-wrap gap-2 mt-3">
-                <a class="btn btn-outline-salt" href="{{ route('resorts.index') }}">Browse every room</a>
-                <a class="btn btn-outline-salt" href="{{ route('map') }}">Open the map</a>
-            </div>
         </div>
 
         <x-shore-curve />

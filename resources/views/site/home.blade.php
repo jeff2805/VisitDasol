@@ -8,12 +8,11 @@
         <div class="vd-saltbeds" aria-hidden="true"></div>
 
         <div class="container position-relative">
-            <p class="vd-hero__place">{{ config('visitdasol.municipality') }}, {{ config('visitdasol.province') }}</p>
+            
             <h1 class="vd-wordmark" id="hero-title">{{ config('visitdasol.name') }}</h1>
             <p class="vd-hero__tagline">{{ config('visitdasol.tagline') }}</p>
-            <p class="vd-hero__lead">
-                Find a resort on Dasol Pangasinan, see where it is on the map, and request a room online.
-                Every listing is reviewed by the {{ config('visitdasol.contact.office') }}.
+            <p class="vd-hero__lead"> Find a resort on Dasol Pangasinan, see where it is on the map, and request a room online.
+                 Every listing is reviewed by the {{ config('visitdasol.contact.office') }}.
             </p>
 
             {{-- The visitor arrives knowing where they want to go and when.
@@ -21,42 +20,12 @@
                  a brochure and something they can use. --}}
             <x-stay-search :barangays="config('visitdasol.barangays')" class="mt-4" />
 
-            <div class="d-flex flex-wrap gap-2 mt-3">
-                <a class="btn btn-outline-salt" href="{{ route('resorts.index') }}">Browse every room</a>
-
-                @if (Route::has('map'))
-                    <a class="btn btn-outline-salt" href="{{ route('map') }}">Open the map</a>
-                @else
-                    <span class="btn btn-outline-salt disabled" aria-disabled="true">Open the map</span>
-                @endif
-            </div>
+           
 
             {{-- What the search and the two buttons above all lead to, said
                  plainly. The same three the sign-in panel offers a returning
                  guest; a first-time visitor reads them here instead. --}}
-            <ul class="vd-hero__features">
-                <li>
-                    <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
-                    <span>
-                        <strong>Explore</strong>
-                        Destinations
-                    </span>
-                </li>
-                <li>
-                    <i class="bi bi-house-heart-fill" aria-hidden="true"></i>
-                    <span>
-                        <strong>Find</strong>
-                        Accommodations
-                    </span>
-                </li>
-                <li>
-                    <i class="bi bi-camera-fill" aria-hidden="true"></i>
-                    <span>
-                        <strong>Experience</strong>
-                        the Beauty of Dasol
-                    </span>
-                </li>
-            </ul>
+          
         </div>
 
         <x-shore-curve />

@@ -355,6 +355,30 @@ return [
         | anything set here is honoured to the hour.
         */
         'auto_complete_grace_hours' => 0,
+
+        /*
+        | THE VALID ID AT THE FRONT DESK.
+        |
+        | require_id_for_check_in   a party cannot be checked in until the
+        |                           resort has approved a government-issued
+        |                           ID for the booking. On by default: it is
+        |                           what the tourism office asks resorts to
+        |                           keep, and an unenforced requirement is
+        |                           the same as none.
+        |
+        | require_check_in_before_check_out
+        |                           a party cannot be checked out of a stay
+        |                           they were never checked into. Stops a
+        |                           desk closing a record that has no arrival
+        |                           in it, which would leave a stay that
+        |                           looks handled and was never seen.
+        |
+        | Turn either off only where a resort has its own procedure on paper.
+        | Nothing here weakens who may READ a document: that is the policy's
+        | business and is never configurable.
+        */
+        'require_id_for_check_in' => env('VD_REQUIRE_ID_FOR_CHECK_IN', true),
+        'require_check_in_before_check_out' => true,
     ],
 
     /*
@@ -409,6 +433,11 @@ return [
             'destinations' => 'destinations',
             'announcements' => 'announcements',
             'owner_documents' => 'owner-documents',
+
+            // Guests' valid IDs. PRIVATE DISK ONLY — the folder name is
+            // here so one spelling is used everywhere, not so it can be
+            // pointed at the public disk.
+            'booking_ids' => 'booking-ids',
         ],
     ],
 

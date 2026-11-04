@@ -524,11 +524,27 @@
                                      entirely when no gateway is configured, so the form never
                                      promises a payment link the system cannot produce. --}}
 
-{{-- Payment preference options --}}
-@if (count($preferences) > 1)
+{{-- Payment preference options.
+
+     THE TEST WAS count($preferences) > 1, AND IT HID THE ONLY METHOD.
+
+     A resort whose single way of taking money is Manual GCash — which is
+     most of them, since QRPh needs PayMongo keys the portal may not have —
+     produced a list of exactly one. One is not more than one, so the whole
+     fieldset was skipped: no radio was rendered, payment_preference was
+     never posted, and the booking was stored with no preference at all. The
+     guest was never offered the resort's GCash account and never reached
+     the page that shows it.
+
+     Shown whenever there is anything to show. The legend asks the question
+     differently for one option, because "How would you like to pay?" above
+     a single immovable choice is not a question. --}}
+@if (count($preferences) > 0)
     <fieldset class="vd-paychoice">
         <legend class="vd-paychoice__legend">
-            How would you like to pay?
+            {{ count($preferences) === 1
+                ? 'How you will pay'
+                : 'How would you like to pay?' }}
         </legend>
 
         @foreach ($preferences as $preference)
@@ -539,10 +555,15 @@
                     name="payment_preference"
                     value="{{ $preference->value }}"
                     data-payment-preference
+                    {{-- The default was hardcoded to QRPh, which is not on
+                         this list when PayMongo is not configured — so with
+                         GCash the only option nothing was ticked and the
+                         form posted no preference at all. The first method
+                         actually offered is the default now. --}}
                     @checked(
                         old(
                             'payment_preference',
-                            \App\Enums\PaymentPreference::Online->value
+                            $preferences[0]->value
                         ) === $preference->value
                     )
                 >
