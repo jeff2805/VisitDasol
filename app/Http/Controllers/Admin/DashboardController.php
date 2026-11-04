@@ -146,7 +146,7 @@ class DashboardController extends Controller
         $guests = Booking::query()
             ->whereIn('status', array_column(self::REAL, 'value'))
             ->whereYear('check_in_date', $year)
-            ->selectRaw('MONTH(check_in_date) as month, SUM(guests) as guests')
+            ->selectRaw('CAST(EXTRACT(MONTH FROM check_in_date) AS integer) as month, SUM(guests) as guests')
             ->groupBy('month')
             ->pluck('guests', 'month');
 
@@ -228,7 +228,7 @@ class DashboardController extends Controller
     private function years(): Collection
     {
         return Booking::query()
-            ->selectRaw('YEAR(check_in_date) as year')
+            ->selectRaw('CAST(EXTRACT(YEAR FROM check_in_date) AS integer) as year')
             ->groupBy('year')
             ->pluck('year')
             ->map(fn ($year): int => (int) $year)

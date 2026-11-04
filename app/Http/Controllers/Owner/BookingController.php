@@ -55,7 +55,7 @@ class BookingController extends Controller
                 $match->where('booking_reference', 'like', "%{$search}%")
                     ->orWhere('contact_name', 'like', "%{$search}%");
             }))
-            ->orderByRaw("FIELD(status, 'pending') DESC")
+            ->orderByRaw("CASE WHEN status = 'pending' THEN 1 ELSE 0 END DESC")
             ->orderBy('check_in_date')
             ->paginate(config('visitdasol.per_page'))
             ->withQueryString();

@@ -66,7 +66,7 @@ class ActivityLogController extends Controller
     private function availableGroups(): array
     {
         return ActivityLog::query()
-            ->selectRaw("SUBSTRING_INDEX(action, '.', 1) as grp")
+            ->selectRaw("SPLIT_PART(action, '.', 1) as grp")
             ->distinct()
             ->orderBy('grp')
             ->pluck('grp')

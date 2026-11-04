@@ -101,20 +101,20 @@ class ReportService
         $column = $basis === 'requested' ? 'bookings.created_at' : 'bookings.check_in_date';
 
         $rows = $this->bookingsIn($from, $to, $resortId, $basis)
-            ->selectRaw("DATE_FORMAT({$column}, '%Y-%m') as month")
+            ->selectRaw("TO_CHAR({$column}, 'YYYY-MM') as month")
             ->selectRaw('count(*) as reservations')
             ->groupBy('month')
             ->pluck('reservations', 'month');
 
         $guests = $this->bookingsIn($from, $to, $resortId, $basis)
-            ->selectRaw("DATE_FORMAT({$column}, '%Y-%m') as month")
+            ->selectRaw("TO_CHAR({$column}, 'YYYY-MM') as month")
             ->selectRaw('sum(guests) as total')
             ->groupBy('month')
             ->pluck('total', 'month');
 
         $value = $this->bookingsIn($from, $to, $resortId, $basis)
             ->whereIn('status', array_column(self::REAL, 'value'))
-            ->selectRaw("DATE_FORMAT({$column}, '%Y-%m') as month")
+            ->selectRaw("TO_CHAR({$column}, 'YYYY-MM') as month")
             ->selectRaw('sum(total_amount) as total')
             ->groupBy('month')
             ->pluck('total', 'month');
@@ -236,7 +236,7 @@ class ReportService
         $byRole = fn (UserRole $role) => User::query()
             ->where('role', $role->value)
             ->whereBetween('created_at', [$from->startOfDay(), $to->endOfDay()])
-            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month")
+            ->selectRaw("TO_CHAR(created_at, 'YYYY-MM') as month")
             ->selectRaw('count(*) as total')
             ->groupBy('month')
             ->pluck('total', 'month');
@@ -272,7 +272,7 @@ class ReportService
             ->where('check_in_date', '<=', $to->toDateString())
             ->where('check_out_date', '>', $from->toDateString())
             ->selectRaw(
-                'COALESCE(SUM(DATEDIFF(LEAST(check_out_date, ?), GREATEST(check_in_date, ?)) * rooms_booked), 0) as nights',
+                'COALESCE(SUM((LEAST(check_out_date, CAST(? AS date)) - GREATEST(check_in_date, CAST(? AS date))) * rooms_booked), 0) as nights',
                 [$to->addDay()->toDateString(), $from->toDateString()]
             )
             ->first();
