@@ -14,6 +14,9 @@ use Symfony\Component\HttpFoundation\Response;
  * through connect-src. Both are read from config/visitdasol.php, so a
  * provider is changed in one place and the policy follows.
  *
+ * Uploaded photos are allowed through img-src from the public disk's
+ * host when that disk is remote (Supabase Storage).
+ *
  * Signed-in pages also get Cache-Control: no-store.
  */
 class SecurityHeaders
@@ -63,7 +66,7 @@ class SecurityHeaders
             "default-src 'self'",
             "script-src 'self'",
             "style-src 'self' 'unsafe-inline'",
-            'img-src '.trim("'self' data: ".$tiles),
+            'img-src '.trim("'self' data: ".self::storageOrigin().' '.$tiles),
             "font-src 'self'",
             // The routing service, and nothing else. Mapbox was named
             // here too and is no longer called.
@@ -122,5 +125,22 @@ class SecurityHeaders
         }
 
         return implode(' ', array_unique($hosts));
+    }
+
+    /**
+     * When uploads live on a remote disk (Supabase Storage), the browser
+     * must be allowed to load images from that host too.
+     */
+    private static function storageOrigin(): string
+    {
+        if (config('filesystems.disks.public.driver') === 'local') {
+            return '';
+        }
+
+        $url = (string) config('filesystems.disks.public.url');
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+        $host = parse_url($url, PHP_URL_HOST);
+
+        return $scheme && $host ? "{$scheme}://{$host}" : '';
     }
 }
