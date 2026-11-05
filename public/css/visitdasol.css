@@ -955,10 +955,17 @@ a {
   color: var(--vd-muted);
 }
 
-/* "Where, when, how many" — the search that sits in the hero.
-
-   A white card on the photograph, so it reads as the thing to use rather
-   than as more of the picture. */
+/* "When, and for how long" — the stay search.
+ *
+ * A white card, raised off whatever it stands on, so it reads as the thing
+ * to use rather than as part of the page behind it.
+ *
+ * THE `margin-top: 4rem !important` THAT WAS HERE HAS GONE WITH IT. The
+ * comment on it read "Move booking engine lower inside the hero", and the
+ * hero is no longer where this stands on the home page — it is its own band
+ * below, and the tourist dashboard and Rooms page never wanted the push at
+ * all. Spacing belongs to whatever contains the card, not to the card.
+ */
 .vd-stay-search {
   display: grid;
   gap: var(--vd-space-sm);
@@ -966,8 +973,33 @@ a {
   border-radius: var(--vd-radius-lg);
   background: rgba(255, 255, 255, .96);
   box-shadow: var(--vd-elevation-3);
-  /* Move booking engine lower inside the hero */
-    margin-top: 4rem !important;
+}
+
+/*
+ * The band the home page gives it, between the hero and "Discover Dasol".
+ *
+ * Top padding only. The tinted section below opens with its own
+ * clamp(3rem, 6vw, 5rem), which is the space under the card; adding a
+ * bottom here would stack the two into a stretch of empty page.
+ *
+ * Ordinary flow — no negative pull up over the hero, nothing positioned
+ * absolutely — so the card cannot land on the shore curve above it or on
+ * the heading below at any width.
+ */
+.vd-booking-bar {
+  /*
+   * The clamp is the band's own rhythm; the 2.5rem on top of it is a
+   * deliberate 40px drop, asked for so the card sits further clear of the
+   * hero above it.
+   *
+   * Added to the PADDING rather than pulled with a margin, and added here
+   * rather than on .vd-stay-search, for two reasons: the card is shared
+   * with the tourist dashboard and the Rooms page, which must not move;
+   * and because this is ordinary flow, everything below shifts down with
+   * it, so the gap to "Discover Dasol" is unchanged and nothing can
+   * overlap. 2.5rem, not 40px, so it scales if the root size ever does.
+   */
+  padding: calc(clamp(2rem, 4vw, 3rem) + 2.5rem) 0 0;
 }
 
 .vd-stay-search .form-label {
@@ -980,23 +1012,26 @@ a {
 .vd-stay-search__field { min-width: 0; }
 
 /*
- * COUNT THE COLUMNS AGAINST THE FORM, EVERY TIME ONE IS ADDED.
+ * COUNT THE COLUMNS AGAINST THE FORM, EVERY TIME ONE CHANGES.
  *
- * The desktop rule below used to read
- *   grid-template-columns: 1.6fr 1fr 1fr .7fr auto;
- * which is five tracks. The form has seven children: where, check-in
- * date, check-in time, check-out date, check-out time, guests, and the
- * button. The two time fields were added to the Blade afterwards and
- * nobody came back here, so grid wrapped the last two onto a second
- * row — Guests and Search sat underneath, which is not a search bar,
- * it is two of them.
+ * This has now been wrong in both directions. It first read five tracks
+ * while the form had seven children, and grid wrapped the last two onto a
+ * row of their own. Then the barangay and guests controls were taken out of
+ * the Blade, leaving FIVE children — four fields and the button — against a
+ * seven-track rule: two tracks stood empty and the four that were used were
+ * sized for controls that are no longer there, so the dates, the times and
+ * the button were each given the wrong width.
+ *
+ * Five children. Five tracks at the widest breakpoint. If a control is ever
+ * added or removed from stay-search.blade.php, this is the file to come back
+ * to, and StaySearchLayoutTest is what notices when nobody does.
  */
 
-/* One control per row on a phone: seven side by side at 360px are seven
-   controls nobody can use. The button goes full width at the foot. */
+/* One control per row on a phone: four fields side by side at 360px are
+   four controls nobody can use. The button goes full width at the foot. */
 @media (min-width: 576px) {
   .vd-stay-search {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .vd-stay-search__go {
@@ -1004,10 +1039,12 @@ a {
   }
 }
 
-/* Tablet: three across, still with the button on its own line. */
+/* Tablet: the four fields across, with the button on its own line beneath.
+   A date input will not render much below 140px, and four of them in the
+   720px container here get about 170px each, which clears it. */
 @media (min-width: 768px) {
   .vd-stay-search {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
@@ -1020,14 +1057,17 @@ a {
  * row would have overflowed or clipped the pickers rather than fitting.
  * Three clean columns is the honest answer at that width.
  *
- * The tracks are sized by what each control actually holds. "Where"
- * takes the most because a barangay name is longer than a date; the
- * times take less than the dates because a clock is shorter than a
- * calendar; guests is a number up to 30.
+ * The tracks are sized by what each control actually holds: the times take
+ * less than the dates, because a clock is shorter than a calendar, and the
+ * button takes the width of its own label.
+ *
+ * Five tracks for five children — check-in date, check-in time, check-out
+ * date, check-out time, Search. The old seven were sized for a barangay
+ * select and a guests box that the form no longer carries.
  */
 @media (min-width: 1200px) {
   .vd-stay-search {
-    grid-template-columns: 1.5fr 1.05fr .85fr 1.05fr .85fr .6fr auto;
+    grid-template-columns: 1.05fr .85fr 1.05fr .85fr auto;
     align-items: end;
     gap: var(--vd-space-md);
     padding: var(--vd-space-lg);
@@ -1715,8 +1755,27 @@ th[aria-sort] {
 .vd-hero {
     position: relative;
     overflow: hidden;
-    min-height: 300px;
-    height: 650px;
+
+    /*
+     * A FLOOR, NOT A FIXED HEIGHT.
+     *
+     * This read `min-height: 300px; height: 650px` with overflow: hidden, so
+     * the hero was a 650px box that cut off whatever did not fit. That was
+     * survivable while it held three lines of wording; with the Plan Your
+     * Trip block and the three-column card inside it, the card's foot would
+     * simply have been sliced off, and on a narrow window where the text
+     * wraps further it would take the buttons with it.
+     *
+     * min-height keeps the same 650px presence on a page with little in it,
+     * and lets the section grow when there is more. Nothing else about the
+     * hero changes: same photograph, same cover sizing, same curve.
+     */
+    min-height: 650px;
+
+    /* Room at the foot for the shore curve, which is absolutely positioned
+       at bottom: -1px and stands clamp(2.5rem, 6vw, 4.5rem) tall. Without
+       this the card would sit under the waterline. */
+    padding-bottom: calc(clamp(2.5rem, 6vw, 4.5rem) + var(--vd-space-2xl));
 
     background-image: url('/images/image3.jpg');
     background-size: cover;
@@ -1812,10 +1871,9 @@ th[aria-sort] {
 
 /*
  * What the search and the two buttons above all lead to, in three words.
- * Reuses the same icon-plus-two-line-label shape as .vd-auth__features on the
- * sign-in panel, so a visitor sees the same three promises whether they land
- * here signed out or sign in later — just set for a bright photo instead of
- * a solid navy ground.
+ * The sign-in panel used to carry the same three promises in the same
+ * icon-plus-two-line-label shape; those have since been removed, so this is
+ * now the only place the shape is defined.
  */
 .vd-hero__features {
   display: flex;
@@ -1870,6 +1928,185 @@ th[aria-sort] {
   stroke-width: 2;
   vector-effect: non-scaling-stroke;
   opacity: .9;
+}
+
+/* Plan your trip ---------------------------------------------------------
+ *
+ * Sits in the hero, under the description. The wording is white on a bright
+ * photograph and .vd-hero::before carries `background: none !important`, so
+ * there is no scrim doing the work — the shadow below is the whole of the
+ * contrast, and it is the same triple the hero's own lead uses rather than
+ * a second recipe that would drift from it.
+ */
+.vd-plan {
+  margin-top: clamp(1.5rem, 4vw, 2.75rem);
+  max-width: 52ch;
+}
+
+.vd-plan__title {
+  font-family: var(--vd-font-display);
+  font-weight: 700;
+  font-stretch: 85%;
+  font-size: clamp(1.75rem, 1.2rem + 2vw, 3rem);
+  line-height: 1.1;
+  color: #FFFFFF;
+  margin: 0 0 var(--vd-space-sm);
+  text-shadow:
+    0 2px 4px rgba(0, 0, 0, .85),
+    0 4px 10px rgba(0, 0, 0, .65),
+    0 1px 2px rgba(0, 0, 0, .95);
+}
+
+/* The place name in the brand's gold, the way the wordmark picks it out. */
+.vd-plan__accent {
+  color: var(--vd-mango);
+}
+
+.vd-plan__text {
+  max-width: 46ch;
+  margin: 0 0 clamp(1.25rem, 2.5vw, 1.75rem);
+  color: #FFFFFF;
+  font-size: clamp(1rem, .95rem + .3vw, 1.15rem);
+  line-height: 1.6;
+  text-shadow:
+    0 2px 4px rgba(0, 0, 0, .85),
+    0 4px 10px rgba(0, 0, 0, .65),
+    0 1px 2px rgba(0, 0, 0, .95);
+}
+
+.vd-plan__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--vd-space-sm);
+}
+
+.vd-plan__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .7rem 1.5rem;
+  border-radius: 999px;
+  font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color var(--vd-transition), transform var(--vd-transition);
+}
+
+.vd-plan__btn:hover,
+.vd-plan__btn:focus-visible {
+  transform: translateY(-1px);
+}
+
+/* Gold on dark blue, which is the site's call-to-action pair. */
+.vd-plan__btn--gold {
+  background: var(--vd-mango);
+  color: var(--vd-bay);
+}
+
+.vd-plan__btn--gold:hover,
+.vd-plan__btn--gold:focus-visible {
+  background: var(--vd-mango-dark);
+  color: var(--vd-bay);
+}
+
+.vd-plan__btn--bay {
+  background: var(--vd-bay);
+  color: #FFFFFF;
+}
+
+.vd-plan__btn--bay:hover,
+.vd-plan__btn--bay:focus-visible {
+  background: var(--vd-bay-raised);
+  color: #FFFFFF;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vd-plan__btn {
+    transition: none;
+  }
+
+  .vd-plan__btn:hover,
+  .vd-plan__btn:focus-visible {
+    transform: none;
+  }
+}
+
+/* The three facts, on a card that floats over the foot of the hero --------
+ *
+ * White on the photograph, so it reads as a panel laid on the beach rather
+ * than as part of it. It is in ORDINARY FLOW inside the hero, not pulled up
+ * with a negative margin or positioned absolutely: the hero's padding-bottom
+ * keeps it clear of the shore curve, and because it takes up room the
+ * section grows around it instead of the card landing on the band below.
+ */
+.vd-trip-facts {
+  margin-top: clamp(2rem, 5vw, 3.5rem);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(1.25rem, 3vw, 2rem);
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  border-radius: var(--vd-radius-lg);
+  background: #FFFFFF;
+  box-shadow: var(--vd-elevation-3);
+}
+
+.vd-trip-facts__item {
+  min-width: 0;
+}
+
+.vd-trip-facts__icon {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  margin-bottom: var(--vd-space-sm);
+  background: var(--vd-lagoon-tint);
+  color: var(--vd-lagoon-dark);
+  font-size: 1.35rem;
+}
+
+.vd-trip-facts__label {
+  margin: 0 0 .3rem;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--vd-muted);
+}
+
+.vd-trip-facts__heading {
+  margin: 0 0 .5rem;
+  font-size: 1.15rem;
+  line-height: 1.3;
+  color: var(--vd-bay);
+}
+
+.vd-trip-facts__text {
+  margin: 0;
+  color: var(--vd-muted);
+  font-size: .9375rem;
+  line-height: 1.6;
+}
+
+/*
+ * Three across once there is room for them, with a hairline between.
+ *
+ * The rule is drawn on the second and third columns rather than as a border
+ * on every item, so there is no line hanging off the outer edge — and it is
+ * declared only here, because stacked on a phone a left border would be a
+ * stripe down the side of each block rather than a separator between them.
+ */
+@media (min-width: 992px) {
+  .vd-trip-facts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: clamp(1.5rem, 3vw, 2.5rem);
+  }
+
+  .vd-trip-facts__item + .vd-trip-facts__item {
+    padding-left: clamp(1.5rem, 3vw, 2.5rem);
+    border-left: 1px solid var(--vd-brine);
+  }
 }
 
 /*
@@ -2195,7 +2432,7 @@ th[aria-sort] {
   position: relative;
   overflow: hidden;
 
-  background-image: url('/images/dasol-arko.jpg');
+  background-image: url('/images/dasol.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -2205,13 +2442,11 @@ th[aria-sort] {
 }
 
 .vd-auth__panel::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg,
-    rgba(13, 59, 71, .88) 0%,
-    rgba(13, 59, 71, .72) 45%,
-    rgba(11, 48, 58, .93) 100%);
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: transparent;
+    pointer-events: none;
 }
 .vd-auth__panel .vd-brand {
   color: #FFFFFF;
@@ -2312,48 +2547,16 @@ th[aria-sort] {
 }
 
 /*
- * What is on the other side of signing in.
+ * The sign-in panel's three promotional lines are gone, and so are the four
+ * rules that dressed them: .vd-auth__features, its > li, its .bi and its
+ * strong. Nothing renders that class any more — it existed only in
+ * layouts/auth.blade.php — so the rules are deleted rather than left behind
+ * for somebody to wonder about.
  *
- * The panel was a photograph, a sentence, and then a tall stretch of empty
- * navy. These three lines fill it with the only thing a sign-in page has to
- * say for itself: what the site is for.
+ * No spacing moved with them. The panel is a flex column and
+ * .vd-auth__office below carries margin-top: auto, so the foot is held down
+ * by the column and not by the height of what sat above it.
  */
-/* Across the panel rather than down it: three short labels in a column would
-   be a list to read, and in a row they are a glance. */
-.vd-auth__features {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--vd-space-lg) var(--vd-space-xl);
-  margin: var(--vd-space-2xl) 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.vd-auth__features > li {
-  display: flex;
-  align-items: center;
-  gap: var(--vd-space-xs);
-  color: rgba(255, 255, 255, .82);
-  font-size: var(--vd-text-caption);
-  line-height: 1.25;
-}
-
-/* Small, plain, and in the brand's light teal — the one colour on the panel
-   that is neither the photograph nor the wording, so the three marks read as
-   signposts rather than as more text. A ring around each would make them
-   badges competing with the words they only point at. */
-.vd-auth__features .bi {
-  flex-shrink: 0;
-  color: var(--vd-lagoon-light);
-  font-size: 1.3rem;
-}
-
-.vd-auth__features strong {
-  display: block;
-  color: #FFFFFF;
-  font-weight: 650;
-  font-size: var(--vd-text-small);
-}
 
 /*
  * Pushed to the foot of the panel, under a short rule.
@@ -6082,4 +6285,13 @@ h2.visually-hidden {
         width: auto;
         white-space: nowrap;
     }
+}
+
+/* Remove salt-bed square pattern from login background only */
+.vd-auth__panel .vd-saltbeds {
+    display: none !important;
+}
+/* Remove salt-bed square pattern from homepage hero only */
+.vd-hero .vd-saltbeds {
+    display: none !important;
 }

@@ -49,40 +49,17 @@
                 <p class="vd-auth__panel-title">@yield('panel_title', 'Explore. Discover. Experience.')</p>
                 <p class="vd-auth__panel-text mb-0 mt-3">@yield('panel_text', 'Book resorts in Dasol, Pangasinan, and find places to visit along the bay.')</p>
 
-                {{-- What is on the other side of signing in. The panel carried
-                     a photograph and a sentence and then a lot of empty navy;
-                     these three say what the site is for, which is what a
-                     sign-in page is otherwise silent about.
+                {{-- The three promotional lines that stood here — Explore
+                     Destinations, Find Accommodations, Experience the Beauty
+                     of Dasol — have been taken out. The panel is the
+                     photograph, the wording above, and the office line at the
+                     foot; nothing here sells the site to somebody who has
+                     already come to sign in to it.
 
-                     The icons repeat the words rather than replacing them, so
-                     they are hidden from assistive technology. --}}
-                {{-- The line breaks matter: the strong is a block, so the two
-                     halves sit on separate lines either way, but written
-                     without a space between the tags they are read aloud as
-                     one word — "Experiencethe Beauty of Dasol". --}}
-                <ul class="vd-auth__features">
-                    <li>
-                        <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
-                        <span>
-                            <strong>Explore</strong>
-                            Destinations
-                        </span>
-                    </li>
-                    <li>
-                        <i class="bi bi-house-heart-fill" aria-hidden="true"></i>
-                        <span>
-                            <strong>Find</strong>
-                            Accommodations
-                        </span>
-                    </li>
-                    <li>
-                        <i class="bi bi-camera-fill" aria-hidden="true"></i>
-                        <span>
-                            <strong>Experience</strong>
-                            the Beauty of Dasol
-                        </span>
-                    </li>
-                </ul>
+                     The spacing needs no replacement. .vd-auth__office carries
+                     margin-top: auto, so the foot of the panel is held down by
+                     the flex column rather than by the height of whatever sat
+                     above it. --}}
             </div>
 
             <p class="position-relative small mb-0 d-none d-lg-block text-white-50 vd-auth__office">

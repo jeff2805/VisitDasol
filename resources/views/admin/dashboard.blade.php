@@ -4,31 +4,38 @@
 
 @section('content')
     {{-- The greeting banner: a photograph of Dasol, darkened on the reading side. --}}
-    <section class="vd-greeting">
-        <img class="vd-greeting__photo" src="{{ asset('images/image1.png') }}" alt="" width="1600" height="900">
+   <section class="vd-greeting">
+    <img
+        class="vd-greeting__photo"
+        src="{{ asset('images/image3.jpg') }}"
+        alt="Dasol Pangasinan"
+        width="1600"
+        height="900"
+    >
 
-        <div class="vd-greeting__body">
-            <p class="vd-greeting__place">
-                <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
-                {{ config('visitdasol.municipality') }}, {{ config('visitdasol.province') }}
-            </p>
-
-            <h1 class="vd-greeting__title">
-                <span class="vd-greeting__hello">Welcome back,</span>
-                {{ auth()->user()->first_name }}!
-            </h1>
-
-            <p class="vd-greeting__lead">
-                Monitor, manage, and support Dasol's tourism — resorts, reservations,
-                and the people behind them — in one place.
-            </p>
-        </div>
-
-        <p class="vd-greeting__today">
-            <span class="vd-greeting__today-day">{{ now()->format('l') }}</span>
-            <span class="vd-greeting__today-date">{{ now()->format('F j, Y') }}</span>
+    <div class="vd-greeting__body">
+        <p class="vd-greeting__place">
+            <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+            {{ config('visitdasol.municipality') }},
+            {{ config('visitdasol.province') }}
         </p>
-    </section>
+
+        <h1 class="vd-greeting__title">
+            <span class="vd-greeting__hello">Welcome back,</span>
+            {{ auth()->user()->first_name }}!
+        </h1>
+
+        <p class="vd-greeting__lead">
+            Monitor, manage, and support Dasol's tourism — resorts, reservations,
+            and the people behind them — in one place.
+        </p>
+    </div>
+
+    <p class="vd-greeting__today">
+        <span class="vd-greeting__today-day">{{ now()->format('l') }}</span>
+        <span class="vd-greeting__today-date">{{ now()->format('F j, Y') }}</span>
+    </p>
+</section>
 
     {{-- Only when there is something to do; an empty strip would be noise. --}}
     @if ($pendingOwnerCount > 0 || $pendingResortCount > 0)

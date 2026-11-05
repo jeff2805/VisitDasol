@@ -15,20 +15,105 @@
                  Every listing is reviewed by the {{ config('visitdasol.contact.office') }}.
             </p>
 
-            {{-- The visitor arrives knowing where they want to go and when.
-                 Asking here saves them a page, and is the difference between
-                 a brochure and something they can use. --}}
-            <x-stay-search :barangays="config('visitdasol.barangays')" class="mt-4" />
+            {{-- Plan your trip ------------------------------------------------
+                 Inside the hero, under the description and above the card, so
+                 the empty stretch of beach between the wording and the curve
+                 does something. The two buttons go to screens that already
+                 exist: the map carries the route planner, and the tourist-spot
+                 listing is the destinations page. --}}
+            <div class="vd-plan">
+                <h2 class="vd-plan__title">
+                    Plan Your Trip to <span class="vd-plan__accent">Dasol</span>
+                </h2>
 
-           
+                <p class="vd-plan__text">
+                    Discover beautiful beaches, explore tourist attractions, and create
+                    your perfect getaway in Dasol, Pangasinan.
+                </p>
 
-            {{-- What the search and the two buttons above all lead to, said
-                 plainly. The same three the sign-in panel offers a returning
-                 guest; a first-time visitor reads them here instead. --}}
-          
+                <div class="vd-plan__actions">
+                    <a class="vd-plan__btn vd-plan__btn--gold" href="{{ route('map') }}">
+                        <i class="bi bi-map-fill" aria-hidden="true"></i>
+                        Plan My Trip
+                    </a>
+
+                    <a class="vd-plan__btn vd-plan__btn--bay" href="{{ route('destinations.index') }}">
+                        <i class="bi bi-compass-fill" aria-hidden="true"></i>
+                        Explore Destinations
+                    </a>
+                </div>
+            </div>
+
+            {{-- What a visitor asks before they book: when to come, what the
+                 weather does, and how to get here.
+
+                 EVERY LINE IS GENERAL AND CHECKABLE. No departure times, no
+                 fares, no journey lengths — this page cannot keep a timetable
+                 current, and a stale one would strand somebody. "Explore the
+                 available routes" sends them to the map, which knows. --}}
+            <div class="vd-trip-facts">
+                <article class="vd-trip-facts__item">
+                    <span class="vd-trip-facts__icon">
+                        <i class="bi bi-calendar-event" aria-hidden="true"></i>
+                    </span>
+                    <p class="vd-trip-facts__label">Best time</p>
+                    <h3 class="vd-trip-facts__heading">December &ndash; May</h3>
+                    <p class="vd-trip-facts__text">
+                        Enjoy sunny weather and beautiful coastal conditions, perfect for
+                        beach activities, island exploration, and relaxing seaside vacations.
+                    </p>
+                </article>
+
+                <article class="vd-trip-facts__item">
+                    <span class="vd-trip-facts__icon">
+                        <i class="bi bi-cloud-sun-fill" aria-hidden="true"></i>
+                    </span>
+                    <p class="vd-trip-facts__label">Climate &amp; weather</p>
+                    <h3 class="vd-trip-facts__heading">Tropical Coastal Climate</h3>
+                    <p class="vd-trip-facts__text">
+                        Dasol offers a warm tropical climate with sunny days, coastal breezes,
+                        and seasonal rainfall. Check local weather conditions before travelling.
+                    </p>
+                </article>
+
+                <article class="vd-trip-facts__item">
+                    <span class="vd-trip-facts__icon">
+                        <i class="bi bi-signpost-split-fill" aria-hidden="true"></i>
+                    </span>
+                    <p class="vd-trip-facts__label">How to get there</p>
+                    <h3 class="vd-trip-facts__heading">Via Alaminos or Nearby Coastal Routes</h3>
+                    <p class="vd-trip-facts__text">
+                        Travel to Dasol, Pangasinan by road from nearby cities.
+                        <a href="{{ route('map') }}">Explore the available routes</a>
+                        and discover the best way to reach your destination.
+                    </p>
+                </article>
+            </div>
         </div>
 
         <x-shore-curve />
+    </section>
+
+    {{-- The stay search, on its own band between the hero and the listings.
+
+         IT USED TO SIT INSIDE THE HERO, which is a fixed 650px tall with
+         overflow: hidden, and it was pushed down into that box by a
+         `margin-top: 4rem !important` written for exactly that spot. On a
+         short window the foot of the card met the bottom of the hero and was
+         clipped by the overflow.
+
+         Out here it is in ordinary flow directly above "Discover Dasol", the
+         first thing a visitor reads after the picture and the thing they
+         came to do. Same component, same four fields, same button, same
+         route — nothing about the form itself changed, only where it stands.
+
+         Top padding only: the tinted section below brings its own top
+         padding, and giving this one a bottom as well would stack two gaps
+         into a band of empty page. --}}
+    <section class="vd-booking-bar" aria-label="Find a room">
+        <div class="container">
+            <x-stay-search :barangays="config('visitdasol.barangays')" />
+        </div>
     </section>
 
     <section class="vd-section vd-section--tinted" aria-labelledby="resorts-title">
