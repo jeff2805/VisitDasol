@@ -13,6 +13,9 @@ return [
     | a conventional file to locate the various service credentials.
     |
     */
+    'cloudinary' => [
+        'cloud_url' => env('CLOUDINARY_URL'),
+    ],
 
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
