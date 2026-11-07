@@ -136,10 +136,43 @@
                                     <button type="submit" class="btn btn-sm btn-light border text-danger">Delete</button>
                                 </form>
                             @else
-                                <span class="btn btn-sm btn-light border disabled" aria-disabled="true"
-                                      title="Room types with reservations cannot be deleted">Delete</span>
+                                {{-- A DEAD CONTROL THAT SAYS SO.
+
+                                     This was a <span> dressed as a button with the
+                                     reason in a title attribute, and nothing else.
+                                     It looked exactly like the live Delete button
+                                     beside it, so an owner clicked it and nothing
+                                     happened — no message, no movement. A title
+                                     needs a mouse to hover, so on a phone there was
+                                     no explanation at all, and the owner tapped it
+                                     again. That is the whole of the "Delete does not
+                                     work" report: the button they were pressing was
+                                     never a button.
+
+                                     Still disabled, because the rule is real and
+                                     deleting the room would take its booking history
+                                     with it. But it is a <button disabled> now, which
+                                     the browser reports as disabled rather than
+                                     leaving it to look live, and the reason is on the
+                                     page in words that a touch screen can show. --}}
+                                <button type="button" class="btn btn-sm btn-light border" disabled
+                                        aria-describedby="no-delete-{{ $room->id }}">Delete</button>
                             @endif
                         </div>
+
+                        @if ($room->bookings_count > 0)
+                            <p class="small text-muted-vd mt-2 mb-0" id="no-delete-{{ $room->id }}">
+                                <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
+                                {{-- Count and noun on one line: split across two, the
+                                     rendered sentence carries a newline between the
+                                     number and the word it counts. --}}
+                                This room type has {{ $room->bookings_count }} {{ Str::plural('reservation', $room->bookings_count) }}
+                                against it, so it cannot be deleted &mdash; that would take
+                                their booking history with it.
+                                Use <strong>{{ $room->isActive() ? 'Stop bookings' : 'Allow bookings' }}</strong>
+                                to take it off the site and keep the records.
+                            </p>
+                        @endif
                     </article>
                 </div>
             @endforeach

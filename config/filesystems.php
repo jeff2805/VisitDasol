@@ -38,7 +38,23 @@ return [
             'report' => false,
         ],
 
-                'public' => env('PUBLIC_DISK_DRIVER', 'local') === 's3' ? [
+    /*
+    | WHERE UPLOADED PHOTOS GO.
+    |
+    | Two shapes of the same disk. On a server with its own filesystem this
+    | is storage/app/public behind the public/storage link; on the deployed
+    | container it is Supabase Storage, because a container's filesystem is
+    | wiped on every redeploy and photos uploaded to it would not survive
+    | the week.
+    |
+    | THE SWITCH IS AN ENV VAR, AND IT FAILS QUIETLY. With PUBLIC_DISK_DRIVER
+    | unset, this falls through to the local branch — no error, no warning,
+    | just uploads written into a container that is about to be thrown away
+    | and URLs pointing at a public/storage link that was never created
+    | there. `php artisan visitdasol:check-production` says plainly which of
+    | the two is in force and whether it actually works.
+    */
+    'public' => env('PUBLIC_DISK_DRIVER', 'local') === 's3' ? [
         'driver' => 's3',
         'key' => env('AWS_ACCESS_KEY_ID'),
         'secret' => env('AWS_SECRET_ACCESS_KEY'),
@@ -47,6 +63,20 @@ return [
         'url' => env('AWS_URL'),
         'endpoint' => env('AWS_ENDPOINT'),
         'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
+
+        /*
+         * Every upload is world-readable, said here rather than left to the
+         * bucket's own default.
+         *
+         * This was missing, and the local branch below has always had it.
+         * These are resort photographs meant to be seen by anybody browsing
+         * the site; without it the object is created with whatever the
+         * bucket happens to be set to, so a bucket left Private serves a 400
+         * for a URL the application believes is fine — which is a broken
+         * image with nothing in the log to explain it.
+         */
+        'visibility' => 'public',
+
         'request_checksum_calculation' => 'when_required',
         'response_checksum_validation' => 'when_required',
         'throw' => false,

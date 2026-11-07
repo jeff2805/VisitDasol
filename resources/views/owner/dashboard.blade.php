@@ -14,7 +14,7 @@
 <section class="vd-greeting">
     <img
     class="vd-greeting__photo"
-    src="{{ asset('images/image1.png') }}"
+    src="{{ asset('images/image3.jpg') }}"
     alt="Tropical beach in Dasol, Pangasinan"
     width="1600"
     height="900"

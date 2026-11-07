@@ -286,12 +286,33 @@ class RoomManagementTest extends TestCase
         $this->assertSame(1, $room->fresh()->total_rooms);
     }
 
+    /**
+     * The room survives, and the owner is told why.
+     *
+     * THIS USED TO ASSERT A 403, and the refusal itself has not changed —
+     * Room::count() below is the same assertion it always was. What
+     * changed is the shape of the answer: an owner's own room, refused for
+     * a business rule, is no longer a bare error page.
+     *
+     * It is reachable without poking at URLs. The page draws the delete
+     * button from bookings_count at the moment it loads, so a guest
+     * booking the room while the owner is on the screen turns the next
+     * click into this path. A 403 told them nothing; the message names the
+     * reason and what to do instead.
+     *
+     * Somebody else's room is still a 403 — see
+     * test_an_owner_cannot_touch_another_resorts_rooms below.
+     */
     public function test_a_room_type_with_reservations_cannot_be_deleted(): void
     {
         $room = Room::factory()->for($this->resort)->create();
         Booking::factory()->for($room)->create();
 
-        $this->actingAs($this->owner)->delete(route('owner.rooms.destroy', $room))->assertForbidden();
+        $this->actingAs($this->owner)
+            ->delete(route('owner.rooms.destroy', $room))
+            ->assertRedirect()
+            ->assertSessionHas('error');
+
         $this->assertSame(1, Room::count());
     }
 

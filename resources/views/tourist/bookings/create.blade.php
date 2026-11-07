@@ -296,7 +296,7 @@
 
                                 <div class="row">
                                     <div class="col-sm-6">
-                                        <x-form.input name="rooms_booked" type="number" label="Rooms" required min="1"
+                                        <x-form.input name="rooms_booked" type="number" label="Beds" required min="0"
                                                       max="{{ max(1, (int) $available) }}"
                                                       :value="old('rooms_booked', $roomsBooked)"
                                                       data-booking-rooms />

@@ -132,8 +132,38 @@ class RoomController extends Controller
             : "{$room->name} can be booked again.");
     }
 
+    /**
+     * Remove a room type.
+     *
+     * TWO REFUSALS, AND THEY ARE NOT THE SAME KIND OF THING.
+     *
+     * Somebody else's room is a 403 and stays one: there is nothing to
+     * explain to a person asking for a room that is not theirs.
+     *
+     * Their OWN room with reservations against it is a business rule, and
+     * it used to come back as the same bare 403 error page. That happens
+     * for real and not only to somebody poking at URLs: the page draws the
+     * delete button from bookings_count at the moment it loads, so a guest
+     * booking the room while the owner is looking at the screen turns the
+     * next click into an error page with no reason on it. It is answered
+     * in words now, on the page they were already on.
+     */
     public function destroy(Room $room): RedirectResponse
     {
+        $this->authorize('update', $room);
+
+        if ($room->bookings()->exists()) {
+            return back()->with(
+                'error',
+                "{$room->name} has reservations against it, so it cannot be deleted — "
+                ."removing it would take their booking history with it. Use \"Stop bookings\" "
+                .'instead: the room disappears from the site and keeps its records.'
+            );
+        }
+
+        // The policy is still the gate. It asks the same question a second
+        // time, which is the point: a caller that reached here another way
+        // is refused by the thing that owns the rule.
         $this->authorize('delete', $room);
 
         $name = $room->name;
