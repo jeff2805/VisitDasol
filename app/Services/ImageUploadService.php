@@ -12,7 +12,9 @@ class ImageUploadService
 
     public function store(UploadedFile $file, string $folder): string
     {
-        $uploadedFile = $file->storeOnCloudinary($folder);
+        $uploadedFile = Cloudinary::upload($file->getRealPath(), [
+            'folder' => $folder
+        ]);
         
         return $uploadedFile->getSecurePath();
     }
@@ -20,9 +22,7 @@ class ImageUploadService
     public function replace(?string $currentPath, UploadedFile $file, string $folder): string
     {
         $path = $this->store($file, $folder);
-
         $this->delete($currentPath);
-
         return $path;
     }
 
