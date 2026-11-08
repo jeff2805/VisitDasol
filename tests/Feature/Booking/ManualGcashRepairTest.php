@@ -196,14 +196,12 @@ class ManualGcashRepairTest extends TestCase
             'deadline_reference' => 'confirmation',
             'last_minute_rule' => 'full',
             'last_minute_hours' => 72,
-            'allow_on_site' => '1',
         ])->assertRedirect()->assertSessionHas('success');
 
         $policy = $this->policy();
 
         $this->assertSame(40, (int) $policy->deposit_percent);
         $this->assertSame(48, (int) $policy->deadline_hours);
-        $this->assertTrue((bool) $policy->allow_on_site);
 
         // Saving again is a new edition, so a booking can say which
         // terms it was made under.
@@ -221,8 +219,53 @@ class ManualGcashRepairTest extends TestCase
         $policy = $this->policy();
 
         $this->assertSame(25, (int) $policy->deposit_percent);
-        $this->assertFalse((bool) $policy->allow_on_site, 'An unticked box must read as off.');
         $this->assertGreaterThan($before, (int) $policy->version);
+    }
+
+    /**
+     * Whether the resort takes payment on arrival is no longer asked by
+     * this form.
+     *
+     * IT MOVED, IT WAS NOT DROPPED. The switch is beside the GCash one
+     * on the payment settings page — it says which methods a resort
+     * accepts, not what it charges — and the rule moved with it. This
+     * test used to assert the opposite here ("an unticked box must read
+     * as off"), which is now true of that form instead; see
+     * PaymentMethodTogglesTest.
+     *
+     * What matters on this side is that saving the terms does not
+     * disturb it. Leaving the rule behind would have been worse than
+     * redundant: policyAttributes() writes everything safe() holds, so
+     * a form that no longer sends the field would have read its absence
+     * as "off" and withdrawn payment on arrival on every save.
+     */
+    public function test_saving_the_terms_does_not_disturb_payment_on_arrival(): void
+    {
+        foreach ([true, false] as $allowed) {
+            $this->actingAs($this->owner)->put(route('owner.manual-gcash.update'), [
+                'account_name' => 'Maria Dela Cruz',
+                'gcash_number' => '09171234567',
+                'active' => '1',
+                'allow_on_site' => $allowed ? '1' : '0',
+            ])->assertSessionHasNoErrors();
+
+            $this->assertSame($allowed, (bool) $this->policy()->allow_on_site);
+
+            $this->actingAs($this->owner)->put(route('owner.payment-policy.update'), [
+                'requirement' => 'deposit',
+                'deposit_percent' => 30,
+                'deadline_hours' => 24,
+                'deadline_reference' => 'confirmation',
+                'last_minute_rule' => 'full',
+                'last_minute_hours' => 48,
+            ])->assertSessionHasNoErrors();
+
+            $this->assertSame(
+                $allowed,
+                (bool) $this->policy()->allow_on_site,
+                'Saving the terms must leave payment on arrival as the owner set it.'
+            );
+        }
     }
 
     /** The configured percentage is what the guest is actually asked for. */
@@ -271,10 +314,16 @@ class ManualGcashRepairTest extends TestCase
     /* Feature 3 — the method reaches the guest ------------------------------ */
 
     /**
-     * THE ONE THAT HID THE WHOLE FEATURE. GCash is the only method here,
-     * because PayMongo is not configured in the test environment.
+     * THE ONE THAT HID THE WHOLE FEATURE. GCash reaches the guest.
+     *
+     * It used to be the only method on the page, because PayMongo is
+     * not configured in the test environment and paying on arrival was
+     * withheld wherever anything was owed in advance. The resort's own
+     * switch decides that now, so this resort offers both and the
+     * assertion about the ticked radio moved to the test below, where
+     * GCash really is the only one.
      */
-    public function test_a_single_payment_method_is_still_offered(): void
+    public function test_gcash_reaches_the_guest(): void
     {
         $this->gcash();
         $room = $this->room();
@@ -286,8 +335,40 @@ class ManualGcashRepairTest extends TestCase
         ]))->assertOk()->getContent();
 
         $this->assertStringContainsString('value="manual_gcash"', $html);
+    }
 
-        // And it is ticked, or the form posts no preference at all.
+    /**
+     * The only method on offer has to be the one already selected, or
+     * the form posts no preference at all.
+     *
+     * Payment on arrival is switched off here so that GCash really is
+     * the only one. It used to be the only one by default, which is
+     * why this assertion lived in the test above.
+     */
+    public function test_the_only_method_on_offer_is_the_one_selected(): void
+    {
+        $this->gcash();
+
+        $this->resort->paymentPolicy()->updateOrCreate([], [
+            'requirement' => 'deposit',
+            'deposit_percent' => 30,
+            'deadline_hours' => 24,
+            'deadline_reference' => 'confirmation',
+            'last_minute_rule' => 'full',
+            'last_minute_hours' => 48,
+            'allow_on_site' => false,
+        ]);
+
+        $room = $this->room();
+
+        $html = $this->actingAs($this->tourist())->get(route('tourist.bookings.create', [
+            'room' => $room->id,
+            'check_in' => today()->addDays(20)->toDateString(),
+            'check_out' => today()->addDays(22)->toDateString(),
+        ]))->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('value="on_arrival"', $html);
+
         $this->assertMatchesRegularExpression(
             '/value="manual_gcash"[^>]*\schecked\b/s',
             $html,
@@ -317,6 +398,7 @@ class ManualGcashRepairTest extends TestCase
             'guests' => 2, 'rooms_booked' => 1,
             'contact_name' => 'Bea Santos', 'contact_phone' => '09171234567',
             'guests_male' => 1, 'guests_female' => 1, 'origin' => 'pangasinan',
+            'id_document' => $this->validId(),
             'payment_preference' => 'manual_gcash',
         ])->assertSessionHasErrors('payment_preference');
     }

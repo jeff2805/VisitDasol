@@ -62,6 +62,7 @@ class PaymentChoiceTest extends TestCase
             'guests_male' => 1,
             'guests_female' => 1,
             'origin' => 'pangasinan',
+            'id_document' => $this->validId(),
         ], $extra));
     }
 
@@ -77,20 +78,43 @@ class PaymentChoiceTest extends TestCase
     /* What the form offers ------------------------------------------------ */
 
     /**
-     * "Pay at the resort" is no longer offered.
+     * "Pay at the resort" is offered again, and the owner's switch is
+     * what decides.
      *
-     * IT USED TO BE, and this test used to require it. The option was
-     * withdrawn for new bookings; the enum case remains only so that
-     * reservations made while it existed can still be read.
+     * THIS TEST HAS NOW SAID BOTH THINGS, which is worth recording. The
+     * option was withdrawn outright, then restored but only where the
+     * terms asked for nothing in advance, and now it follows the
+     * resort's own switch and nothing else. The amount owed is still
+     * the terms' business; the method only says where it is handed
+     * over.
      */
-    public function test_the_booking_form_no_longer_offers_paying_at_the_resort(): void
+    public function test_the_booking_form_offers_paying_at_the_resort(): void
     {
         $this->actingAs($this->tourist)->get($this->formUrl())
             ->assertOk()
-            ->assertDontSee('Pay at the resort')
-            ->assertDontSee('value="on_arrival"', false)
+            ->assertSee('Pay at the resort')
+            ->assertSee('value="on_arrival"', false)
             // The summary still looks like a bill, so this has to stay said.
             ->assertSee('Nothing is charged now.');
+    }
+
+    /** And it goes when the resort says it does not take money on the day. */
+    public function test_the_form_drops_it_when_the_resort_switches_it_off(): void
+    {
+        $this->room->resort->paymentPolicy()->create([
+            'requirement' => 'deposit',
+            'deposit_percent' => 30,
+            'deadline_hours' => 24,
+            'deadline_reference' => 'confirmation',
+            'last_minute_rule' => 'full',
+            'last_minute_hours' => 48,
+            'allow_on_site' => false,
+        ]);
+
+        $this->actingAs($this->tourist)->get($this->formUrl())
+            ->assertOk()
+            ->assertDontSee('Pay at the resort')
+            ->assertDontSee('value="on_arrival"', false);
     }
 
     /**
@@ -116,15 +140,37 @@ class PaymentChoiceTest extends TestCase
         $this->assertSame(PaymentPreference::Online, Booking::latest('id')->sole()->payment_preference);
     }
 
-    /**
-     * Sending the withdrawn choice by hand does not book.
-     *
-     * This is the server half of the removal: taking the radio off the
-     * page stops nobody who can type a form field.
-     */
-    public function test_choosing_to_pay_at_the_resort_is_refused(): void
+    /** The choice is carried through like any other. */
+    public function test_choosing_to_pay_at_the_resort_is_kept_on_the_reservation(): void
     {
-        $this->request(['payment_preference' => 'on_arrival']);
+        $this->request(['payment_preference' => 'on_arrival'])->assertSessionHasNoErrors();
+
+        $this->assertSame(
+            PaymentPreference::OnArrival,
+            Booking::latest('id')->sole()->payment_preference
+        );
+    }
+
+    /**
+     * Sending it by hand where the resort does not take it does not book.
+     *
+     * This is the server half: taking the radio off the page stops
+     * nobody who can type a form field.
+     */
+    public function test_choosing_to_pay_at_the_resort_is_refused_when_switched_off(): void
+    {
+        $this->room->resort->paymentPolicy()->create([
+            'requirement' => 'deposit',
+            'deposit_percent' => 30,
+            'deadline_hours' => 24,
+            'deadline_reference' => 'confirmation',
+            'last_minute_rule' => 'full',
+            'last_minute_hours' => 48,
+            'allow_on_site' => false,
+        ]);
+
+        $this->request(['payment_preference' => 'on_arrival'])
+            ->assertSessionHasErrors('payment_preference');
 
         $this->assertSame(0, Booking::query()->count());
     }

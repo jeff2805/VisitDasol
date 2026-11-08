@@ -68,6 +68,20 @@ class ManualGcashRequest extends FormRequest
             'active' => ['nullable', 'boolean'],
 
             /*
+             * Whether this resort takes payment on arrival.
+             *
+             * ASKED HERE, STORED ELSEWHERE. The column is
+             * resort_payment_policies.allow_on_site, which already held
+             * this answer and which every booking snapshots. This page
+             * is where an owner decides which methods they accept, so
+             * the control belongs here; a second column would be a
+             * second answer to one question, and two answers drift.
+             *
+             * ManualGcashController::syncOnSite() writes it.
+             */
+            'allow_on_site' => ['nullable', 'boolean'],
+
+            /*
              * Both the extension and the real content type, the way every
              * other upload in this project is checked. `mimes` reads the
              * name, which the sender picks; `mimetypes` reads what the

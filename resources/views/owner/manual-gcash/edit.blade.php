@@ -238,13 +238,58 @@
                     through the manual payment workflow, provided the booking
                     checkout is configured to use it.
                 </p>
+
+                {{-- The second method, and independent of the first: a
+                     resort may take both, either, or neither.
+
+                     It writes resort_payment_policies.allow_on_site — the
+                     same column the payment terms page used to carry —
+                     rather than a column of its own, so there is one
+                     answer to the question and not two that can drift.
+                     See ManualGcashController::syncOnSite(). --}}
+                <hr class="my-3">
+
+                <input type="hidden" name="allow_on_site" value="0">
+
+                <div class="form-check form-switch">
+                    <input
+                        type="checkbox"
+                        id="allow_on_site"
+                        name="allow_on_site"
+                        value="1"
+                        class="form-check-input"
+                        role="switch"
+                        @checked(old('allow_on_site', $policy->allow_on_site))
+                    >
+
+                    <label for="allow_on_site" class="form-check-label fw-semibold">
+                        Accept Pay at Resort bookings
+                    </label>
+                </div>
+
+                <p class="text-muted small mt-2 mb-0">
+                    When enabled, guests can choose to pay directly at your
+                    resort, subject to your payment terms.
+                </p>
+
+                {{-- Said plainly, because the two settings are on separate
+                     pages and an owner who turns this on while asking for a
+                     deposit would otherwise wonder why guests never see it. --}}
+                @if ($policy->requirement !== \App\Enums\PaymentRequirement::None)
+                    <p class="form-text mb-0">
+                        Your <a href="{{ route('owner.payment-policy.edit') }}">payment terms</a>
+                        currently ask for something before arrival, so guests settle
+                        that part in advance. Change the terms to "No advance payment"
+                        if you would rather collect everything on the day.
+                    </p>
+                @endif
             </div>
         </div>
 
         <div class="d-flex flex-wrap gap-2">
             <button type="submit" class="btn btn-primary btn-lg">
                 <i class="bi bi-check-lg me-1"></i>
-                Save GCash Settings
+                Save Payment Settings
             </button>
 
             <a href="{{ route('owner.resort.show') }}"
@@ -256,4 +301,3 @@
     </form>
 </div>
 @endsection
-```

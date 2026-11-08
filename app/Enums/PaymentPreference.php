@@ -68,56 +68,81 @@ enum PaymentPreference: string
         ?ResortManualPaymentAccount $manualAccount = null,
         ?PaymentTerms $terms = null,
     ): bool {
-        /*
-         * Paying in advance when nothing is due in advance. Both the
-         * prepaid methods are hidden, for the same reason: there is no
-         * amount for them to collect.
-         */
-        $prepaidWanted = $terms === null || $terms->needsAdvancePayment();
-
         return match ($this) {
-            self::Online => PaymentProvider::PayMongo->isConfigured()
-                && $prepaidWanted,
-
             /*
-             * WITHDRAWN. "Pay at the resort" is no longer offered for
-             * new bookings, so it is never available — not even where
-             * the resort's policy still allows cash on arrival.
+             * QRPh is dormant: there is no key in this deployment, so
+             * isConfigured() is false and the gateway is never offered.
+             * The two methods the portal actually supports are the two
+             * below, each on its owner's own switch.
              *
-             * THE CASE STAYS, and deleting it would be the mistake.
-             * bookings.payment_preference is cast to this enum, so a
-             * reservation made while the option existed would throw
-             * the moment anybody opened it: the guest's own page, the
-             * owner's list, the office reports. History has to remain
-             * readable, and label() and icon() below still describe it
-             * for exactly that.
-             *
-             * The resort owner's allow_on_site switch is a DIFFERENT
-             * thing and is untouched. It still decides the payment
-             * terms, the sentence a guest reads about settling at the
-             * resort, and the last-minute rule.
+             * The amount is not asked here. A gateway that cannot take
+             * a payment of nothing simply is not reached: the
+             * reservation page opens a payment only where something is
+             * outstanding.
              */
-            self::OnArrival => false,
+            self::Online => PaymentProvider::PayMongo->isConfigured(),
 
             /*
-             * TWO QUESTIONS, the same as QRPh above.
+             * PAY AT THE RESORT. THE OWNER'S SWITCH DECIDES, AND
+             * NOTHING ELSE DOES.
              *
-             * Has the resort an account switched on — and is there an
-             * amount for it to collect. The second had been dropped, so
-             * a resort asking for nothing in advance still offered a way
-             * to pay in advance: the guest was sent to produce a
-             * reference number and a screenshot for a payment nobody had
-             * asked for, against a Payment row ManualPaymentService
-             * refuses to open (see its start(), which throws
-             * nothingToPay). The option led to a dead end.
+             * It used to need a second condition: that the terms asked
+             * for nothing before arrival. The reasoning was that a
+             * required deposit cannot be settled on arrival — true of
+             * the deposit, but not a reason to withdraw the method.
+             *
+             * What it did in practice was hide the switch's effect from
+             * the owner who had just set it. A resort on "No advance
+             * payment" with a last-minute rule asking for a deposit
+             * offered Pay at the resort for a stay six weeks out and
+             * silently withheld it for one tomorrow, with nothing on
+             * either screen saying why. The owner saw a switch that
+             * did nothing.
+             *
+             * The amount is still the terms': what is due now and what
+             * is left stay exactly as PaymentPolicyService works them
+             * out, and the booking form still shows both. The method
+             * says where the money is handed over, not how much. An
+             * owner who turns this on has said they will take it at the
+             * desk; it is not for this enum to tell them they may not.
+             *
+             * booking-form.js asks the same question — onSiteAllowed,
+             * with no second clause — so the script and the server
+             * still agree about every booking.
+             *
+             * With no terms at all the answer stays false: a caller
+             * that has not said what is owed is asking about the site
+             * in general, and "pay on arrival" is a fact about one
+             * stay, not about the portal.
+             */
+            self::OnArrival => $terms !== null && $terms->onSiteAllowed,
+
+            /*
+             * GCASH. THE OWNER'S SWITCH DECIDES, AND NOTHING ELSE DOES.
+             *
+             * This needed an amount to collect as well, which is the
+             * same coupling that was taken off OnArrival above and it
+             * failed in the same way: one resort with both switches on
+             * showed the guest exactly one method, and which one
+             * depended on what the terms happened to ask for that week.
+             * Changing the last-minute rule swapped GCash for paying on
+             * arrival with nothing on either screen saying why.
+             *
+             * WHAT THE AMOUNT STILL DECIDES is whether there is a
+             * payment to open. ManualPaymentService::isAvailable() asks
+             * for a confirmed booking with something outstanding before
+             * it offers the guest a reference number and a receipt
+             * upload, so a stay with nothing due in advance simply
+             * never reaches that step — the guest has said how they
+             * mean to pay and settles at the resort. That is a quiet
+             * answer, not a dead end.
              *
              * isUsable() rather than ->active alone: an account with the
              * switch on but no name or number on it cannot be paid, and
-             * offering it is the same dead end by a different route.
+             * offering it IS a dead end.
              */
             self::ManualGcash => $manualAccount !== null
-                && $manualAccount->isUsable()
-                && $prepaidWanted,
+                && $manualAccount->isUsable(),
         };
     }
 

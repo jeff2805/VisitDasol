@@ -66,10 +66,19 @@ final class PaymentTerms
      */
     public function sentence(): string
     {
+        /*
+         * Nothing is due before arrival.
+         *
+         * The sentence has to match what the form will actually offer,
+         * and "Pay at the resort" is offered only where the resort
+         * takes money on arrival — see PaymentPreference::isAvailable.
+         * Saying "pay at the resort" to a guest whose resort has that
+         * switched off would name a method they are not being given.
+         */
         if (! $this->needsAdvancePayment()) {
             return $this->onSiteAllowed
-                ? 'Nothing to pay now. Settle the whole amount at the resort.'
-                : 'Nothing to pay now. The resort will tell you how to settle.';
+                ? 'No advance payment required. Pay directly at the resort upon arrival.'
+                : 'No advance payment required. The resort will tell you how to settle.';
         }
 
         $what = $this->requirement === PaymentRequirement::Full

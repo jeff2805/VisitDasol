@@ -3395,6 +3395,21 @@ th[aria-sort] {
   justify-content: flex-end;
 }
 
+/*
+ * The pair of buttons on a room card: Book now, then View details.
+ *
+ * They wrap onto their own line rather than squeezing the price out of
+ * the footer on a narrow card, and keep the gap the footer already uses
+ * so the row reads as one group whichever way it falls.
+ */
+.vd-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .5rem;
+}
+
 .vd-card__price {
   font-family: var(--vd-font-display);
   font-size: 1.25rem;
@@ -4253,6 +4268,9 @@ th[aria-sort] {
   border-bottom: 1px solid var(--vd-brine);
   color: var(--vd-bay);
 }
+
+/* The booking form's compact spacing lives at the foot of this file,
+   under [data-booking-form]. */
 
 .vd-booking__room-photo {
   width: 100%;
@@ -5281,67 +5299,168 @@ th[aria-sort] {
 }
 
 
-/* Reduce unnecessary spacing in the booking form */
-[data-booking-form] {
-    --booking-field-gap: 12px;
-}
+/*
+ * THE BOOKING FORM'S COMPACT SPACING.
+ *
+ * It asks for a great deal in one page — who is staying, the dates, the
+ * party, the tourism counts, the extras, a valid ID — and every field
+ * arrives from <x-form.input> wrapped in Bootstrap's mb-3. At 1rem each,
+ * nine fields deep, the page becomes mostly gaps.
+ *
+ * SCOPED, BECAUSE THE COMPONENT IS SHARED. Eighteen other forms draw
+ * their fields from it — the owner's room editor, the auth pages, the
+ * office's settings — and none of them asked to move. The attribute on
+ * the <form> is what keeps this off all of them.
+ *
+ * THIS WAS WRITTEN TWICE AND RAN NEITHER TIME. Two near-identical blocks
+ * stood here, one shadowing the other, and the markup never carried
+ * data-booking-form at all — so every rule matched nothing and the form
+ * kept its full spacing. They are one block now, with the values from
+ * the later of the two (the ones that were winning where they
+ * overlapped), and the <form> carries the attribute.
+ *
+ * !important is not a flourish: Bootstrap declares its own spacing
+ * utilities with it, so a scoped override is the only way to reach them
+ * without editing the framework or the shared component.
+ *
+ * Nothing here changes a width, a height, a colour, a font or the
+ * two-column grid. Only the space between things.
+ */
 
-[data-booking-form] .row {
-    --bs-gutter-y: 12px;
-}
-
-/* Reduce space around each form field */
-[data-booking-form] .mb-3,
-[data-booking-form] .mb-4,
-[data-booking-form] .form-group {
-    margin-bottom: 12px !important;
-}
-
-/* Keep labels close to their inputs */
-[data-booking-form] label {
-    display: block;
-    margin-bottom: 5px;
-}
-
-/* Reduce excess spacing in helper text */
-[data-booking-form] .form-text,
-[data-booking-form] small {
-    display: block;
-    margin-top: 5px;
-    margin-bottom: 0;
-    line-height: 1.4;
-}
-
-/* Avoid unnecessary bottom space on fields */
-[data-booking-form] input,
-[data-booking-form] select {
-    margin-bottom: 0;
-}
-
-
-/* VisitDasol booking form — compact field spacing */
+/* A row's fields carry their own bottom margin, so its vertical gutter
+   was a second gap stacked on the first wherever the columns wrapped. */
 [data-booking-form] .row {
     --bs-gutter-y: 0.5rem;
 }
 
-/* Reduce vertical spacing from common Bootstrap classes */
+/* The gap between one field and the next. */
 [data-booking-form] .mb-3,
 [data-booking-form] .mb-4,
 [data-booking-form] .form-group {
     margin-bottom: 0.5rem !important;
 }
 
-/* Tighten label-to-input spacing */
+/* A label belongs to the input under it. */
 [data-booking-form] label {
+    display: block;
     margin-bottom: 4px !important;
 }
 
-/* Tighten help text spacing */
+/* And helper text to the input above it, not to the field below. */
 [data-booking-form] .form-text,
 [data-booking-form] small {
+    display: block;
     margin-top: 3px !important;
     margin-bottom: 0 !important;
     line-height: 1.35;
+}
+
+/* Fields bring no bottom margin of their own; the wrapper carries it. */
+[data-booking-form] input,
+[data-booking-form] select {
+    margin-bottom: 0;
+}
+
+/*
+ * THE HOLE UNDER "CHILDREN", AND WHY TRIMMING MARGINS WOULD NOT CLOSE IT.
+ *
+ * The five guest counts — Beds, Adults, Children, PWD guests, Total
+ * guests — are col-sm-6 children of one .row, and a .row is a wrapping
+ * flexbox. Its lines come out as:
+ *
+ *     line 1   Beds       Adults
+ *     line 2   Children   PWD guests      <- four lines of helper text
+ *     line 3   Total guests
+ *
+ * Every line is as tall as its tallest item, and the next line starts
+ * below it. PWD's helper runs to four lines, so line 3 begins below the
+ * foot of that paragraph and "Total guests" sits a long way under
+ * "Children" with nothing in the gap. No margin or padding anywhere is
+ * responsible: it is the line height of the flex row, and no amount of
+ * tightening would close it.
+ *
+ * GRID, WITH THE TALL ONE SPANNING TWO ROWS. The columns keep their
+ * places, but PWD occupies rows 2 and 3 of the right-hand column, so
+ * row 2 is only as tall as Children and "Total guests" rises to sit
+ * directly beneath it. PWD may then be as tall as it likes.
+ *
+ * THE SOURCE ORDER IS UNTOUCHED, which is the point of doing it this way
+ * rather than splitting the markup into two stacks: below 576px this
+ * rule does not apply at all, the row falls back to Bootstrap's own
+ * stacking, and the fields read in the order they are written —
+ * Beds, Adults, Children, PWD, Total. Rewriting the markup would have
+ * reordered the mobile form.
+ *
+ * Male and Female are a separate .row in the Blade and are not touched.
+ *
+ * column-gap is 0 on purpose: the columns keep Bootstrap's own left and
+ * right padding, which is what the gutter has always been, so the fields
+ * land on exactly the same vertical lines as before.
+ */
+/*
+ * TWO MECHANISMS WERE SETTING THESE WIDTHS, AND THE FIELDS CAME OUT A
+ * QUARTER OF THE ROW.
+ *
+ * This was a .row of .col-sm-6 children, and the grid above was laid
+ * over the top of it. Bootstrap's own rule is
+ *
+ *     .col-sm-6 { flex: 0 0 auto; width: 50% }
+ *
+ * so each child was told twice how wide to be: once by its 1fr grid
+ * track, and again by that width: 50% — which resolves against the
+ * track, not the row. Half of a half is a quarter. That is why the
+ * boxes were narrow and why "Children (aged 12 and under)" wrapped
+ * when there was room for it on one line.
+ *
+ * Adding a wider override would have left both mechanisms in place and
+ * the next person to touch it fighting the same fight. The column
+ * classes are gone from the markup instead, and the grid is the only
+ * thing deciding the columns now.
+ *
+ * The gutter has to be stated here for the same reason: it used to come
+ * from the columns' own left and right padding, which went with them.
+ */
+[data-booking-form] .vd-guest-counts {
+    display: grid;
+    grid-template-columns: 1fr;          /* stacked on a phone */
+    gap: var(--vd-space-sm) var(--vd-space-xl);
+    align-items: start;
+}
+
+/* Grid items default to min-width: auto, which a number input's own
+   intrinsic width can hold open; this lets the track decide. */
+[data-booking-form] .vd-guest-counts > * {
+    min-width: 0;
+}
+
+@media (min-width: 576px) {
+    [data-booking-form] .vd-guest-counts {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+/*
+ * Every control fills the column it is in. .form-control is already
+ * width: 100% in Bootstrap; it is restated for the plain <input> and
+ * <select> elements this form writes by hand, which are not all built
+ * through <x-form.input>.
+ */
+[data-booking-form] .vd-guest-counts input,
+[data-booking-form] .vd-guest-counts select,
+[data-booking-form] .vd-guest-total input {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+/*
+ * Total guests runs the full width under Male and Female. It is the sum
+ * of the four counts above and is read-only, so it reads as a total
+ * rather than as another thing to fill in.
+ */
+[data-booking-form] .vd-guest-total {
+    display: block;
+    width: 100%;
 }
 
 /* Prevent empty wrappers from creating unnecessary height */

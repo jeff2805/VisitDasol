@@ -69,6 +69,7 @@ class BookingCapacityValidationTest extends TestCase
             'contact_first_name' => 'Ana',
             'contact_last_name' => 'Reyes',
             'contact_phone' => '09171234567',
+            'id_document' => $this->validId(),
         ], $overrides);
     }
 

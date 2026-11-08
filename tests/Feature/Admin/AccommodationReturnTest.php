@@ -244,6 +244,7 @@ class AccommodationReturnTest extends TestCase
             'guests_male' => 1,
             'guests_female' => 2,
             'origin' => VisitorOrigin::Ncr->value,
+            'id_document' => $this->validId(),
         ])->assertRedirect();
 
         $booking = Booking::query()->latest('id')->firstOrFail();
@@ -272,6 +273,7 @@ class AccommodationReturnTest extends TestCase
             'rooms_booked' => 1,
             'contact_name' => 'Rogelio Santos',
             'contact_phone' => '09171234567',
+            'id_document' => $this->validId(),
         ])->assertSessionHasErrors(['guests_male', 'guests_female', 'origin']);
 
         $this->assertSame(0, Booking::query()->count());
@@ -299,6 +301,7 @@ class AccommodationReturnTest extends TestCase
             'guests_male' => 0,
             'guests_female' => 2,
             'origin' => VisitorOrigin::Ilocos->value,
+            'id_document' => $this->validId(),
         ])->assertSessionHasNoErrors();
 
         $booking = Booking::query()->latest('id')->firstOrFail();
@@ -322,6 +325,7 @@ class AccommodationReturnTest extends TestCase
             'contact_phone' => '09171234567',
             'guests_male' => 1,
             'guests_female' => 1,
+            'id_document' => $this->validId(),
         ])->assertSessionHasErrors('guests_male');
 
         $this->assertSame(0, Booking::query()->count());

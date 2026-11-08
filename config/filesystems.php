@@ -53,6 +53,7 @@ return [
     | and URLs pointing at a public/storage link that was never created
     | there. `php artisan visitdasol:check-production` says plainly which of
     | the two is in force and whether it actually works.
+    |
     */
     'public' => env('PUBLIC_DISK_DRIVER', 'local') === 's3' ? [
         'driver' => 's3',

@@ -146,10 +146,25 @@
 
             {{-- The full width is the point of moving the filters: four cards
                  across on a wide screen instead of three. --}}
+            {{-- The dates and party the visitor searched with, handed to
+                 every card so its "Book now" carries them into the booking
+                 form instead of starting the question again. Null dates are
+                 left null: the card has its own fallback for a visitor who
+                 has not searched. --}}
+            @php($stay = [
+                'check_in' => $filters['check_in']?->toDateString(),
+                'check_out' => $filters['check_out']?->toDateString(),
+                'check_in_time' => $filters['check_in_time'],
+                'check_out_time' => $filters['check_out_time'],
+                'guests' => $filters['guests'],
+            ])
+
             <div class="row g-4">
                 @foreach ($rooms as $room)
                     <div class="col-sm-6 col-lg-4 col-xxl-3">
-                        <x-room-card :room="$room" :free="$availability[$room->id] ?? null" />
+                        <x-room-card :room="$room"
+                                     :free="$availability[$room->id] ?? null"
+                                     :stay="array_filter($stay, fn ($value) => $value !== null)" />
                     </div>
                 @endforeach
             </div>

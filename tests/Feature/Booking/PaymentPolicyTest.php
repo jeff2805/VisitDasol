@@ -95,6 +95,7 @@ class PaymentPolicyTest extends TestCase
             'contact_name' => 'Bea Santos',
             'contact_phone' => '09171234567',
             'origin' => 'pangasinan',
+            'id_document' => $this->validId(),
         ], $overrides);
 
         $guests = (int) $payload['adults'] + (int) $payload['children'];
@@ -546,7 +547,15 @@ class PaymentPolicyTest extends TestCase
         $this->actingAs($this->tourist)->get(route('tourist.bookings.show', $booking->refresh()))
             ->assertOk()
             ->assertDontSee('Pay online')
-            ->assertSee('Nothing to pay now');
+            /*
+             * The wording changed when "No advance payment" was made to
+             * mean "pay at the resort" outright. It used to read
+             * "Nothing to pay now." and then branch on the resort's
+             * allow_on_site switch, which could leave a guest told only
+             * that the resort would be in touch. The absence of a pay
+             * button above is the part that matters and is unchanged.
+             */
+            ->assertSee('No advance payment required. Pay directly at the resort upon arrival.');
     }
 
     public function test_the_owner_sees_what_the_guest_agreed_to(): void

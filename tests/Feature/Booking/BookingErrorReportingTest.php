@@ -96,6 +96,7 @@ class BookingErrorReportingTest extends TestCase
                 'contact_name' => 'Jenny Caole',
                 'contact_phone' => '09562101985',
                 'origin' => 'pangasinan',
+                'id_document' => $this->validId(),
 
                 // The two the guest never scrolled down to.
                 'guests_male' => '',
@@ -134,6 +135,7 @@ class BookingErrorReportingTest extends TestCase
                 'contact_name' => 'Jenny Caole',
                 'contact_phone' => 'not a phone number',
                 'origin' => 'pangasinan',
+                'id_document' => $this->validId(),
             ])
             ->assertSessionHasErrors('contact_phone');
 
@@ -191,6 +193,7 @@ class BookingErrorReportingTest extends TestCase
                 'contact_name' => 'Jenny Caole',
                 'contact_phone' => '09562101985',
                 'origin' => 'pangasinan',
+                'id_document' => $this->validId(),
                 'payment_preference' => PaymentPreference::ManualGcash->value,
             ])
             ->assertSessionHasNoErrors();
@@ -217,6 +220,7 @@ class BookingErrorReportingTest extends TestCase
                 'contact_name' => 'Jenny Caole',
                 'contact_phone' => '09562101985',
                 'origin' => 'pangasinan',
+                'id_document' => $this->validId(),
                 'payment_preference' => PaymentPreference::ManualGcash->value,
             ])
             ->assertSessionHasErrors('payment_preference');
@@ -246,6 +250,7 @@ class BookingErrorReportingTest extends TestCase
                 'contact_name' => 'Jenny Caole',
                 'contact_phone' => '09562101985',
                 'origin' => 'pangasinan',
+                'id_document' => $this->validId(),
                 'payment_preference' => PaymentPreference::ManualGcash->value,
             ])
             ->assertSessionHasErrors('payment_preference');

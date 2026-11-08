@@ -64,6 +64,7 @@ class GuestDiscountTest extends TestCase
             'contact_name' => 'Bea Santos',
             'contact_phone' => '09171234567',
             'origin' => 'pangasinan',
+            'id_document' => $this->validId(),
         ], $overrides);
 
         // The office's return needs a sex split that adds up to the party.

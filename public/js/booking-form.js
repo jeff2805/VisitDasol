@@ -387,7 +387,7 @@
      * It keeps the choices honest while they are being made; the server
      * is what makes them stick.
      */
-    function applyPaymentMethods(due, onSiteAllowed) {
+    function applyPaymentMethods(_due, onSiteAllowed) {
       var radios = form.querySelectorAll('[data-payment-preference]');
 
       if (!radios.length) {
@@ -397,11 +397,24 @@
       var chosenWasHidden = false;
 
       radios.forEach(function (radio) {
-        // Prepaid methods need something to collect; paying on arrival
-        // needs the resort to accept cash on arrival.
+        /*
+         * EACH METHOD IS ITS OWNER'S SWITCH, AND NOTHING ELSE.
+         *
+         * Both of these used to need an amount as well — a prepaid
+         * method had to have something to collect, and paying on
+         * arrival had to have nothing owed before it. Between them
+         * that meant a resort with both switches on showed the guest
+         * exactly one method, and moving the dates swapped which one
+         * with no explanation on screen.
+         *
+         * The amount is still the terms' business and is still shown
+         * in the summary. A method only says where the money is handed
+         * over. Kept in step with PaymentPreference::isAvailable, which
+         * is what actually decides.
+         */
         var allowed = radio.value === 'on_arrival'
           ? onSiteAllowed
-          : due;
+          : true;
 
         // The whole option, label and all, so the text goes with the
         // button rather than leaving a stranded sentence behind.

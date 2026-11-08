@@ -15,6 +15,7 @@ use App\Services\AvailabilityService;
 use App\Services\BookingPricer;
 use App\Services\BookingService;
 use App\Services\BookingStatusManager;
+use App\Services\IdentityVerificationService;
 use App\Services\Payments\ManualPaymentService;
 use App\Services\Payments\PaymentPolicyService;
 use App\Services\Payments\PaymentService;
@@ -24,6 +25,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Throwable;
 
 class BookingController extends Controller
 {
@@ -34,6 +36,11 @@ class BookingController extends Controller
         private readonly PaymentService $payments,
         private readonly BookingPricer $pricer,
         private readonly PaymentPolicyService $policies,
+
+        // The guest's valid ID, when one comes with the booking form.
+        // Same service the reservation page uses, so both doors into
+        // this feature behave identically.
+        private readonly IdentityVerificationService $identity,
     ) {}
 
     /**
@@ -336,13 +343,53 @@ class BookingController extends Controller
                 ->with('error', $e->getMessage());
         }
 
-        return redirect()
+        /*
+         * The valid ID, when the guest attached one to the form.
+         *
+         * AFTER THE BOOKING, AND NEVER AT ITS EXPENSE. The reservation is
+         * already saved by this point, so a file that will not store —
+         * a dropped connection, a full disk — must not undo it. The guest
+         * is told the document did not arrive and their own reservation
+         * page offers the upload again; losing the room over a photograph
+         * would be the worse of the two failures by far.
+         *
+         * Handed to IdentityVerificationService rather than stored here,
+         * so this takes the same private disk, the same status, the same
+         * activity log entry and the same refusals as the upload that has
+         * always lived on the reservation page. One document, one path
+         * through the system.
+         */
+        $idSent = false;
+        $idFailed = false;
+
+        if ($request->hasFile('id_document')) {
+            try {
+                $this->identity->submit($booking, $request->file('id_document'));
+                $idSent = true;
+            } catch (Throwable $e) {
+                report($e);
+                $idFailed = true;
+            }
+        }
+
+        $redirect = redirect()
             ->route('tourist.bookings.show', $booking)
             ->with(
                 'success',
                 'Request sent. The resort will confirm or decline it, '
                 . 'and you can follow the status here.'
+                . ($idSent ? ' Your valid ID was sent with it.' : '')
             );
+
+        if ($idFailed) {
+            $redirect->with(
+                'error',
+                'Your reservation was sent, but the valid ID did not upload. '
+                . 'You can send it again below.'
+            );
+        }
+
+        return $redirect;
     }
 
     /**

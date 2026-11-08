@@ -98,6 +98,7 @@ class BookingExtraTest extends TestCase
             'contact_name' => 'Bea Santos',
             'contact_phone' => '09171234567',
             'origin' => 'pangasinan',
+            'id_document' => $this->validId(),
         ], $overrides);
 
         $guests = (int) $payload['adults'] + (int) $payload['children'];

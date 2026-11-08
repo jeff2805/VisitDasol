@@ -23,13 +23,6 @@ class PaymentPolicyRequest extends FormRequest
         return true;
     }
 
-    protected function prepareForValidation(): void
-    {
-        // An unticked checkbox sends nothing, which has to read as "off"
-        // and not as "leave it as it was".
-        $this->merge(['allow_on_site' => $this->boolean('allow_on_site')]);
-    }
-
     /**
      * @return array<string, mixed>
      */
@@ -54,7 +47,21 @@ class PaymentPolicyRequest extends FormRequest
             'last_minute_rule' => ['required', Rule::enum(LastMinuteRule::class)],
             'last_minute_hours' => ['required', 'integer', 'min:0', 'max:720'],
 
-            'allow_on_site' => ['boolean'],
+            /*
+             * allow_on_site IS DELIBERATELY NOT HERE.
+             *
+             * It is asked on the payment settings page now, beside the
+             * GCash switch, because it says which methods a resort
+             * accepts rather than what it charges. Leaving the rule here
+             * would have been worse than redundant: policyAttributes()
+             * writes everything safe() holds, and this form no longer
+             * sends the field — so every save of the terms would have
+             * read the absent checkbox as "off" and silently withdrawn
+             * payment on arrival.
+             *
+             * Absent from the rules, it is absent from safe(), and an
+             * owner saving their terms leaves the column alone.
+             */
         ];
     }
 
@@ -109,7 +116,6 @@ class PaymentPolicyRequest extends FormRequest
             'deadline_reference' => 'deadline start',
             'last_minute_rule' => 'last-minute rule',
             'last_minute_hours' => 'last-minute window',
-            'allow_on_site' => 'payment at the resort',
         ];
     }
 }

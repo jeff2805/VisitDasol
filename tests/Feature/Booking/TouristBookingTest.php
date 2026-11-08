@@ -238,6 +238,7 @@ class TouristBookingTest extends TestCase
             'guests_male' => 1,
             'guests_female' => 1,
             'origin' => 'pangasinan',
+            'id_document' => $this->validId(),
         ]);
 
         $booking = Booking::latest('id')->first();
@@ -266,6 +267,7 @@ class TouristBookingTest extends TestCase
             'guests_male' => 1,
             'guests_female' => 1,
             'origin' => 'pangasinan',
+            'id_document' => $this->validId(),
         ])->assertSessionHasNoErrors();
 
         $booking = Booking::latest('id')->sole();
@@ -288,6 +290,7 @@ class TouristBookingTest extends TestCase
             'contact_first_name' => 'Bea',
             'contact_last_name' => '',
             'contact_phone' => '09171234567',
+            'id_document' => $this->validId(),
         ])->assertSessionHasErrors('contact_last_name');
 
         $this->assertDatabaseCount('bookings', 0);

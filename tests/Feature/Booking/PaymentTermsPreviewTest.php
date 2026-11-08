@@ -277,6 +277,7 @@ class PaymentTermsPreviewTest extends TestCase
                 'contact_name' => 'Bea Santos',
                 'contact_phone' => '09171234567',
                 'origin' => 'pangasinan',
+                'id_document' => $this->validId(),
             ])
             ->assertSessionHasNoErrors();
 

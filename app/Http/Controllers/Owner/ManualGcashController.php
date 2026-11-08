@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Owner;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Owner\ManualGcashRequest;
+use App\Models\Resort;
 use App\Services\ActivityLogger;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -39,6 +40,14 @@ class ManualGcashController extends Controller
             // The model works the address out, so a remote public disk
             // and a missing file are both handled in one place.
             'qrUrl' => $account?->qr_url,
+
+            /*
+             * For the "Accept Pay at Resort bookings" switch beside the
+             * GCash one. paymentTerms() answers for a resort that has
+             * never opened the terms page too, so the switch shows the
+             * value actually in force rather than an unchecked box.
+             */
+            'policy' => $resort->paymentTerms(),
         ]);
     }
 
@@ -131,8 +140,65 @@ class ManualGcashController extends Controller
             ],
         );
 
+        // The second switch on the same card. Independent of the one
+        // above: a resort may take both, either, or neither.
+        $this->syncOnSite($resort, $request->boolean('allow_on_site'));
+
         return redirect()
             ->route('owner.manual-gcash.edit')
-            ->with('status', 'Your GCash account details have been saved.');
+            ->with('status', 'Your payment settings have been saved.');
+    }
+
+    /**
+     * Whether this resort takes payment on arrival.
+     *
+     * THE CONTROL MOVED HERE; THE DATA DID NOT. It is still
+     * resort_payment_policies.allow_on_site — the column
+     * PaymentPreference::isAvailable() reads to decide whether the
+     * booking form offers "Pay at the resort", and the one every
+     * booking snapshots as payment_on_site_allowed. Giving this page a
+     * column of its own would have been two answers to one question.
+     *
+     * NOTHING IS WRITTEN WHEN NOTHING CHANGED. A resort that has never
+     * opened the terms page has no policy row and runs on the portal's
+     * defaults; saving GCash details must not quietly turn those
+     * defaults into terms of the owner's own, which is what creating a
+     * row here on every save would do.
+     *
+     * When it did change, the version is bumped exactly as the terms
+     * page bumps it, because a booking has to be able to say which
+     * edition of the terms it was made under — and this is part of them.
+     */
+    private function syncOnSite(Resort $resort, bool $allowed): void
+    {
+        $policy = $resort->paymentTerms();
+
+        if ((bool) $policy->allow_on_site === $allowed) {
+            return;
+        }
+
+        $policy->resort()->associate($resort);
+        $policy->allow_on_site = $allowed;
+        $policy->version = (int) ($policy->version ?? 0) + 1;
+        $policy->save();
+
+        /*
+         * Logged under the payment-terms action, not the GCash one.
+         * Somebody auditing why a guest was or was not offered payment
+         * on arrival reads the terms trail, and this belongs in it
+         * however the owner reached the switch.
+         */
+        $this->logger->log(
+            'resort.payment_policy_updated',
+            $resort,
+            $allowed
+                ? "Turned on payment at the resort for {$resort->name}"
+                : "Turned off payment at the resort for {$resort->name}",
+            [
+                'version' => $policy->version,
+                'allow_on_site' => $allowed,
+                'changed_from' => 'payment_methods',
+            ],
+        );
     }
 }

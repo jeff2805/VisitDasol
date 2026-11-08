@@ -52,6 +52,7 @@ class BookingEngineTest extends TestCase
             'contact_phone' => '0917 123 4567',
             'special_requests' => null,
             'origin' => 'pangasinan',
+            'id_document' => $this->validId(),
         ], $overrides);
 
         /*

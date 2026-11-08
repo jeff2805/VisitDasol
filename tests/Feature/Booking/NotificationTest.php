@@ -77,6 +77,7 @@ class NotificationTest extends TestCase
             'guests_male' => 1,
             'guests_female' => 1,
             'origin' => 'pangasinan',
+            'id_document' => $this->validId(),
         ])->assertSessionHasNoErrors();
 
         NotificationFacade::assertSentTo($this->owner, BookingRequested::class);

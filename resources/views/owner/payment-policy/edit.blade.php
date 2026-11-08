@@ -131,13 +131,18 @@
                         </div>
                     </div>
 
-                    <x-form.checkbox name="allow_on_site" :checked="$policy->allow_on_site">
-                        Let guests pay at the resort
-                    </x-form.checkbox>
-
+                    {{-- "Let guests pay at the resort" used to be a second
+                         checkbox here. It is the same stored value as the
+                         switch on the payment settings page, and one value
+                         with two controls is how an owner ends up unsure
+                         which one they changed. It lives beside the GCash
+                         switch now, where the methods are chosen; this page
+                         decides the amounts. --}}
                     <p class="form-text mb-0">
-                        Turning this off removes "Pay at the resort" from the booking form.
-                        Only do that if you really cannot take cash on arrival.
+                        Whether guests may pay at the resort at all is a
+                        <a href="{{ route('owner.manual-gcash.edit') }}">payment settings</a>
+                        question, beside your GCash switch. It is currently
+                        <strong>{{ $policy->allow_on_site ? 'on' : 'off' }}</strong>.
                     </p>
                 </section>
             </div>

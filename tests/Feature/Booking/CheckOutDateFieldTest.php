@@ -65,6 +65,7 @@ class CheckOutDateFieldTest extends TestCase
             'guests_male' => 1,
             'guests_female' => 1,
             'origin' => 'pangasinan',
+            'id_document' => $this->validId(),
         ], $dates);
     }
 

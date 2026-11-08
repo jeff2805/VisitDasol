@@ -149,6 +149,7 @@ class FullLifecycleTest extends TestCase
             'contact_name' => 'Bea Santos', 'contact_phone' => '09179876543',
             // For the office's return to the Department of Tourism.
             'guests_male' => 1, 'guests_female' => 2, 'origin' => 'ncr',
+            'id_document' => $this->validId(),
             // Tampering: an attacker-chosen price must be ignored.
             'total_amount' => 1, 'unit_price' => 1,
         ]);
@@ -165,6 +166,7 @@ class FullLifecycleTest extends TestCase
             'guests' => 2, 'rooms_booked' => 1,
             'contact_name' => 'Kevin Lim', 'contact_phone' => '09170000000',
             'guests_male' => 2, 'guests_female' => 0, 'origin' => 'ilocos',
+            'id_document' => $this->validId(),
         ])->assertSessionHas('error');
         $this->assertSame(1, Booking::count());
 
@@ -175,6 +177,7 @@ class FullLifecycleTest extends TestCase
             'guests' => 2, 'rooms_booked' => 1,
             'contact_name' => 'Kevin Lim', 'contact_phone' => '09170000000',
             'guests_male' => 2, 'guests_female' => 0, 'origin' => 'ilocos',
+            'id_document' => $this->validId(),
         ])->assertSessionHasNoErrors();
         $this->assertSame(2, Booking::count());
 

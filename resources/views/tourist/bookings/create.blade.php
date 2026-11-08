@@ -37,7 +37,16 @@
                        href="{{ route('resorts.show', $resort) }}">Back to resort</a>
                 </header>
 
+                {{-- data-booking-form is the hook the compact spacing at the
+                     foot of visitdasol.css has always been written against.
+                     It was never on this element, so none of those rules ever
+                     matched and the form kept its full Bootstrap spacing.
+
+                     It has to be scoped to something: every field here comes
+                     from <x-form.input>, which wraps itself in mb-3, and
+                     eighteen other forms draw from that same component. --}}
                 <form method="POST" action="{{ route('tourist.bookings.store') }}"
+                      data-booking-form
                       enctype="multipart/form-data" novalidate data-submit-once
                       {{-- The route is declared inside a group with ->name('tourist.'),
                            so its full name carries that prefix. Without it route()
@@ -294,15 +303,18 @@
                                     </div>
                                 </div>
 
-                                <div class="row">
-                                    <div class="col-sm-6">
+                                {{-- The five guest counts. vd-guest-counts is a
+                                     layout hook only; see the stylesheet for why
+                                     a plain .row leaves a hole under Children. --}}
+                                <div class="vd-guest-counts">
+                                    <div>
                                         <x-form.input name="rooms_booked" type="number" label="Beds" required min="0"
                                                       max="{{ max(1, (int) $available) }}"
                                                       :value="old('rooms_booked', $roomsBooked)"
                                                       data-booking-rooms />
                                         <p class="form-text mt-n2" data-booking-free>{{ $available }} free for these dates.</p>
                                     </div>
-                                    <div class="col-sm-6">
+                                    <div>
                                         <label for="field-adults" class="form-label">Adults <span class="text-danger">*</span></label>
                                         <input id="field-adults" type="number" name="adults"
                                                class="form-control @error('adults') is-invalid @enderror"
@@ -311,7 +323,7 @@
                                                data-booking-adults>
                                         @error('adults')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                     </div>
-                                    <div class="col-sm-6">
+                                    <div>
                                         <label for="field-children" class="form-label">
                                             Children <span data-booking-child-ages>{{ $room->hasChildDiscount() ? '(' . $room->childAgeRange() . ')' : '' }}</span>
                                         </label>
@@ -321,12 +333,17 @@
                                                value="{{ old('children', 0) }}"
                                                data-booking-children>
                                         @error('children')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                                        {{-- The room's own ages, because the resort checks them at
-                                             the gate and a guest counting to a different definition
-                                             is a guest who gets a different bill on arrival. --}}
-                                        <div class="form-text" data-booking-child-note></div>
+                                        {{-- The child-discount note that stood here has been removed.
+                                             The age range it explained is still in the label above,
+                                             through [data-booking-child-ages], and the discount
+                                             itself still shows in the Booking summary panel.
+
+                                             booking-form.js writes that note through
+                                             [data-booking-child-note] behind an `if`, so with the
+                                             element gone it simply skips it — no error, and the
+                                             live totals are untouched. --}}
                                     </div>
-                                    <div class="col-sm-6 mt-3">
+                                    <div>
                                         <label for="field-pwd-guests" class="form-label">PWD guests</label>
                                         <input id="field-pwd-guests" type="number" name="pwd_guests"
                                                class="form-control @error('pwd_guests') is-invalid @enderror"
@@ -334,21 +351,19 @@
                                                value="{{ old('pwd_guests', 0) }}"
                                                data-booking-pwd>
                                         @error('pwd_guests')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                                        <div class="form-text">
-                                            How many of the adults and children above have a PWD ID.
-                                            They are not extra guests, so do not count them twice.
-                                            <span data-booking-pwd-note></span>
-                                        </div>
-                                    </div>
-                                    <div class="col-sm-6 mt-3">
-                                        <label for="field-guests-total" class="form-label">Total guests</label>
-                                        <input id="field-guests-total" type="number" name="guests"
-                                               class="form-control" min="1" max="60" required readonly
-                                               value="{{ old('guests', $guests) }}"
-                                               data-booking-guests>
-                                        <p class="form-text mt-n2" data-booking-capacity>
-                                            Up to {{ $room->capacity }} per room.
-                                        </p>
+                                        {{-- The four lines of explanation that stood here have been
+                                             removed. They carried the discount rate through
+                                             [data-booking-pwd-note], which booking-form.js writes
+                                             behind an `if` — with the element gone it skips it, and
+                                             the PWD discount still appears in the Booking summary
+                                             where the money is worked out.
+
+                                             This was also the tallest thing in the guest-count grid,
+                                             and the row-span rule in the stylesheet existed only to
+                                             lift Total guests past it. With the helper gone and
+                                             Total guests moved below Male and Female, neither
+                                             reason remains and the rule has gone too — these four
+                                             counts are a plain two-by-two again. --}}
                                     </div>
                                 </div>
 
@@ -378,10 +393,32 @@
                                 {{-- How the two compare with the number of guests
                                      above. The form refuses a split that does not
                                      add up, and being told that only after
-                                     sending the request is a wasted journey. --}}
+                                     sending the request is a wasted journey.
+
+                                     It stays directly under Male and Female,
+                                     which is the pair it is about. --}}
                                 <p class="form-text mt-n2 mb-3" data-booking-sex role="status">
                                     Split your guests between the two. Put 0 where there are none.
                                 </p>
+
+                                {{-- Total guests, under Male and Female.
+
+                                     It is the sum of adults and children and is
+                                     read-only — the guest never types in it — so
+                                     it belongs after the counts that feed it
+                                     rather than among them. Same field, same
+                                     name, same data hook; only its place in the
+                                     page changed. --}}
+                                <div class="vd-guest-total mb-3">
+                                    <label for="field-guests-total" class="form-label">Total guests</label>
+                                    <input id="field-guests-total" type="number" name="guests"
+                                           class="form-control" min="1" max="60" required readonly
+                                           value="{{ old('guests', $guests) }}"
+                                           data-booking-guests>
+                                    <p class="form-text mt-n2" data-booking-capacity>
+                                        Up to {{ $room->capacity }} per room.
+                                    </p>
+                                </div>
 
                                 <div class="mb-3">
                                     <label class="form-label" for="field-origin">Travelling from</label>
@@ -408,7 +445,7 @@
                                     </div>
                                 </div>
 
-                                <div class="mb-0">
+                                <div class="mb-4">
                                     <label class="form-label" for="field-special-requests">
                                         Special requests <span class="text-muted-vd fw-normal small">(optional)</span>
                                     </label>
@@ -418,6 +455,44 @@
                                     @error('special_requests')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
+                                </div>
+
+                                {{-- The valid ID.
+
+                                     REQUIRED. The resort cannot check anybody in
+                                     until an ID has been verified, so a booking
+                                     sent without one was a booking that could not
+                                     be honoured — and the guest only found that
+                                     out afterwards, from their reservation page,
+                                     once the room was already being held. Asking
+                                     here moves that discovery to the one moment
+                                     the guest is still filling the form in.
+
+                                     The `required` attribute is a courtesy, not
+                                     the check: the form carries `novalidate`, and
+                                     StoreBookingRequest refuses the request. --}}
+                                <div class="mb-0">
+                                    <label class="form-label" for="field-id-document">
+                                        Valid ID <span class="text-danger">*</span>
+                                    </label>
+
+                                    <input class="form-control @error('id_document') is-invalid @enderror"
+                                           type="file" id="field-id-document" name="id_document"
+                                           accept=".jpg,.jpeg,.png,.pdf"
+                                           required
+                                           aria-describedby="field-id-document-help">
+
+                                    @error('id_document')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+
+                                    <div class="form-text" id="field-id-document-help">
+                                        A photo or PDF of a government-issued ID &mdash; passport,
+                                        driver's licence, PhilID, postal ID. JPG, PNG or PDF, up to
+                                        {{ round(config('visitdasol.uploads.document_max_kb') / 1024, 1) }} MB.
+                                        Only this resort can open it, and it is never published.
+                                        The resort cannot check you in until one is verified.
+                                    </div>
                                 </div>
                             </section>
                         </div>

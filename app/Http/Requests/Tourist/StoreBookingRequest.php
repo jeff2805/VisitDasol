@@ -7,6 +7,9 @@ use App\Enums\PaymentPreference;
 use App\Enums\VisitorOrigin;
 use App\Models\ResortManualPaymentAccount;
 use App\Models\Room;
+use App\Services\BookingService;
+use App\Services\Payments\PaymentPolicyService;
+use App\Services\Payments\PaymentTerms;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
@@ -53,6 +56,55 @@ class StoreBookingRequest extends FormRequest
             ?->manualAccount()
             ->where('active', true)
             ->first();
+    }
+
+    /**
+     * What this resort asks for up front, for the stay being requested.
+     *
+     * THE THIRD PLACE THAT ASKS, AND IT USED TO ASK WITHOUT THEM.
+     *
+     * Three things decide which payment methods exist: the booking form
+     * draws them, this rule accepts them, and BookingService refuses
+     * anything else. The first and last pass the stay's real terms; this
+     * one passed only the GCash account, so it was answering a different
+     * question from the other two.
+     *
+     * While "Pay at the resort" was withdrawn outright that made no
+     * visible difference. It does now: the method is offered exactly
+     * when the terms ask for nothing up front, so a rule that cannot see
+     * the terms would reject the one option the form had shown.
+     *
+     * Null when the request has not named a room or usable dates. The
+     * rules for those fields refuse it first, and the methods list then
+     * falls back to what is true of the site rather than of the stay.
+     */
+    private function terms(): ?PaymentTerms
+    {
+        $room = $this->room();
+
+        if ($room === null) {
+            return null;
+        }
+
+        try {
+            $checkIn = CarbonImmutable::parse($this->input('check_in_date'))->startOfDay();
+            $checkOut = CarbonImmutable::parse($this->input('check_out_date'))->startOfDay();
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if ($checkOut->lte($checkIn)) {
+            return null;
+        }
+
+        $nights = (int) $checkIn->diffInDays($checkOut);
+        $rooms = max(1, (int) $this->input('rooms_booked', 1));
+
+        return app(PaymentPolicyService::class)->terms(
+            $room->resort->paymentTerms(),
+            app(BookingService::class)->total($room->price_per_night, $nights, $rooms),
+            $checkIn,
+        );
     }
 
     protected function prepareForValidation(): void
@@ -358,6 +410,30 @@ class StoreBookingRequest extends FormRequest
             ],
 
             /*
+             * The guest's valid ID, sent with the request rather than after it.
+             *
+             * REQUIRED. The resort cannot check anybody in until an ID has
+             * been verified, so a booking made without one was a booking that
+             * could not be honoured — the guest found that out later, from
+             * their reservation page, after the room had already been held
+             * for them. Asking here moves that discovery to the one moment
+             * the guest is still filling the form in.
+             *
+             * The rules are the ones IdDocumentRequest already uses — both
+             * the extension and the real content type, and the size ceiling
+             * from config — because this is the same document arriving by a
+             * different door, and two doors with two rules is how one of
+             * them ends up weaker.
+             */
+            'id_document' => [
+                'required',
+                'file',
+                'mimes:'.implode(',', config('visitdasol.uploads.document_mimes')),
+                'mimetypes:image/jpeg,image/png,application/pdf',
+                'max:'.config('visitdasol.uploads.document_max_kb'),
+            ],
+
+            /*
              * What the guest asked for besides the room, as
              * extra id => quantity.
              *
@@ -404,7 +480,7 @@ class StoreBookingRequest extends FormRequest
                 'nullable',
                 Rule::in(
                     array_column(
-                        PaymentPreference::available($this->manualAccount()),
+                        PaymentPreference::available($this->manualAccount(), $this->terms()),
                         'value'
                     )
                 ),
@@ -582,6 +658,24 @@ class StoreBookingRequest extends FormRequest
             'room.exists' =>
                 'Choose a valid room type.',
 
+            'id_document.required' =>
+                'Attach a photo or PDF of your valid ID. '
+                . 'The resort cannot check you in without one.',
+
+            'id_document.file' =>
+                'Choose a photo or PDF of your valid ID.',
+
+            'id_document.mimes' =>
+                'Upload your ID as a JPG, PNG, or PDF.',
+
+            'id_document.mimetypes' =>
+                'Upload your ID as a JPG, PNG, or PDF.',
+
+            'id_document.max' =>
+                'Your ID must be '
+                . round(config('visitdasol.uploads.document_max_kb') / 1024, 1)
+                . ' MB or smaller.',
+
             'rooms_booked.min' =>
                 'You must book at least one room.',
 
@@ -629,6 +723,7 @@ class StoreBookingRequest extends FormRequest
             'guests_male' => 'number of male guests',
             'guests_female' => 'number of female guests',
             'origin' => 'where you are travelling from',
+            'id_document' => 'valid ID',
         ];
     }
 }
