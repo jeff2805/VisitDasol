@@ -12,14 +12,14 @@
             <h1 class="vd-welcome__title" id="welcome-title">Hello, {{ $user->first_name }}</h1>
             <p class="vd-welcome__lead">
                 @if ($stats['upcoming'] > 0)
-                    You have {{ $stats['upcoming'] }} {{ Str::plural('stay', $stats['upcoming']) }} coming up on Dasol Bay.
+                    You have {{ $stats['upcoming'] }} {{ Str::plural('stay', $stats['upcoming']) }} coming up on Dasol .
                 @elseif ($stats['pending'] > 0)
                     {{ $stats['pending'] }} {{ Str::plural('request', $stats['pending']) }} {{ $stats['pending'] === 1 ? 'is' : 'are' }} with the resort, waiting for a reply.
                 @else
                     {{-- Not the home page's sentence repeated: that one
                          introduces the site to a stranger, and this one is read
                          by somebody who already has an account. --}}
-                    Pick your dates and see which rooms are free on Dasol Bay.
+                    Pick your dates and see which rooms are free on Dasol.
                 @endif
             </p>
 

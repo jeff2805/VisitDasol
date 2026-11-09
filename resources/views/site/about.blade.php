@@ -22,7 +22,7 @@
                         Dasol is a coastal municipality in the western part of Pangasinan, in the Ilocos Region
                         of the Philippines. It is made up of 18 barangays and uses the postal code
                         {{ config('visitdasol.postal_code') }}. The town is long associated with salt-making,
-                        and its shoreline faces Dasol Bay.
+                        and its shoreline faces Dasol.
                     </p>
                     <p class="vd-prose text-muted-vd">
                         For official information about the municipality, its services, and current travel

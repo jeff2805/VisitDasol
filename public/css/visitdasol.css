@@ -2261,7 +2261,7 @@ th[aria-sort] {
 .vd-welcome {
   position: relative;
   overflow: hidden;
-  background-image: url('/images/image3.png');
+  background-image: url('/images/image3.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -2280,16 +2280,6 @@ th[aria-sort] {
   content: '';
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(95deg,
-      rgba(13, 59, 71, .92) 0%,
-      rgba(13, 59, 71, .86) 55%,
-      rgba(13, 59, 71, .45) 80%,
-      rgba(13, 59, 71, .22) 100%),
-    linear-gradient(180deg,
-      rgba(13, 59, 71, .50) 0%,
-      rgba(13, 59, 71, .20) 45%,
-      rgba(11, 48, 58, .58) 100%);
   pointer-events: none;
 }
 
@@ -6412,5 +6402,9 @@ h2.visually-hidden {
 }
 /* Remove salt-bed square pattern from homepage hero only */
 .vd-hero .vd-saltbeds {
+    display: none !important;
+}
+
+.vd-welcome .vd-saltbeds {
     display: none !important;
 }

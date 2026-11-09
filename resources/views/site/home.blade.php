@@ -184,7 +184,7 @@
                     <div>
                         <p class="vd-eyebrow">Find your way</p>
                         <h2 id="map-preview-title" class="mb-1">See it on the map</h2>
-                        <p class="text-muted-vd mb-0">Every resort and destination above, placed on Dasol Bay.</p>
+                        <p class="text-muted-vd mb-0">Every resort and destination above, placed on Dasol.</p>
                     </div>
                     <a class="btn btn-outline-primary rounded-pill px-4 d-inline-flex align-items-center gap-2" href="{{ route('map') }}">
                         Open the full map
