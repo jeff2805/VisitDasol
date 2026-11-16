@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\User;
+use App\Support\Sql;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -66,7 +67,7 @@ class ActivityLogController extends Controller
     private function availableGroups(): array
     {
         return ActivityLog::query()
-            ->selectRaw("SPLIT_PART(action, '.', 1) as grp")
+            ->selectRaw(Sql::firstSegment('action', '.').' as grp')
             ->distinct()
             ->orderBy('grp')
             ->pluck('grp')

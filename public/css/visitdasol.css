@@ -681,12 +681,22 @@ a {
   background: currentColor;
 }
 
-.vd-badge--pending   { background: var(--vd-status-pending-bg);   color: var(--vd-status-pending-fg); }
+/* A walk-in waiting on the tourism office reads like anything else
+   waiting; a resubmission is still waiting, so it reads the same. */
+.vd-badge--pending,
+.vd-badge--pending_review,
+.vd-badge--resubmitted { background: var(--vd-status-pending-bg);   color: var(--vd-status-pending-fg); }
 .vd-badge--active,
 .vd-badge--paid,
 .vd-badge--confirmed,
 .vd-badge--verified,
+/* An accepted walk-in counts towards the return: the same green as
+   anything else that is settled and in force. */
+.vd-badge--accepted,
 .vd-badge--published { background: var(--vd-status-active-bg);    color: var(--vd-status-active-fg); }
+/* Returned is not a refusal, but it IS the only thing on the owner's
+   list that needs doing, so it is given the colour that draws the eye. */
+.vd-badge--returned,
 .vd-badge--rejected,
 .vd-badge--failed    { background: var(--vd-status-rejected-bg);  color: var(--vd-status-rejected-fg); }
 .vd-badge--inactive,

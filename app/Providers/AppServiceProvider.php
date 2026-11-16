@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Enums\WalkInSubmissionStatus;
 use App\Models\ActivityLog;
 use App\Models\Amenity;
 use App\Models\Announcement;
@@ -86,10 +87,48 @@ class AppServiceProvider extends ServiceProvider
                 $request->attributes->set($key, [
                     'pendingOwnerCount' => User::pendingOwners()->count(),
                     'pendingResortCount' => Resort::pending()->count(),
+
+                    /*
+                     * Walk-in records waiting on the office. Only the ones
+                     * actually awaiting a decision: a badge counting every
+                     * record ever submitted would never go down, and a badge
+                     * that never goes down stops being read.
+                     */
+                    'pendingWalkInCount' => Booking::query()->awaitingTourismReview()->count(),
                 ]);
             }
 
             $view->with($request->attributes->get($key));
+        });
+
+        /*
+         * The resort owner's own badge: records the office has sent back.
+         *
+         * The only thing on the owner's walk-in screens that needs acting on,
+         * so it is the only thing counted. Remembered on the request for the
+         * same reason as the office's figures above.
+         */
+        View::composer('partials.sidebar-owner', function ($view): void {
+            $user = auth()->user();
+
+            if ($user === null || ! $user->isResortOwner()) {
+                $view->with('returnedWalkIns', 0);
+
+                return;
+            }
+
+            $request = request();
+            $key = 'visitdasol.returned_walk_ins';
+
+            if (! $request->attributes->has($key)) {
+                $request->attributes->set($key, Booking::query()
+                    ->forOwner($user)
+                    ->walkIns()
+                    ->where('submission_status', WalkInSubmissionStatus::Returned->value)
+                    ->count());
+            }
+
+            $view->with('returnedWalkIns', $request->attributes->get($key));
         });
 
         /*

@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Enums\BookingStatus;
 use App\Enums\PaymentPreference;
+use App\Enums\PaymentProvider;
 use App\Models\Booking;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -84,7 +85,8 @@ class BookingDecided extends Notification
             && ! $this->toOwner
             && $booking->payment_preference === PaymentPreference::Online
             && PaymentPreference::Online->isAvailable()) {
-            $mail->line('You chose to pay by QRPh, and you can do that now from the link below. '
+            $mail->line('You chose to pay by '.PaymentProvider::payMongoMethodPhrase()
+                .', and you can do that now from the link below. '
                 .'It stays optional: you may still settle at the resort when you arrive.');
         }
 

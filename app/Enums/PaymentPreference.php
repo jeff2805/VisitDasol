@@ -5,6 +5,7 @@ namespace App\Enums;
 use App\Enums\Concerns\EnumHelpers;
 use App\Models\ResortManualPaymentAccount;
 use App\Services\Payments\PaymentTerms;
+use Illuminate\Support\Str;
 
 enum PaymentPreference: string
 {
@@ -17,7 +18,7 @@ enum PaymentPreference: string
     public function label(): string
     {
         return match ($this) {
-            self::Online => 'QRPh',
+            self::Online => Str::ucfirst(PaymentProvider::payMongoMethodPhrase()),
             self::OnArrival => 'Pay at the resort',
             self::ManualGcash => 'Manual GCash',
         };
@@ -27,7 +28,8 @@ enum PaymentPreference: string
     {
         return match ($this) {
             self::Online =>
-                'Pay through PayMongo QRPh once the resort has confirmed.',
+                'Pay through PayMongo with '.PaymentProvider::payMongoMethodPhrase()
+                    .' once the resort has confirmed.',
             self::OnArrival =>
                 'Settle in person, in cash, on the day you arrive.',
             self::ManualGcash =>

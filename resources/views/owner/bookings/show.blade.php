@@ -77,7 +77,7 @@
 
                 <p class="form-text mb-0">
                     @if ($booking->payment_preference === \App\Enums\PaymentPreference::Online)
-                        This guest intends to pay by QRPh once you confirm. A payment that clears
+                        This guest intends to pay by {{ \App\Enums\PaymentProvider::payMongoMethodPhrase() }} once you confirm. A payment that clears
                         is recorded on this reservation; collect anything still outstanding at your
                         resort as usual.
                     @else

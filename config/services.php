@@ -103,11 +103,20 @@ return [
         /*
          * Which methods PayMongo offers on its checkout page.
          *
-         * QRPh alone, because that is what the site advertises and what
-         * visitors here actually use. PayMongo can also do GCash, cards, Maya
-         * and GrabPay; adding any of them is a matter of listing it here AND
-         * switching it on for the PayMongo account, in either order, but the
-         * booking form's wording says QRPh and the two should agree.
+         * QRPh and card: QRPh is what visitors here mostly use, and a card
+         * is what a guest booking from outside the country usually has.
+         * PayMongo can also do GCash, Maya and GrabPay; adding any of them
+         * is a matter of listing it here AND switching it on for the
+         * PayMongo account, in either order.
+         *
+         * NOTHING ELSE NEEDS CHANGING TO ADD ONE. Every screen that names
+         * the methods reads this list through
+         * PaymentProvider::payMongoMethodPhrase(), so the booking form, the
+         * reservation page and the confirmation email cannot promise a
+         * method PayMongo's own page will not show.
+         *
+         * "card" covers Visa and Mastercard, credit and debit alike; the
+         * guest types the number on PayMongo's page, never on this site.
          *
          * Lower-cased: PayMongo's API reads these as its own method codes
          * (e.g. "qrph", not "QRPh"), and a wrong case fails the whole
@@ -115,7 +124,7 @@ return [
          */
         'methods' => array_values(array_filter(array_map(
             fn (string $method): string => strtolower(trim($method)),
-            explode(',', (string) env('PAYMONGO_METHODS', 'qrph'))
+            explode(',', (string) env('PAYMONGO_METHODS', 'qrph,card'))
         ))),
     ],
 

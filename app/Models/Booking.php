@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\BookingSource;
 use App\Enums\BookingStatus;
 use App\Enums\BookingType;
 use App\Enums\IdVerificationStatus;
@@ -9,6 +10,7 @@ use App\Enums\PaymentDeadlineReference;
 use App\Enums\PaymentPreference;
 use App\Enums\PaymentRequirement;
 use App\Enums\VisitorOrigin;
+use App\Enums\WalkInSubmissionStatus;
 use Carbon\CarbonInterface;
 use Database\Factories\BookingFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -63,6 +65,10 @@ class Booking extends Model
         'status' => 'pending',
         'rooms_booked' => 1,
 
+        // What every reservation made before walk-ins existed was: a guest
+        // who booked themselves through this site.
+        'booking_source' => 'online',
+
         // What every booking made before tours existed was.
         'booking_type' => 'overnight',
 
@@ -91,7 +97,15 @@ class Booking extends Model
         return [
             'status' => BookingStatus::class,
             'booking_type' => BookingType::class,
+            'booking_source' => BookingSource::class,
             'payment_preference' => PaymentPreference::class,
+
+            // Null for an online booking: there is no tourism-office
+            // submission behind a stay the guest booked themselves.
+            'submission_status' => WalkInSubmissionStatus::class,
+            'submitted_at' => 'datetime',
+            'reviewed_at' => 'datetime',
+            'accepted_at' => 'datetime',
 
             // Dates
             'check_in_date' => 'immutable_date',
@@ -312,6 +326,48 @@ class Booking extends Model
         return $this->hasMany(Payment::class)->latest('id');
     }
 
+    /**
+     * What the tourism office did with this walk-in record, oldest first.
+     *
+     * Empty for an online booking, which is never submitted to anybody.
+     */
+    public function submissions(): HasMany
+    {
+        return $this->hasMany(WalkInSubmission::class)->oldest('id');
+    }
+
+    /** Who at the office last decided on this record. */
+    public function reviewedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    /* Walk-in helpers --------------------------------------------------- */
+
+    public function isWalkIn(): bool
+    {
+        return $this->booking_source === BookingSource::WalkIn;
+    }
+
+    /**
+     * Whether the resort may still change this record.
+     *
+     * False for every online booking: a guest's own reservation is not an
+     * owner's to rewrite, and this asks only about walk-in records.
+     */
+    public function isEditableByOwner(): bool
+    {
+        return $this->isWalkIn()
+            && $this->submission_status?->isEditableByOwner() === true;
+    }
+
+    /** Whether this walk-in counts towards the Department of Tourism return. */
+    public function isReportable(): bool
+    {
+        return ! $this->isWalkIn()
+            || $this->submission_status?->isReportable() === true;
+    }
+
     /* Scopes */
 
     /**
@@ -382,6 +438,56 @@ class Booking extends Model
             BookingStatus::Pending->value,
             BookingStatus::Confirmed->value,
         ]);
+    }
+
+    /** Records the resort took at its own gate. */
+    public function scopeWalkIns(Builder $query): void
+    {
+        $query->where('booking_source', BookingSource::WalkIn->value);
+    }
+
+    /** Reservations the guest made themselves on this site. */
+    public function scopeOnline(Builder $query): void
+    {
+        $query->where('booking_source', BookingSource::Online->value);
+    }
+
+    /** Walk-in records the tourism office still has to decide on. */
+    public function scopeAwaitingTourismReview(Builder $query): void
+    {
+        $query->where('booking_source', BookingSource::WalkIn->value)
+            ->whereIn('submission_status', [
+                WalkInSubmissionStatus::PendingReview->value,
+                WalkInSubmissionStatus::Resubmitted->value,
+            ]);
+    }
+
+    /**
+     * Everything that belongs in the Department of Tourism return: every
+     * online booking, and only the walk-ins the office has accepted.
+     *
+     * THE ONE PLACE THAT RULE IS WRITTEN. ReportService reads it for the
+     * monthly return, so a draft or returned walk-in can never be counted
+     * towards the municipality's arrivals — while still holding its room,
+     * which is a different question entirely.
+     */
+    public function scopeReportable(Builder $query): void
+    {
+        /*
+         * Qualified, unlike the scopes above it: this one is the only scope
+         * that goes into a joined query — accommodationRegister() joins
+         * resorts, rooms and users — and a bare column name there is a trap
+         * for whoever joins a fourth table that happens to have one too.
+         */
+        $query->where(function (Builder $reportable): void {
+            $reportable
+                ->where('bookings.booking_source', BookingSource::Online->value)
+                ->orWhere(function (Builder $accepted): void {
+                    $accepted
+                        ->where('bookings.booking_source', BookingSource::WalkIn->value)
+                        ->where('bookings.submission_status', WalkInSubmissionStatus::Accepted->value);
+                });
+        });
     }
 
     /** Bookings for resorts owned by the given user. */

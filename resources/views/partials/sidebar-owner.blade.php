@@ -49,6 +49,17 @@
         Reservations
     </x-sidebar-link>
 
+    {{-- Guests taken at the gate. Next to Reservations because to an owner
+         they are the same job — who is staying — and the difference is only
+         how the booking reached them. --}}
+    <x-sidebar-link
+        route="owner.walk-ins.index"
+        match="owner.walk-ins.*"
+        icon="person-walking"
+        :count="$returnedWalkIns ?? null">
+        Walk-in Records
+    </x-sidebar-link>
+
     {{-- Guests who have written in. Under Guests rather than Account
          because it is about the people staying, not about the owner's
          own settings. --}}

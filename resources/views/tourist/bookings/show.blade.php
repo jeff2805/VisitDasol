@@ -167,9 +167,9 @@
                          pay button here needs explaining. Without this the page
                          simply looks as though their choice was ignored. --}}
                     <section class="vd-panel p-4 mb-4" aria-labelledby="pay-soon-title">
-                        <h2 class="h5 mb-1" id="pay-soon-title">Paying by QRPh</h2>
+                        <h2 class="h5 mb-1" id="pay-soon-title">Paying by {{ \App\Enums\PaymentProvider::payMongoMethodPhrase() }}</h2>
                         <p class="text-muted-vd mb-0">
-                            You chose to pay by QRPh. The payment button appears here as soon as
+                            You chose to pay by {{ \App\Enums\PaymentProvider::payMongoMethodPhrase() }}. The payment button appears here as soon as
                             {{ $resort->name }} confirms your request &mdash; nothing is charged
                             while they are still deciding.
                         </p>

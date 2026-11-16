@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\BookingStatus;
+use App\Enums\BookingType;
 use App\Enums\ResortStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
@@ -11,6 +12,7 @@ use App\Models\Booking;
 use App\Models\Resort;
 use App\Models\Room;
 use App\Models\User;
+use App\Support\Sql;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -99,22 +101,23 @@ class ReportService
         // safe today because nothing here joins, but an unqualified created_at
         // is a trap for whoever adds a join later.
         $column = $basis === 'requested' ? 'bookings.created_at' : 'bookings.check_in_date';
+        $month = Sql::monthKey($column);
 
         $rows = $this->bookingsIn($from, $to, $resortId, $basis)
-            ->selectRaw("TO_CHAR({$column}, 'YYYY-MM') as month")
+            ->selectRaw("{$month} as month")
             ->selectRaw('count(*) as reservations')
             ->groupBy('month')
             ->pluck('reservations', 'month');
 
         $guests = $this->bookingsIn($from, $to, $resortId, $basis)
-            ->selectRaw("TO_CHAR({$column}, 'YYYY-MM') as month")
+            ->selectRaw("{$month} as month")
             ->selectRaw('sum(guests) as total')
             ->groupBy('month')
             ->pluck('total', 'month');
 
         $value = $this->bookingsIn($from, $to, $resortId, $basis)
             ->whereIn('status', array_column(self::REAL, 'value'))
-            ->selectRaw("TO_CHAR({$column}, 'YYYY-MM') as month")
+            ->selectRaw("{$month} as month")
             ->selectRaw('sum(total_amount) as total')
             ->groupBy('month')
             ->pluck('total', 'month');
@@ -236,7 +239,7 @@ class ReportService
         $byRole = fn (UserRole $role) => User::query()
             ->where('role', $role->value)
             ->whereBetween('created_at', [$from->startOfDay(), $to->endOfDay()])
-            ->selectRaw("TO_CHAR(created_at, 'YYYY-MM') as month")
+            ->selectRaw(Sql::monthKey('created_at').' as month')
             ->selectRaw('count(*) as total')
             ->groupBy('month')
             ->pluck('total', 'month');
@@ -272,7 +275,10 @@ class ReportService
             ->where('check_in_date', '<=', $to->toDateString())
             ->where('check_out_date', '>', $from->toDateString())
             ->selectRaw(
-                'COALESCE(SUM((LEAST(check_out_date, CAST(? AS date)) - GREATEST(check_in_date, CAST(? AS date))) * rooms_booked), 0) as nights',
+                'COALESCE(SUM('.Sql::dateDiffDays(
+                    'LEAST(check_out_date, '.Sql::asDate('?').')',
+                    'GREATEST(check_in_date, '.Sql::asDate('?').')',
+                ).' * rooms_booked), 0) as nights',
                 [$to->addDay()->toDateString(), $from->toDateString()]
             )
             ->first();
@@ -390,7 +396,8 @@ class ReportService
      *
      *   guests        people who checked in on this booking
      *   guest_nights  those people multiplied by the nights they stayed
-     *   rooms_used    rooms taken, multiplied by those nights
+     *   day_tour      those people, when the visit had no night in it
+     *   rooms_used    rooms taken, by the dates they were taken for
      *   male / female the party split by sex, as the guest gave it
      *   origin        where they travelled from
      *
@@ -398,9 +405,16 @@ class ReportService
      * for October holds who checked IN during October, which is what each
      * resort's own guest book records.
      *
-     * Only reservations that stand appear. Somebody who cancelled did not
-     * visit, and a register that counted them would overstate the
-     * municipality's arrivals to the Department.
+     * TWO FILTERS DECIDE WHAT APPEARS, and they are different questions:
+     *
+     *   1. Only reservations that stand. Somebody who cancelled did not
+     *      visit, and counting them would overstate the municipality's
+     *      arrivals to the Department.
+     *
+     *   2. Only stays the return may carry: every online booking, and the
+     *      walk-ins the tourism office has accepted. A walk-in still in
+     *      draft at its resort, or returned for correction, holds its room
+     *      but is nobody's agreed figure yet. See Booking::scopeReportable.
      *
      * @return Collection<int, array<string, mixed>>
      */
@@ -422,6 +436,25 @@ class ReportService
          * name.
          */
         return Booking::query()
+            /*
+             * ONLINE BOOKINGS, AND ONLY THE WALK-INS THE OFFICE HAS ACCEPTED.
+             *
+             * A walk-in holds its room from the moment the resort writes it
+             * down, so it is Confirmed like any other stay and the status
+             * filter below lets it through. That is right for availability
+             * and wrong for the Department: a draft the resort has not sent,
+             * or one this office returned for correction, is not a figure
+             * anybody has agreed to file.
+             *
+             * The rule itself lives on the model (Booking::scopeReportable)
+             * and not here, so the screens that preview these numbers and
+             * the spreadsheet that files them can never disagree about which
+             * stays count.
+             *
+             * Applied BEFORE toBase(): the scope is Eloquent's, and after
+             * toBase() there is no model left to ask.
+             */
+            ->reportable()
             ->toBase()
             ->join('resorts', 'resorts.id', '=', 'bookings.resort_id')
             ->join('rooms', 'rooms.id', '=', 'bookings.room_id')
@@ -438,6 +471,7 @@ class ReportService
             ->selectRaw('bookings.check_in_date as check_in_date')
             ->selectRaw('bookings.check_out_date as check_out_date')
             ->selectRaw('bookings.nights as nights')
+            ->selectRaw('bookings.booking_type as booking_type')
             ->selectRaw('bookings.guests as guests')
             ->selectRaw('bookings.rooms_booked as rooms_booked')
             ->selectRaw('bookings.guests_male as guests_male')
@@ -449,6 +483,15 @@ class ReportService
             ->map(function (object $row): array {
                 $guests = (int) $row->guests;
                 $nights = (int) $row->nights;
+
+                /*
+                 * A tour is a visit with no night in it. The return counts
+                 * those people in their own column, because a municipality
+                 * whose beaches fill with day groups has arrivals that the
+                 * guest-nights figure cannot see — nights is zero for all
+                 * of them, which is exactly what makes them a tour.
+                 */
+                $isTour = BookingType::tryFrom((string) $row->booking_type)?->isTour() ?? false;
 
                 // The party's guests land in the one column they belong to, so
                 // a line adds across to the number of people on it.
@@ -477,7 +520,22 @@ class ReportService
                     'nights' => $nights,
                     'guests' => $guests,
                     'guest_nights' => $guests * $nights,
-                    'rooms_used' => (int) $row->rooms_booked * $nights,
+
+                    // The Day Tour column. It read zero for every resort in
+                    // the municipality until now: the key was never produced
+                    // here, and ReportController summed a key that did not
+                    // exist, which quietly comes to nothing.
+                    'day_tour' => $isTour ? $guests : 0,
+
+                    /*
+                     * Rooms taken, by the dates they were taken for. A tour
+                     * occupies its cottage for a whole date — that is why
+                     * AvailabilityService blocks the date for one — so it
+                     * uses a room even with no night to multiply by. Without
+                     * the floor of one, every tour in the municipality
+                     * reported zero room use.
+                     */
+                    'rooms_used' => (int) $row->rooms_booked * max(1, $nights),
                     'male' => (int) $row->guests_male,
                     'female' => (int) $row->guests_female,
                     'sex_not_stated' => $stated ? 0 : $guests,

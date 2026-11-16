@@ -44,6 +44,8 @@ use App\Http\Controllers\Owner\PaymentPolicyController;
 use App\Http\Controllers\Owner\PaymentProofController;
 use App\Http\Controllers\Owner\ResortController as OwnerResortController;
 use App\Http\Controllers\Owner\StatisticsController as OwnerStatisticsController;
+use App\Http\Controllers\Owner\WalkInController as OwnerWalkInController;
+use App\Http\Controllers\Admin\WalkInSubmissionController as AdminWalkInController;
 use App\Http\Controllers\Owner\BookingExtraController as OwnerBookingExtraController;
 use App\Http\Controllers\Owner\ResortExtraController as OwnerExtraController;
 use App\Http\Controllers\Owner\RoomController as OwnerRoomController;
@@ -470,6 +472,30 @@ Route::prefix('owner')
         Route::get('/availability', OwnerAvailabilityController::class)->name('availability');
         Route::get('/statistics', OwnerStatisticsController::class)->name('statistics');
 
+        /*
+        | WALK-IN RECORDS. Guests the resort met at its own gate, written
+        | down here and sent to the tourism office for the monthly return.
+        |
+        | Saving one holds the room immediately — these are real stays, and
+        | the availability sweep counts them exactly as it counts an online
+        | booking. Sending to the office is a SEPARATE act on its own route,
+        | because a resort may write a guest down at a busy desk and finish
+        | the paperwork later.
+        |
+        | No DELETE. A walk-in is a record of a stay that happened; the way
+        | to undo one is to cancel the booking, which is what the ordinary
+        | reservation screens are for.
+        */
+        Route::get('/walk-ins', [OwnerWalkInController::class, 'index'])->name('walk-ins.index');
+        Route::get('/walk-ins/new', [OwnerWalkInController::class, 'create'])->name('walk-ins.create');
+        Route::post('/walk-ins', [OwnerWalkInController::class, 'store'])->name('walk-ins.store');
+        Route::get('/walk-ins/{booking}', [OwnerWalkInController::class, 'show'])->name('walk-ins.show');
+        Route::get('/walk-ins/{booking}/edit', [OwnerWalkInController::class, 'edit'])->name('walk-ins.edit');
+        Route::put('/walk-ins/{booking}', [OwnerWalkInController::class, 'update'])->name('walk-ins.update');
+        Route::post('/walk-ins/{booking}/submit', [OwnerWalkInController::class, 'submit'])
+            ->middleware('throttle:30,1')
+            ->name('walk-ins.submit');
+
         Route::get('/gcash', [ManualGcashController::class, 'edit'])->name('manual-gcash.edit');
         Route::put('/gcash', [ManualGcashController::class, 'update'])->name('manual-gcash.update');
 
@@ -562,6 +588,29 @@ Route::prefix('admin')
 
         Route::get('/bookings', [AdminBookingController::class, 'index'])->name('bookings.index');
         Route::get('/bookings/{booking}', [AdminBookingController::class, 'show'])->name('bookings.show');
+
+        /*
+        | WALK-IN RECORDS SENT BY THE RESORTS, for the monthly return.
+        |
+        | The office reviews visitor information and nothing else: the
+        | controller selects a fixed list of columns that holds no rate, no
+        | total and no payment, so adding a money column to the bookings
+        | table can never put one in front of a reviewer.
+        |
+        | Accept and return are the ONLY two things the office may do. There
+        | is deliberately no route that edits a resort's figures — a reviewer
+        | who could change the numbers they are reviewing would make an
+        | accepted record worthless as a statistic.
+        |
+        | A draft the resort has not sent answers 404 here, not 403: it is
+        | not the office's to know about.
+        */
+        Route::get('/walk-ins', [AdminWalkInController::class, 'index'])->name('walk-ins.index');
+        Route::get('/walk-ins/{booking}', [AdminWalkInController::class, 'show'])->name('walk-ins.show');
+        Route::patch('/walk-ins/{booking}/accept', [AdminWalkInController::class, 'accept'])
+            ->name('walk-ins.accept');
+        Route::patch('/walk-ins/{booking}/return', [AdminWalkInController::class, 'returnForCorrection'])
+            ->name('walk-ins.return');
 
         // Tourist destinations
         Route::get('/tourist-spots', [AdminDestinationController::class, 'index'])->name('destinations.index');

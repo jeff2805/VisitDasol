@@ -25,10 +25,23 @@ enum PaymentProvider: string
     public function label(): string
     {
         return match ($this) {
-            self::PayMongo => 'Pay with '.Arr::join(self::payMongoMethods(), ', ', ' or ').' through PayMongo',
+            self::PayMongo => 'Pay with '.self::payMongoMethodPhrase().' through PayMongo',
             self::PayPal => 'Pay with your PayPal account',
             self::ManualGcash => 'GCash (sent to the resort)',
         };
+    }
+
+    /**
+     * The configured PayMongo methods named the way a guest would say them:
+     * "QRPh" on its own, "QRPh or card" once cards are switched on.
+     *
+     * The one place any screen gets this wording from. Hard-coding it meant
+     * a form promising QRPh while PayMongo's page offered a card as well,
+     * and the two drifting apart is exactly what this prevents.
+     */
+    public static function payMongoMethodPhrase(): string
+    {
+        return Arr::join(self::payMongoMethods(), ', ', ' or ') ?: 'online payment';
     }
 
     /** Short name for a button: the headline method, not the whole list. */

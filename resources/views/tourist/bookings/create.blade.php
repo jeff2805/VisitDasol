@@ -784,7 +784,8 @@
                                 @if (count($preferences) > 1)
                                     <p class="form-text text-center mb-0 mt-1">
                                         <i class="bi bi-shield-lock me-1" aria-hidden="true"></i>
-                                        QRPh payments are taken on PayMongo's own secure page. Your
+                                        {{ Str::ucfirst(\App\Enums\PaymentProvider::payMongoMethodPhrase()) }}
+                                        payments are taken on PayMongo's own secure page. Your card and
                                         wallet details are never typed into, or stored by, this site.
                                     </p>
                                 @endif

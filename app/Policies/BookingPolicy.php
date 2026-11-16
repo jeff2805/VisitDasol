@@ -118,6 +118,70 @@ class BookingPolicy
             && $booking->check_in_date->gt(CarbonImmutable::today());
     }
 
+    /* Walk-in records, and the tourism office's review ---------------------
+     *
+     * TWO SIDES, AND NEITHER MAY DO THE OTHER'S WORK.
+     *
+     * A resort owner writes records and sends them; the office decides on
+     * them. An owner can never accept their own return, and the office can
+     * never edit a resort's figures — it may only accept them or send them
+     * back with a reason. That is what makes an accepted record worth
+     * anything as a statistic.
+     *
+     * Every one of these is checked again inside WalkInBookingService or
+     * WalkInSubmissionService under a row lock. These decide what a page may
+     * offer; those decide what is true when the write happens.
+     */
+
+    /** Record guests met at the gate. Owners of an approved resort only. */
+    public function createWalkIn(User $user): bool
+    {
+        return $user->isResortOwner()
+            && $user->isActive()
+            && $user->resorts()->exists();
+    }
+
+    /** The resort's own walk-in list, or the office's review queue. */
+    public function viewAnyWalkIn(User $user): bool
+    {
+        return $user->isSuperAdmin() || $this->createWalkIn($user);
+    }
+
+    /**
+     * Change a record's figures.
+     *
+     * The resort's own, and only while it is theirs to change: a draft they
+     * have not sent, or one the office has handed back. NOT the office's —
+     * a reviewer who could edit the numbers they are reviewing would make
+     * the review meaningless.
+     */
+    public function updateWalkIn(User $user, Booking $booking): bool
+    {
+        return $booking->isWalkIn()
+            && $this->ownsResort($user, $booking)
+            && $booking->isEditableByOwner();
+    }
+
+    /** Send a record to the office, or send a corrected one back. */
+    public function submitWalkIn(User $user, Booking $booking): bool
+    {
+        return $this->updateWalkIn($user, $booking);
+    }
+
+    /**
+     * Accept a record, or return it for correction.
+     *
+     * The office alone, and only on records actually waiting on them. A
+     * record still in draft at the resort is not theirs to see decided.
+     */
+    public function reviewWalkIn(User $user, Booking $booking): bool
+    {
+        return $user->isSuperAdmin()
+            && $user->isActive()
+            && $booking->isWalkIn()
+            && $booking->submission_status?->isAwaitingReview() === true;
+    }
+
     /* The valid ID, and the two desk moments ------------------------------
      *
      * EVERY ONE OF THESE IS THE WHOLE OF THE ACCESS CONTROL.
