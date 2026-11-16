@@ -130,38 +130,87 @@
       return wrap;
     }
 
-    var guests = document.createElement('span');
-    guests.className = 'vd-occupancy__line';
-    guests.textContent = (projected ? 'Booked for those nights: ' : 'Staying tonight: ') +
-      occupancy.guests + ' / ' + plural(occupancy.capacity, 'guest');
-    wrap.appendChild(guests);
+    /*
+     * TWO READINGS, NOT ONE.
+     *
+     * Beds taken and rooms gone are different questions and they
+     * routinely disagree: a couple in a six-bed cottage leaves a resort
+     * a third full by guests while costing it a whole room. Showing only
+     * the guest figure sent visitors to resorts with no room left, so
+     * each gets its own heading, its own bar, and its own numbers.
+     */
+    wrap.appendChild(occupancyGroup(
+      'Guests',
+      (projected ? 'Booked for those nights: ' : 'Staying tonight: ') +
+        occupancy.guests + ' / ' + plural(occupancy.capacity, 'guest'),
+      occupancy.percent,
+      'Guest occupancy',
+      occupancy.percent + '% occupied · ' +
+        plural(occupancy.remaining, 'guest space') + ' remaining'
+    ));
 
     /*
-     * A bar as well as the numbers, but never the bar alone: it carries
-     * the same figure in a form that can be read at a glance, and its
-     * ARIA values carry it for a reader that cannot see it at all.
+     * Only when the resort has published rooms to count. rooms_total of
+     * zero with a real guest capacity cannot happen, but a bar reading
+     * "0 / 0 rooms" if it ever did would say nothing worth the space.
      */
+    if (occupancy.rooms_total) {
+      wrap.appendChild(occupancyGroup(
+        'Rooms',
+        occupancy.rooms_booked + ' / ' + plural(occupancy.rooms_total, 'room') + ' booked',
+        occupancy.rooms_percent,
+        'Room occupancy',
+        occupancy.rooms_percent + '% occupied · ' +
+          plural(occupancy.rooms_free, 'room') + ' available'
+      ));
+    }
+
+    return wrap;
+  }
+
+  /*
+   * One labelled reading: heading, the figure in words, a bar, and the
+   * detail beneath it.
+   *
+   * The bar never appears alone. It carries the same number in a form
+   * that can be read at a glance, and its ARIA values carry it for a
+   * reader that cannot see it at all.
+   */
+  function occupancyGroup(heading, figure, percent, meterLabel, detail) {
+    var safePercent = Math.max(0, Math.min(100, Number(percent) || 0));
+
+    var group = document.createElement('div');
+    group.className = 'vd-occupancy__group';
+
+    var title = document.createElement('span');
+    title.className = 'vd-occupancy__heading';
+    title.textContent = heading;
+    group.appendChild(title);
+
+    var figureLine = document.createElement('span');
+    figureLine.className = 'vd-occupancy__line';
+    figureLine.textContent = figure;
+    group.appendChild(figureLine);
+
     var meter = document.createElement('div');
     meter.className = 'vd-occupancy__meter';
     meter.setAttribute('role', 'progressbar');
-    meter.setAttribute('aria-label', 'Guest occupancy');
-    meter.setAttribute('aria-valuenow', String(occupancy.percent));
+    meter.setAttribute('aria-label', meterLabel);
+    meter.setAttribute('aria-valuenow', String(safePercent));
     meter.setAttribute('aria-valuemin', '0');
     meter.setAttribute('aria-valuemax', '100');
 
     var fill = document.createElement('span');
-    fill.style.width = Math.max(0, Math.min(100, occupancy.percent)) + '%';
+    fill.style.width = safePercent + '%';
     meter.appendChild(fill);
-    wrap.appendChild(meter);
+    group.appendChild(meter);
 
-    var detail = document.createElement('span');
-    detail.className = 'vd-occupancy__line';
-    detail.textContent = occupancy.percent + '% full · ' +
-      plural(occupancy.remaining, 'guest space') + ' left · ' +
-      plural(occupancy.rooms_free, 'room') + ' free';
-    wrap.appendChild(detail);
+    var detailLine = document.createElement('span');
+    detailLine.className = 'vd-occupancy__line';
+    detailLine.textContent = detail;
+    group.appendChild(detailLine);
 
-    return wrap;
+    return group;
   }
 
   /*

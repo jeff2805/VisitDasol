@@ -92,7 +92,9 @@ class MapOccupancyController extends Controller
             'remaining' => 0,
             'percent' => 0,
             'rooms_total' => 0,
+            'rooms_booked' => 0,
             'rooms_free' => 0,
+            'rooms_percent' => 0,
             'status' => 'unknown',
         ];
     }

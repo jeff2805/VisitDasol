@@ -86,6 +86,8 @@ class ResortOccupancyTest extends TestCase
         $this->assertSame(22, $figures['capacity']);
         $this->assertSame(8, $figures['rooms_total']);
         $this->assertSame(8, $figures['rooms_free']);
+        $this->assertSame(0, $figures['rooms_booked']);
+        $this->assertSame(0, $figures['rooms_percent']);
         $this->assertSame(0, $figures['guests']);
         $this->assertSame(22, $figures['remaining']);
         $this->assertSame(0, $figures['percent']);
@@ -127,6 +129,66 @@ class ResortOccupancyTest extends TestCase
     }
 
     /**
+     * Rooms are a reading in their own right, not guest occupancy worded
+     * differently. A small party in a large room leaves the two figures
+     * saying different things, and both of them are true.
+     */
+    public function test_rooms_booked_is_reported_beside_the_guest_figure(): void
+    {
+        $room = $this->room(capacity: 6, units: 10);          // 60 guest capacity
+        $this->stay($room, '2030-07-10', '2030-07-12', guests: 4, rooms: 4);
+
+        $figures = $this->figures();
+
+        // Four rooms gone to four guests: 40% of the rooms, 7% of the beds.
+        $this->assertSame(10, $figures['rooms_total']);
+        $this->assertSame(4, $figures['rooms_booked']);
+        $this->assertSame(6, $figures['rooms_free']);
+        $this->assertSame(40, $figures['rooms_percent']);
+
+        $this->assertSame(4, $figures['guests']);
+        $this->assertSame(7, $figures['percent']);
+    }
+
+    /** Every unit accounted for: what is booked plus what is free is the lot. */
+    public function test_rooms_booked_and_rooms_free_account_for_every_unit(): void
+    {
+        $small = $this->room(capacity: 2, units: 3);
+        $large = $this->room(capacity: 6, units: 2);
+
+        $this->stay($small, '2030-07-10', '2030-07-13', guests: 2, rooms: 2);
+        $this->stay($large, '2030-07-11', '2030-07-12', guests: 5, rooms: 1);
+
+        $figures = $this->figures('2030-07-10', '2030-07-13');
+
+        $this->assertSame(
+            $figures['rooms_total'],
+            $figures['rooms_booked'] + $figures['rooms_free'],
+            'Units booked and units free do not add up to the inventory.'
+        );
+    }
+
+    /**
+     * An owner who cuts the room count after a party has already booked
+     * it leaves more units promised than the resort owns. The map must
+     * not report 2 of 1 rooms booked, or 200% occupied.
+     */
+    public function test_rooms_booked_never_exceeds_the_inventory(): void
+    {
+        $room = $this->room(capacity: 4, units: 2);
+        $this->stay($room, '2030-07-10', '2030-07-12', guests: 4, rooms: 2);
+
+        $room->forceFill(['total_rooms' => 1])->save();
+
+        $figures = $this->figures();
+
+        $this->assertSame(1, $figures['rooms_total']);
+        $this->assertSame(1, $figures['rooms_booked']);
+        $this->assertSame(0, $figures['rooms_free']);
+        $this->assertSame(100, $figures['rooms_percent']);
+    }
+
+    /**
      * The whole reason the engine sweeps night by night. Two stays that
      * overlap the asked-for range but not each other must not be added
      * together, or a resort with one room would look doubly booked.
@@ -144,6 +206,10 @@ class ResortOccupancyTest extends TestCase
         $this->assertSame(4, $figures['guests']);
         $this->assertSame(0, $figures['rooms_free']);
         $this->assertSame('full', $figures['status']);
+
+        // The room figure is swept the same way: one unit, not two.
+        $this->assertSame(1, $figures['rooms_booked']);
+        $this->assertSame(100, $figures['rooms_percent']);
     }
 
     public function test_cancelled_and_rejected_stays_hold_nothing(): void
@@ -373,6 +439,34 @@ class ResortOccupancyTest extends TestCase
         $response->assertJsonPath('resorts.0.guests', 7);
         $response->assertJsonPath('resorts.0.rooms_free', 0);
         $response->assertJsonPath('resorts.0.status', 'full');
+
+        // Both readings travel to the browser, or the popup has only half
+        // of what it draws.
+        $response->assertJsonPath('resorts.0.rooms_total', 2);
+        $response->assertJsonPath('resorts.0.rooms_booked', 2);
+        $response->assertJsonPath('resorts.0.rooms_percent', 100);
+    }
+
+    /**
+     * A resort the service could not work out is reported with every key
+     * the popup reads, at zero. A missing key would reach the browser as
+     * undefined and be drawn as the word "undefined".
+     */
+    public function test_a_resort_without_figures_still_carries_every_key(): void
+    {
+        $response = $this->getJson(route('map.occupancy'))->assertOk();
+
+        foreach ([
+            'capacity', 'guests', 'remaining', 'percent',
+            'rooms_total', 'rooms_booked', 'rooms_free', 'rooms_percent',
+            'status',
+        ] as $key) {
+            $response->assertJsonStructure(['resorts' => [['id', $key]]]);
+        }
+
+        $response->assertJsonPath('resorts.0.rooms_booked', 0);
+        $response->assertJsonPath('resorts.0.rooms_percent', 0);
+        $response->assertJsonPath('resorts.0.status', 'unknown');
     }
 
     public function test_the_endpoint_defaults_to_tonight(): void

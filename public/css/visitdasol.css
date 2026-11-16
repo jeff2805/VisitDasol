@@ -3628,6 +3628,27 @@ th[aria-sort] {
   line-height: 1.35;
 }
 
+/* One reading — guests, or rooms. Two of these sit in a popup, so each
+   is spaced off from the next rather than running together. */
+.vd-occupancy__group {
+  display: grid;
+  gap: .2rem;
+}
+
+.vd-occupancy__group + .vd-occupancy__group {
+  margin-top: .45rem;
+  padding-top: .45rem;
+  border-top: 1px solid rgba(0, 0, 0, .08);
+}
+
+.vd-occupancy__heading {
+  font-weight: 600;
+  font-size: .75rem;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: var(--vd-bay);
+}
+
 .vd-occupancy__meter {
   height: .4rem;
   border-radius: 999px;
@@ -6313,6 +6334,23 @@ h2.visually-hidden {
 
 .vd-room-results > .row {
     margin-top: 0 !important;
+}
+
+.vd-gallery__stage { 
+    position: relative; 
+    width: 100%; 
+    aspect-ratio: 16 / 9; 
+    overflow: hidden; 
+    border-radius: 14px; 
+    background: #e8eeee; 
+}
+
+.vd-gallery__stage img, 
+.vd-gallery__slide {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 
 

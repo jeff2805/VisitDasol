@@ -14,114 +14,106 @@
              so dates chosen on the way in can be changed without going back. --}}
        {{-- Combined Stay Search and Room Filters: One Visual Container --}}
         {{-- Stay Search ONLY --}}
+
+{{-- Combined Stay Search and Room Filters --}}
 <div class="vd-rooms-search-panel mb-4">
 
-    <x-stay-search
-        :barangays="$barangays"
-        :values="[
-            'barangay' => $filters['barangay'],
-            'check_in' => $filters['check_in']?->toDateString(),
-            'check_out' => $filters['check_out']?->toDateString(),
-            'guests' => $filters['guests'],
-        ]"
-    />
-    
-{{-- Room Filters --}}
-<form method="GET"
-      action="{{ route('resorts.index') }}"
-      class="vd-filterbar p-3 p-lg-4 mb-0">
+    <form method="GET" action="{{ route('resorts.index') }}">
 
-    @if(request('category'))
-        <input type="hidden" name="category" value="{{ request('category') }}">
-    @endif
+        {{-- Stay Search: Date and Time --}}
+        <x-stay-search
+            :barangays="$barangays"
+            :standalone="false"
+            :values="[
+                'barangay' => $filters['barangay'],
+                'check_in' => $filters['check_in']?->toDateString(),
+                'check_out' => $filters['check_out']?->toDateString(),
+                'check_in_time' => $filters['check_in_time'],
+                'check_out_time' => $filters['check_out_time'],
+                'guests' => $filters['guests'],
+            ]"
+        />
 
-    <div class="row g-3 align-items-end">
+        {{-- Preserve Accommodation Category --}}
+        @if(request('category'))
+            <input type="hidden" name="category" value="{{ request('category') }}">
+        @endif
 
-        {{-- Search --}}
-        <div class="col-12 col-lg-4 col-xl-3">
-            <label class="form-label" for="filter-q">Search</label>
-            <input type="search"
-                   class="form-control"
-                   id="filter-q"
-                   name="q"
-                   value="{{ $filters['q'] }}"
-                   placeholder="Room, resort, or barangay">
-        </div>
+        {{-- Room Filters --}}
+        <div class="vd-filterbar p-3 p-lg-4 mb-0">
 
-        {{-- Room Category --}}
-        <div class="col-sm-6 col-lg-4 col-xl-2">
-            <label class="form-label" for="filter-type">Room category</label>
-            <select class="form-select" id="filter-type" name="type">
-                <option value="">Any kind</option>
-                @foreach ($roomTypes as $value => $label)
-                    <option value="{{ $value }}" @selected($filters['type'] === $value)>
-                        {{ $label }}
-                    </option>
-                @endforeach
-            </select>
-        </div>
+            <div class="row g-3 align-items-end">
 
-        {{-- Guests --}}
-        <div class="col-6 col-lg-3 col-xl-1">
-            <label class="form-label" for="filter-guests">Guests</label>
-            <input type="number"
-                   class="form-control"
-                   id="filter-guests"
-                   name="guests"
-                   min="1"
-                   max="30"
-                   value="{{ $filters['guests'] }}"
-                   placeholder="Any">
-        </div>
+                {{-- Search --}}
+                <div class="col-12 col-lg-4 col-xl-3">
+                    <label class="form-label" for="filter-q">Search</label>
+                    <input
+                        type="search"
+                        class="form-control"
+                        id="filter-q"
+                        name="q"
+                        value="{{ $filters['q'] }}"
+                        placeholder="Room, resort, or barangay"
+                    >
+                </div>
 
-        {{-- Maximum Price --}}
-            
-
-        {{-- Sorting --}}
-        <div class="col-sm-6 col-lg-3 col-xl-2">
-            <label class="form-label" for="filter-sort">Sort by</label>
-            <select class="form-select" id="filter-sort" name="sort">
-                @foreach ($sorts as $value => $label)
-                    <option value="{{ $value }}" @selected($filters['sort'] === $value)>
-                        {{ $label }}
+                {{-- Room Category --}}
+                <div class="col-sm-6 col-lg-4 col-xl-2">
+                    <label class="form-label" for="filter-type">Room category</label>
+                    <select class="form-select" id="filter-type" name="type">
+                        <option value="">Any kind</option>
+                        @foreach ($roomTypes as $value => $label)
+                            <option value="{{ $value }}" @selected($filters['type'] === $value)>
+                                {{ $label }}
+                            </option>
                         @endforeach
-                    </option>
-            </select>
-        </div>
-           {{-- Clear --}}
-        <div class="col-auto">
-            <div class="vd-filterbar__actions">
-                <a class="btn btn-light border"
-                   href="{{ route('resorts.index') }}">
-                    Clear
-                </a>
+                    </select>
+                </div>
+
+                {{-- Guests --}}
+                <div class="col-6 col-lg-3 col-xl-1">
+                    <label class="form-label" for="filter-guests">Guests</label>
+                    <input
+                        type="number"
+                        class="form-control"
+                        id="filter-guests"
+                        name="guests"
+                        min="1"
+                        max="30"
+                        value="{{ $filters['guests'] }}"
+                        placeholder="Any"
+                    >
+                </div>
+
+                {{-- Sorting --}}
+                <div class="col-sm-6 col-lg-3 col-xl-2">
+                    <label class="form-label" for="filter-sort">Sort by</label>
+                    <select class="form-select" id="filter-sort" name="sort">
+                        @foreach ($sorts as $value => $label)
+                            <option value="{{ $value }}" @selected($filters['sort'] === $value)>
+                                {{ $label }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Clear --}}
+                <div class="col-auto">
+                    <a class="btn btn-light border"
+                       href="{{ route('resorts.index') }}">
+                        Clear
+                    </a>
+                </div>
+
             </div>
         </div>
 
-    </div>
-
-</form>
+    </form>
 
 </div>
 
-{{-- Accommodation Category: COMPLETELY SEPARATE --}}
-<div class="vd-accommodation-category mb-4">
 
-    <h2>Accommodation Category</h2>
 
-    <div class="vd-accommodation-category__buttons">
-        @foreach (['All', 'Budget', 'Premium', 'Cottage'] as $category)
-            <a href="{{ route('resorts.index', array_merge(
-                request()->except('page', 'category'),
-                ['category' => $category === 'All' ? null : $category]
-            )) }}"
-               class="vd-category-btn {{ request('category', 'All') === $category ? 'active' : '' }}">
-                {{ $category }}
-            </a>
-        @endforeach
-    </div>
-
-</div>
 
 {{-- Room Filters: Separate --}}
 <form method="GET"

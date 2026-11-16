@@ -7,6 +7,7 @@ use App\Models\Resort;
 use App\Models\Room;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use App\Enums\BookingStatus;
 
 /**
  * Works out how many units of a room type are in use.
@@ -229,6 +230,16 @@ class AvailabilityService
      * Two queries whatever the number of resorts, so the map does not grow
      * slower with every listing that registers.
      *
+     * Two readings, not one. "How many beds are taken" and "how many
+     * rooms are gone" answer different questions and routinely disagree:
+     * a family of two in a six-bed cottage leaves the resort a third full
+     * by guests and short one of its rooms. A visitor needs both to know
+     * whether to drive out.
+     *
+     * percent is the GUEST figure, unprefixed, because it was here first
+     * and the public map payload is a published shape. rooms_percent is
+     * its room-by-room counterpart.
+     *
      * @param  iterable<Resort>  $resorts
      * @return array<int, array{
      *     capacity: int,
@@ -236,7 +247,10 @@ class AvailabilityService
      *     remaining: int,
      *     percent: int,
      *     rooms_total: int,
+     *     rooms_booked: int,
      *     rooms_free: int,
+     *     rooms_percent: int,
+     *     confirmed_bookings: int,
      *     status: string
      * }>  resort id => its figures
      */
@@ -280,17 +294,23 @@ class AvailabilityService
                 ->get([
                     'id', 'resort_id', 'room_id',
                     'check_in_date', 'check_out_date',
-                    'rooms_booked', 'guests',
+                    'rooms_booked', 'guests', 'status',
                 ]);
 
         $roomsByResort = $rooms->groupBy('resort_id');
         $bookingsByResort = $bookings->groupBy('resort_id');
         $bookingsByRoom = $bookings->groupBy('room_id');
-
         $figures = [];
 
         foreach ($resorts as $resort) {
             $resortRooms = $roomsByResort->get($resort->id, collect());
+            $resortBookings = $bookingsByResort->get($resort->id, collect());
+
+            $confirmedBookings = $resortBookings
+                ->filter(fn (Booking $booking) =>
+                    $booking->status === BookingStatus::Confirmed
+                )
+                ->count();
 
             // Every bed the resort could sell on one night.
             $capacity = (int) $resortRooms->sum(
@@ -303,15 +323,27 @@ class AvailabilityService
              * Free units are counted per room TYPE and then added up. A
              * resort is not "three rooms free" if all three are cottages
              * and the family rooms are gone.
+             *
+             * Units held are counted in the same pass, from the same peak,
+             * so the two figures cannot drift apart. Each type's tally is
+             * capped at its own inventory: an owner who cut total_rooms
+             * below what was already promised to guests would otherwise
+             * have more units reported booked than the resort owns.
              */
             $roomsFree = 0;
+            $roomsBooked = 0;
 
             foreach ($resortRooms as $room) {
-                $roomsFree += max(0, $room->total_rooms - $this->peak(
+                $units = (int) $room->total_rooms;
+
+                $inUse = $this->peak(
                     $bookingsByRoom->get($room->id, collect()),
                     $from,
                     $until
-                ));
+                );
+
+                $roomsBooked += min($units, $inUse);
+                $roomsFree += max(0, $units - $inUse);
             }
 
             // Heads, on the busiest night of the range.
@@ -335,13 +367,29 @@ class AvailabilityService
                 ? (int) min(100, round($guests / $capacity * 100))
                 : 0;
 
+            // A resort with nothing published is 0% rather than 100%: it
+            // has not told us it is full, only that it has not said.
+            $roomsPercent = $roomsTotal > 0
+                ? (int) min(100, round($roomsBooked / $roomsTotal * 100))
+                : 0;
+
             $figures[$resort->id] = [
                 'capacity' => $capacity,
                 'guests' => $guests,
                 'remaining' => $remaining,
                 'percent' => $percent,
                 'rooms_total' => $roomsTotal,
+                'rooms_booked' => $roomsBooked,
                 'rooms_free' => $roomsFree,
+                'rooms_percent' => $roomsPercent,
+                'confirmed_bookings' => $confirmedBookings,
+
+                /*
+                 * The word, and the pin colour, are still decided by the
+                 * guest figure and free units — unchanged on purpose.
+                 * rooms_percent is reported, not acted on, so no pin
+                 * changes colour because of this addition.
+                 */
                 'status' => $this->occupancyStatus($capacity, $percent, $roomsFree),
             ];
         }

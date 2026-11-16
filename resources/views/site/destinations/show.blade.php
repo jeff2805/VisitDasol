@@ -37,27 +37,6 @@
                 <p class="vd-detail__lead" style="white-space: pre-line">{{ $destination->description }}</p>
             </div>
 
-            <div class="col-lg-4">
-                <aside class="vd-panel p-4">
-                    <h2 class="h5 mb-2">Getting there</h2>
-                    @if (filled($destination->address))
-                        <p class="text-muted-vd small">{{ $destination->address }}</p>
-                    @endif
-
-                    <x-location-map :latitude="$destination->latitude" :longitude="$destination->longitude"
-                                    :label="$destination->name" style="height: 15rem" class="mb-2" />
-
-                    <div class="d-flex flex-wrap gap-2 mb-2">
-                        <x-external-link class="btn btn-outline-primary btn-sm"
-                           href="https://www.openstreetmap.org/?mlat={{ $destination->latitude }}&mlon={{ $destination->longitude }}#map=16/{{ $destination->latitude }}/{{ $destination->longitude }}">
-                            <i class="bi bi-compass me-1" aria-hidden="true"></i>Get directions
-                        </x-external-link>
-                        <a class="btn btn-light border btn-sm" href="{{ route('map') }}">See all on the map</a>
-                    </div>
-
-                    <p class="form-text mb-0">Always check local conditions and advisories before travelling.</p>
-                </aside>
-            </div>
         </div>
 
         @if ($related->isNotEmpty())

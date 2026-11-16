@@ -78,6 +78,7 @@ class ResortController extends Controller
             })
             ->when($filters['barangay'], fn (Builder $query) => $query->where('resorts.barangay', $filters['barangay']))
             ->when($filters['type'], fn (Builder $query) => $query->where('rooms.room_type', $filters['type']))
+            ->when($filters['category'], fn (Builder $query) => $query->where('resorts.category', $filters['category']))
             ->when($filters['guests'], fn (Builder $query) => $query->where('rooms.capacity', '>=', $filters['guests']))
             ->when($filters['max_price'], fn (Builder $query) => $query->where('rooms.price_per_night', '<=', $filters['max_price']));
 
@@ -247,6 +248,7 @@ class ResortController extends Controller
     {
         $barangay = $request->query('barangay');
         $type = $request->query('type');
+        $category = $request->query('category');
         $sort = (string) $request->query('sort', 'recommended');
 
         /*
@@ -280,6 +282,7 @@ class ResortController extends Controller
         return [
             'q' => trim((string) $request->query('q', '')),
             'barangay' => in_array($barangay, config('visitdasol.barangays'), true) ? $barangay : null,
+               'category' => in_array($category, ['budget', 'premium', 'cottage'], true) ? $category : null,
             'type' => in_array($type, RoomType::values(), true) ? $type : null,
             'guests' => max(0, min(30, (int) $request->query('guests'))) ?: null,
             'max_price' => max(0, min(1_000_000, (int) $request->query('max_price'))) ?: null,
