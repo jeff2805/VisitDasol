@@ -465,6 +465,7 @@ class ReportService
             ->selectRaw('bookings.booking_reference as reference')
             ->selectRaw('bookings.contact_name as contact_name')
             ->selectRaw("TRIM(CONCAT(COALESCE(users.first_name, ''), ' ', COALESCE(users.last_name, ''))) as account_name")
+            ->selectRaw('resorts.id as resort_id')
             ->selectRaw('resorts.name as resort_name')
             ->selectRaw('resorts.barangay as barangay')
             ->selectRaw('rooms.name as room_name')
@@ -512,6 +513,10 @@ class ReportService
                     // is one, and otherwise the name the booking was made
                     // under, which is who the resort will actually meet.
                     'guest' => $row->account_name !== '' ? $row->account_name : $row->contact_name,
+                    // Grouped on in the spreadsheet. By id and not by name,
+                    // because two resorts may share a name and the return
+                    // must not add their figures into one line.
+                    'resort_id' => (int) $row->resort_id,
                     'resort' => $row->resort_name,
                     'barangay' => $row->barangay,
                     'room' => $row->room_name,

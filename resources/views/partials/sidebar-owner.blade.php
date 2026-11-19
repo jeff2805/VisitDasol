@@ -85,6 +85,16 @@
     <x-sidebar-link route="owner.statistics" icon="bar-chart-line">
         Statistics
     </x-sidebar-link>
+
+    {{-- Advisories from the tourism office. Under Guests because that is
+         what they are about — a storm warning or a closed road is something
+         the resort has to tell the people arriving. --}}
+    <x-sidebar-link
+        route="owner.announcements.index"
+        match="owner.announcements.*"
+        icon="megaphone">
+        Announcements
+    </x-sidebar-link>
 </ul>
 
 <p class="vd-sidebar__group">Account</p>

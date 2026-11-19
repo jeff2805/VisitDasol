@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\OtpPurpose;
 use App\Models\EmailVerificationCode;
 use App\Models\User;
+use App\Notifications\SignInCode;
 use App\Notifications\VerifyEmailWithCode;
 use Illuminate\Support\Facades\Hash;
 
@@ -28,12 +30,12 @@ class EmailVerificationService
      * Returns the plain code so local development can display it; callers
      * on a real server should ignore it.
      */
-    public function send(User $user): string
+    public function send(User $user, OtpPurpose $purpose = OtpPurpose::Registration): string
     {
         $code = $this->generateCode();
 
         EmailVerificationCode::updateOrCreate(
-            ['user_id' => $user->id],
+            ['user_id' => $user->id, 'purpose' => $purpose->value],
             [
                 'code_hash' => Hash::make($code),
                 'attempts' => 0,
@@ -42,7 +44,9 @@ class EmailVerificationService
             ],
         );
 
-        $user->notify(new VerifyEmailWithCode($code));
+        $user->notify($purpose === OtpPurpose::Login
+            ? new SignInCode($code)
+            : new VerifyEmailWithCode($code));
 
         $this->flashCodeDuringLocalDevelopment($code);
 
@@ -70,9 +74,9 @@ class EmailVerificationService
      * Checks a code the person typed and, when it matches, marks the address
      * confirmed and clears the code.
      */
-    public function verify(User $user, string $code): VerificationResult
+    public function verify(User $user, string $code, OtpPurpose $purpose = OtpPurpose::Registration): VerificationResult
     {
-        $record = $this->outstanding($user);
+        $record = $this->outstanding($user, $purpose);
 
         if ($record === null) {
             return VerificationResult::NoCode;
@@ -98,12 +102,21 @@ class EmailVerificationService
 
         $record->delete();
 
-        User::withoutTimestamps(fn () => $user->forceFill(['email_verified_at' => now()])->save());
+        /*
+         * Only a registration code confirms the address for good. A sign-in
+         * code proves the same thing in the moment, but marking the address
+         * verified from here would quietly repair an account that had never
+         * finished confirming — and the audit trail would then say the
+         * address was confirmed on a day nobody confirmed anything.
+         */
+        if ($purpose->confirmsAddress()) {
+            User::withoutTimestamps(fn () => $user->forceFill(['email_verified_at' => now()])->save());
+        }
 
         $this->logger->log(
-            'account.email_verified',
+            $purpose->logAction(),
             $user,
-            'Confirmed the email address with a one-time code',
+            $purpose->logDescription(),
             [],
             $user,
         );
@@ -111,19 +124,22 @@ class EmailVerificationService
         return VerificationResult::Verified;
     }
 
-    /** The outstanding code for this account, if there is one. */
-    public function outstanding(User $user): ?EmailVerificationCode
+    /** The outstanding code of this kind for this account, if there is one. */
+    public function outstanding(User $user, OtpPurpose $purpose = OtpPurpose::Registration): ?EmailVerificationCode
     {
-        return EmailVerificationCode::query()->where('user_id', $user->id)->first();
+        return EmailVerificationCode::query()
+            ->where('user_id', $user->id)
+            ->where('purpose', $purpose->value)
+            ->first();
     }
 
     /**
      * Seconds the person must wait before another code may be sent.
      * Zero means a code may be sent right now.
      */
-    public function secondsUntilResend(User $user): int
+    public function secondsUntilResend(User $user, OtpPurpose $purpose = OtpPurpose::Registration): int
     {
-        return $this->outstanding($user)?->secondsUntilResend() ?? 0;
+        return $this->outstanding($user, $purpose)?->secondsUntilResend() ?? 0;
     }
 
     /**

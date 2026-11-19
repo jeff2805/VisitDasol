@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\ResortStatus;
 use App\Enums\VisitorOrigin;
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
@@ -174,9 +175,45 @@ class ReportController extends Controller
         $bookings = $this->reports
             ->accommodationRegister($from, $to, $resort?->id);
 
-        $rows = $bookings
-            ->groupBy('resort')
-            ->map(function ($resortBookings, string $resortName) use ($originColumns): array {
+        $byResort = $bookings->groupBy('resort_id');
+
+        /*
+         * EVERY ESTABLISHMENT THE OFFICE HAS APPROVED GETS A LINE, whether or
+         * not anybody stayed there.
+         *
+         * The return is a return about the municipality, not about the
+         * bookings this system happens to hold. A resort that took no guests
+         * in January took no guests in January, and the Department reads that
+         * from a row of zeros — a resort that simply vanished from the sheet
+         * is indistinguishable from one the office forgot, and somebody has
+         * to telephone to find out which.
+         *
+         * Pending and rejected applications are not establishments yet and
+         * are left out.
+         */
+        $establishments = Resort::query()
+            ->whereIn('status', [ResortStatus::Active->value, ResortStatus::Inactive->value])
+            ->when($resort, fn ($query) => $query->whereKey($resort->id))
+            ->orderBy('name')
+            ->pluck('name', 'id');
+
+        /*
+         * Anything that actually took guests but is not on that list — a
+         * listing withdrawn part-way through the month, say — is added back
+         * rather than dropped. The figures have to reconcile whatever became
+         * of the listing afterwards.
+         */
+        foreach ($byResort as $resortId => $resortBookings) {
+            if (! $establishments->has($resortId)) {
+                $establishments->put($resortId, $resortBookings->first()['resort']);
+            }
+        }
+
+        $rows = $establishments
+            ->map(function (string $resortName, int $resortId) use ($byResort, $originColumns): array {
+                // An establishment with no arrivals files zeros, not nothing.
+                $resortBookings = $byResort->get($resortId, collect());
+
                 $originTotals = [];
 
                 foreach ($originColumns as $heading => $originKey) {
@@ -212,12 +249,35 @@ class ReportController extends Controller
 
         $rows->push($grandTotal);
 
+        /*
+         * The signature block. The return is a document somebody signs, so
+         * the sheet carries the name of whoever prepared it.
+         *
+         * A blank row first, so the name is not read as another resort. Set
+         * REPORT_PREPARED_BY empty and the block is left off entirely, which
+         * is what an office that signs by hand would want.
+         */
+        $preparedBy = trim((string) config('visitdasol.reports.prepared_by'));
+        $preparedByTitle = trim((string) config('visitdasol.reports.prepared_by_title'));
+
+        $footer = [];
+
+        if ($preparedBy !== '') {
+            $footer[] = [''];
+            $footer[] = ['Prepared by:'];
+            $footer[] = [$preparedBy];
+
+            if ($preparedByTitle !== '') {
+                $footer[] = [$preparedByTitle];
+            }
+        }
+
         $file = (new Xlsx(
             'Tourism Statistics',
             $headings,
             $fills,
             $widths
-        ))->write($rows, true);
+        ))->write($rows, true, $footer);
 
         $name = 'dasol-tourism-statistics-'
             .$from->format('Y-m-d')

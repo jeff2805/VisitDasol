@@ -43,8 +43,10 @@ final class Xlsx
      * first byte is correct.
      *
      * @param  iterable<int, list<string|int|float|null>>  $rows
+     * @param  list<list<string|int|float|null>>  $footer  rows written after
+     *                                                     the data, unstyled
      */
-    public function write(iterable $rows, bool $lastRowIsTotal = false): string
+    public function write(iterable $rows, bool $lastRowIsTotal = false, array $footer = []): string
     {
         $path = tempnam(sys_get_temp_dir(), 'vdxlsx');
 
@@ -59,15 +61,18 @@ final class Xlsx
         $zip->addFromString('xl/workbook.xml', $this->workbook());
         $zip->addFromString('xl/_rels/workbook.xml.rels', $this->workbookRels());
         $zip->addFromString('xl/styles.xml', $this->styles());
-        $zip->addFromString('xl/worksheets/sheet1.xml', $this->sheet($rows, $lastRowIsTotal));
+        $zip->addFromString('xl/worksheets/sheet1.xml', $this->sheet($rows, $lastRowIsTotal, $footer));
 
         $zip->close();
 
         return $path;
     }
 
-    /** @param  iterable<int, list<string|int|float|null>>  $rows */
-    private function sheet(iterable $rows, bool $lastRowIsTotal = false): string
+    /**
+     * @param  iterable<int, list<string|int|float|null>>  $rows
+     * @param  list<list<string|int|float|null>>  $footer
+     */
+    private function sheet(iterable $rows, bool $lastRowIsTotal = false, array $footer = []): string
     {
         $xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
             .'<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
@@ -108,6 +113,27 @@ final class Xlsx
             foreach (array_values($row) as $index => $value) {
                 $style = $isTotal ? count($this->headings) + 1 : 0;
                 $xml .= $this->cell($index, $number, $value, $style);
+            }
+
+            $xml .= '</row>';
+        }
+
+        /*
+         * Anything written beneath the table: the signature block on the
+         * Department of Tourism return.
+         *
+         * Kept out of $rows and written here on purpose. $lastRowIsTotal
+         * styles whichever row comes last, so a signature appended to the
+         * data would take the grand total's bold border and the grand total
+         * would lose it. These rows carry no style at all, which is what a
+         * signature block should look like.
+         */
+        foreach ($footer as $row) {
+            $number++;
+            $xml .= '<row r="'.$number.'">';
+
+            foreach (array_values($row) as $index => $value) {
+                $xml .= $this->cell($index, $number, $value, 0);
             }
 
             $xml .= '</row>';

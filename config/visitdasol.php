@@ -458,6 +458,37 @@ return [
         'ttl_minutes' => 10,
         'max_attempts' => 5,
         'resend_cooldown_seconds' => 60,
+
+        /*
+        | A ONE-TIME CODE ON EVERY SIGN-IN, not only on a new account.
+        |
+        | A password alone is one secret, and the people who hold accounts here
+        | run resorts and file returns with the Department of Tourism. The code
+        | means a stolen password on its own opens nothing: whoever has it must
+        | also be reading the mailbox.
+        |
+        | THIS IS THE SWITCH THAT TURNS IT OFF, and it exists because nothing
+        | else in this system can lock every single person out at once. If the
+        | mail server stops — a changed Gmail app password, a blocked port, a
+        | provider outage — no code can be sent and nobody can sign in, office
+        | included. Set AUTH_LOGIN_OTP=false in .env and the site goes back to
+        | password-only while the mail is repaired.
+        |
+        | The automated tests set it false as well. A test about room
+        | availability has no business typing a code out of a mailbox, and the
+        | sign-in tests that DO care switch it on themselves.
+        */
+        'require_on_login' => filter_var(
+            env('AUTH_LOGIN_OTP', true),
+            FILTER_VALIDATE_BOOLEAN
+        ),
+
+        /*
+        | How long the half-finished sign-in waits for its code, in minutes.
+        | Past this the password has to be typed again, so a session left open
+        | on a shared machine is not a way in later.
+        */
+        'login_window_minutes' => (int) env('AUTH_LOGIN_OTP_WINDOW', 15),
     ],
 
     'per_page' => 12,
@@ -500,6 +531,26 @@ return [
         | would need to be found in order to be removed.
         */
         'listings_public' => (bool) env('DEMO_LISTINGS_PUBLIC', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | The monthly return to the Department of Tourism
+    |--------------------------------------------------------------------------
+    |
+    | The accommodation return is a signed document, so the spreadsheet carries
+    | the name of whoever prepared it under the grand total.
+    |
+    | Here and not written into the report code, because this is a post rather
+    | than a fact about the system: the officer who prepares the return will
+    | one day be somebody else, and changing a name should not need a
+    | developer. Set REPORT_PREPARED_BY in .env to change it.
+    |
+    | Left empty, the signature block is simply left off the sheet.
+    */
+    'reports' => [
+        'prepared_by' => env('REPORT_PREPARED_BY', 'ARLENE R. BONILLA'),
+        'prepared_by_title' => env('REPORT_PREPARED_BY_TITLE', ''),
     ],
 
 ];

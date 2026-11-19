@@ -31,6 +31,20 @@
         -->
         <env name="APP_URL" value="http://localhost"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
+        <!--
+            No sign-in code during the tests.
+
+            The site asks for one on every sign-in; see
+            visitdasol.otp.require_on_login. A test about room availability or
+            an Excel column has no business reading a code out of a mailbox to
+            get through the door, and thirty-odd tests sign in with a password
+            to reach the thing they are really about.
+
+            The tests that ARE about the sign-in code switch it back on
+            themselves, so the two-step flow is still covered — see
+            tests/Feature/Auth/LoginOtpTest.php.
+        -->
+        <env name="AUTH_LOGIN_OTP" value="false"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>

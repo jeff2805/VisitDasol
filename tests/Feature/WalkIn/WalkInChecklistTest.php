@@ -450,18 +450,22 @@ class WalkInChecklistTest extends TestCase
         $zip->close();
         @unlink($path);
 
-        // Rows in document order; the writer puts GRAND TOTAL last.
+        /*
+         * Found by its label rather than by position. It used to be the last
+         * row and the test read it with end(); the signature block now sits
+         * beneath it, and a test that assumes a position breaks the next
+         * time anything is written under the table.
+         */
         preg_match_all('/<row [^>]*>(.*?)<\/row>/s', $sheet, $rows);
-        $last = end($rows[1]);
 
-        $this->assertStringContainsString(
-            'GRAND TOTAL',
-            (string) $last,
-            'The last row of the sheet is not the grand total.'
+        $totalRow = collect($rows[1])->first(
+            fn (string $row): bool => str_contains($row, 'GRAND TOTAL')
         );
 
+        $this->assertNotNull($totalRow, 'The sheet has no grand total row.');
+
         // Numbers are written bare in <v>; text goes in an inline string.
-        preg_match_all('/<v>(-?\d+(?:\.\d+)?)<\/v>/', (string) $last, $values);
+        preg_match_all('/<v>(-?\d+(?:\.\d+)?)<\/v>/', (string) $totalRow, $values);
 
         return array_map('intval', $values[1]);
     }

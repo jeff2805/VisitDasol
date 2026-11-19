@@ -59,6 +59,13 @@ class WalkInTourismReportTest extends TestCase
             'price_per_night' => 1000,
             'day_tour_price' => 500,
         ]);
+
+        /*
+         * No signature block by default here, so the tests that count rows
+         * are counting the table and nothing else. The two tests about the
+         * signature switch it on themselves.
+         */
+        config(['visitdasol.reports.prepared_by' => '']);
     }
 
     /** A walk-in, left in whatever state the caller asks for. */
@@ -305,6 +312,157 @@ class WalkInTourismReportTest extends TestCase
 
         // The record still waiting on the office is nowhere in the return.
         $this->assertStringNotContainsString('Not Accepted', $sheet);
+    }
+
+    /**
+     * Every approved establishment files a line, busy or not.
+     *
+     * The return is about the municipality, not about the bookings this
+     * system happens to hold. A resort missing from the sheet is
+     * indistinguishable from one the office forgot to ask, and somebody has
+     * to telephone to find out which; a row of zeros says it plainly.
+     */
+    public function test_a_resort_with_no_arrivals_still_files_a_row_of_zeros(): void
+    {
+        // Takes guests this month.
+        $this->walkIn([], WalkInSubmissionStatus::Accepted);
+
+        // Approved, and took nobody.
+        Resort::factory()->active()->create(['name' => 'Quiet Cove Resort']);
+
+        // Not an establishment yet: an application nobody has approved.
+        Resort::factory()->create([
+            'name' => 'Pending Application Resort',
+            'status' => \App\Enums\ResortStatus::Pending,
+        ]);
+
+        $sheet = $this->sheetXml();
+
+        $this->assertStringContainsString('Salt Breeze Resort', $sheet);
+        $this->assertStringContainsString(
+            'Quiet Cove Resort',
+            $sheet,
+            'An approved resort with no arrivals must still appear.'
+        );
+        $this->assertStringNotContainsString(
+            'Pending Application Resort',
+            $sheet,
+            'An unapproved application is not an establishment and does not file.'
+        );
+
+        // Heading, the two establishments, and the grand total.
+        $this->assertSame(4, substr_count($sheet, '<row '));
+    }
+
+    public function test_the_empty_rows_do_not_disturb_the_grand_total(): void
+    {
+        $this->onlineStay();                                  // 2 guests, 2 nights
+        $this->walkIn([], WalkInSubmissionStatus::Accepted);  // 2 guests, 2 nights
+
+        Resort::factory()->active()->create(['name' => 'Quiet Cove Resort']);
+        Resort::factory()->active()->create(['name' => 'Empty Bay Resort']);
+
+        $sheet = $this->sheetXml();
+
+        // Found by its label, not by being last: a signature block may sit
+        // beneath it.
+        preg_match_all('/<row [^>]*>(.*?)<\/row>/s', $sheet, $rows);
+
+        $totalRow = collect($rows[1])->first(
+            fn (string $row): bool => str_contains($row, 'GRAND TOTAL')
+        );
+
+        $this->assertNotNull($totalRow, 'The sheet has no grand total row.');
+
+        preg_match_all('/<v>(-?\d+)<\/v>/', (string) $totalRow, $values);
+        $total = array_map('intval', $values[1]);
+
+        $this->assertSame(2, $total[0], 'Check-ins: the two real stays, and no phantom ones.');
+        $this->assertSame(8, $total[1], 'Guest nights: 2x2 plus 2x2.');
+    }
+
+    /**
+     * The return is a signed document, so it carries who prepared it.
+     *
+     * Below the grand total and separated from it, because a name sitting
+     * directly under a column of resorts reads as another resort.
+     */
+    public function test_the_sheet_is_signed_beneath_the_grand_total(): void
+    {
+        config(['visitdasol.reports.prepared_by' => 'ARLENE R. BONILLA']);
+
+        $this->walkIn([], WalkInSubmissionStatus::Accepted);
+
+        $sheet = $this->sheetXml();
+
+        $this->assertStringContainsString('Prepared by:', $sheet);
+        $this->assertStringContainsString('ARLENE R. BONILLA', $sheet);
+
+        // Heading, one resort, grand total, a blank row, and the two lines.
+        $this->assertSame(6, substr_count($sheet, '<row '));
+
+        /*
+         * THE GRAND TOTAL KEEPS ITS OWN STYLING.
+         *
+         * The writer gives the LAST row the bold total style, so a signature
+         * appended to the data rows would have taken that styling and the
+         * grand total would have lost it. The signature is written
+         * separately for exactly this reason, and this is the assertion that
+         * says so.
+         */
+        preg_match_all('/<row [^>]*>(.*?)<\/row>/s', $sheet, $rows);
+
+        $totalRow = null;
+        $signatureRow = null;
+
+        foreach ($rows[1] as $row) {
+            if (str_contains((string) $row, 'GRAND TOTAL')) {
+                $totalRow = (string) $row;
+            }
+
+            if (str_contains((string) $row, 'ARLENE R. BONILLA')) {
+                $signatureRow = (string) $row;
+            }
+        }
+
+        $this->assertNotNull($totalRow);
+        $this->assertNotNull($signatureRow);
+        $this->assertMatchesRegularExpression('/ s="\d+"/', $totalRow, 'The grand total lost its styling.');
+        $this->assertDoesNotMatchRegularExpression('/ s="\d+"/', $signatureRow, 'A signature is not a total.');
+    }
+
+    public function test_an_office_that_signs_by_hand_gets_no_signature_block(): void
+    {
+        config(['visitdasol.reports.prepared_by' => '']);
+
+        $this->walkIn([], WalkInSubmissionStatus::Accepted);
+
+        $sheet = $this->sheetXml();
+
+        $this->assertStringNotContainsString('Prepared by:', $sheet);
+        $this->assertSame(3, substr_count($sheet, '<row '), 'Heading, one resort, grand total.');
+    }
+
+    /** The sheet XML of the December return, as the office downloads it. */
+    private function sheetXml(): string
+    {
+        $response = $this->actingAs($this->office)->get(route('admin.reports.accommodation', [
+            'from' => '2030-06-01',
+            'to' => '2030-06-30',
+        ]));
+
+        $response->assertOk();
+
+        $path = tempnam(sys_get_temp_dir(), 'vd').'.xlsx';
+        file_put_contents($path, $response->streamedContent());
+
+        $zip = new ZipArchive();
+        $this->assertTrue($zip->open($path) === true, 'The download is not a readable workbook.');
+        $sheet = (string) $zip->getFromName('xl/worksheets/sheet1.xml');
+        $zip->close();
+        @unlink($path);
+
+        return $sheet;
     }
 
     public function test_an_owner_cannot_download_the_offices_return(): void

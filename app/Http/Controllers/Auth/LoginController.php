@@ -23,7 +23,14 @@ class LoginController extends Controller
      * 2. Refuse accounts that are not active, with a status-specific message.
      *    This message appears only after the password is correct, so it
      *    cannot be used to discover which emails are registered.
-     * 3. Sign in, start a fresh session, and go to the right dashboard.
+     * 3. Send a one-time code and stop. NOBODY IS SIGNED IN HERE.
+     *
+     * The password is only the first of two things asked for. Auth::login()
+     * happens in LoginOtpController, once the code out of the mailbox has
+     * been typed as well — so a stolen password on its own opens nothing.
+     *
+     * With the code switched off (see visitdasol.otp.require_on_login) the
+     * password alone signs in exactly as it used to.
      */
     public function store(LoginRequest $request): RedirectResponse
     {
@@ -33,6 +40,10 @@ class LoginController extends Controller
             return back()
                 ->onlyInput('email')
                 ->with($user->status === UserStatus::Rejected ? 'error' : 'warning', $this->refusalMessage($user));
+        }
+
+        if (LoginOtpController::isRequired()) {
+            return LoginOtpController::begin($request, $user);
         }
 
         Auth::login($user, $request->boolean('remember'));

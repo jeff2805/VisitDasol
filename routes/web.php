@@ -36,6 +36,7 @@ use App\Http\Controllers\Auth\SocialLoginController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Owner\AmenityController as OwnerAmenityController;
+use App\Http\Controllers\Owner\AnnouncementController as OwnerAnnouncementController;
 use App\Http\Controllers\Owner\AvailabilityController as OwnerAvailabilityController;
 use App\Http\Controllers\Owner\BookingController as OwnerBookingController;
 use App\Http\Controllers\Owner\GuestIdentityController;
@@ -52,6 +53,7 @@ use App\Http\Controllers\Owner\RoomController as OwnerRoomController;
 use App\Http\Controllers\Owner\RoomImageController as OwnerRoomImageController;
 use App\Http\Controllers\Owner\ResortImageController as OwnerResortImageController;
 use App\Http\Controllers\Auth\OwnerRegistrationController;
+use App\Http\Controllers\Auth\LoginOtpController;
 use App\Http\Controllers\Auth\TouristRegistrationController;
 use App\Http\Controllers\Tourist\ManualPaymentController;
 use App\Http\Controllers\ConversationController;
@@ -180,6 +182,33 @@ Route::post('/payments/webhook/{provider}', [TouristPaymentController::class, 'w
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])->middleware('throttle:20,1');
+
+    /*
+    | THE SECOND HALF OF SIGNING IN: the code emailed to the mailbox.
+    |
+    | Inside the "guest" group on purpose. Nobody is signed in while these
+    | run — the password step leaves an id in the session and nothing else,
+    | and Auth::login() happens only when the code is accepted. An account
+    | that is already signed in has no business here and is sent away by the
+    | guest middleware, exactly as it is from the password screen.
+    |
+    | There is no route that REACHES this step: LoginController hands over to
+    | it in process once the password is right. Opening these addresses with
+    | no half-finished sign-in behind them lands back on the password screen.
+    |
+    | Throttled harder than the password form. A six-digit code is only out
+    | of reach while guessing is slow, and the per-code attempt limit is not
+    | enough on its own: without this, a script could ask for a fresh code
+    | after every fifth guess and work through the range.
+    */
+    Route::get('/login/code', [LoginOtpController::class, 'show'])->name('login.otp');
+    Route::post('/login/code', [LoginOtpController::class, 'verify'])
+        ->middleware('throttle:10,1')
+        ->name('login.otp.verify');
+    Route::post('/login/code/resend', [LoginOtpController::class, 'resend'])
+        ->middleware('throttle:5,1')
+        ->name('login.otp.resend');
+    Route::post('/login/code/cancel', [LoginOtpController::class, 'cancel'])->name('login.otp.cancel');
 
     Route::get('/register', [TouristRegistrationController::class, 'create'])->name('register');
     Route::post('/register', [TouristRegistrationController::class, 'store'])->middleware('throttle:10,1');
@@ -471,6 +500,17 @@ Route::prefix('owner')
 
         Route::get('/availability', OwnerAvailabilityController::class)->name('availability');
         Route::get('/statistics', OwnerStatisticsController::class)->name('statistics');
+
+        /*
+        | Advisories from the tourism office, read without leaving the
+        | dashboard. The same published announcements the public site
+        | carries — there is no separate channel to the resorts, and an
+        | owner who has to go and find the public site is an owner who does
+        | not read them.
+        */
+        Route::get('/announcements', [OwnerAnnouncementController::class, 'index'])->name('announcements.index');
+        Route::get('/announcements/{announcement}', [OwnerAnnouncementController::class, 'show'])
+            ->name('announcements.show');
 
         /*
         | WALK-IN RECORDS. Guests the resort met at its own gate, written
