@@ -1,4 +1,7 @@
-@extends('layouts.public')
+{{-- The shell follows whoever is reading: an owner keeps their dashboard
+     sidebar, a guest gets the public site. See
+     ConversationController::chrome(). --}}
+@extends($layout)
 
 @section('title', 'Messages')
 
@@ -19,7 +22,8 @@
 @endphp
 
 @section('content')
-    <div class="container py-5">
+    {{-- The dashboard shell brings its own padding; the public one does not. --}}
+    <div class="{{ $inDashboard ? '' : 'container py-5' }}">
         <x-page-header :title="$otherName"
                        :subtitle="$isOwner ? 'Guest enquiry' : 'Brgy. '.$conversation->resort->barangay">
             <a class="btn btn-light border" href="{{ route('messages.index') }}">All messages</a>

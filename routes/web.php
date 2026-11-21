@@ -47,6 +47,7 @@ use App\Http\Controllers\Owner\ResortController as OwnerResortController;
 use App\Http\Controllers\Owner\StatisticsController as OwnerStatisticsController;
 use App\Http\Controllers\Owner\WalkInController as OwnerWalkInController;
 use App\Http\Controllers\Admin\WalkInSubmissionController as AdminWalkInController;
+use App\Http\Controllers\Admin\AboutPageController;
 use App\Http\Controllers\Owner\BookingExtraController as OwnerBookingExtraController;
 use App\Http\Controllers\Owner\ResortExtraController as OwnerExtraController;
 use App\Http\Controllers\Owner\RoomController as OwnerRoomController;
@@ -366,6 +367,19 @@ Route::prefix('tourist')
         Route::patch('/bookings/{booking}/cancel', [TouristBookingController::class, 'cancel'])->name('bookings.cancel');
 
         /*
+        | New dates on a request the resort has not answered yet.
+        |
+        | Pending only, and the policy says why: once the resort has
+        | confirmed, the dates are an arrangement between two people and
+        | not the guest's alone to rewrite. A confirmed stay is moved by
+        | cancelling and asking again, which is the same two decisions
+        | made in the open.
+        */
+        Route::patch('/bookings/{booking}/reschedule', [TouristBookingController::class, 'reschedule'])
+            ->middleware('throttle:10,1')
+            ->name('bookings.reschedule');
+
+        /*
         | The guest's government-issued ID.
         |
         | The file goes to the PRIVATE disk, so the GET below is the only
@@ -615,6 +629,30 @@ Route::prefix('admin')
         | Nothing of it touched resort money, which is why none of the
         | booking, payment or reporting code below needed changing.
         */
+
+        /*
+        | ABOUT PAGE MANAGEMENT.
+        |
+        | Seven sections, each saved and published on its own. Saving and
+        | publishing are separate addresses because they are separate
+        | decisions: PUT writes a draft the public cannot see, and only
+        | the publish route moves anything in front of a visitor.
+        |
+        | The preview renders the real public template with the draft
+        | content poured into it, so what the office checks is the page
+        | itself rather than an approximation that could be wrong in its
+        | own way. It sits behind the same authorization as the editor —
+        | an unpublished draft is not public yet, and a preview address
+        | that leaked would make it so.
+        */
+        Route::get('/about', [AboutPageController::class, 'index'])->name('about.index');
+        Route::get('/about/preview', [AboutPageController::class, 'preview'])->name('about.preview');
+        Route::get('/about/{section}', [AboutPageController::class, 'edit'])->name('about.edit');
+        Route::put('/about/{section}', [AboutPageController::class, 'update'])->name('about.update');
+        Route::patch('/about/{section}/publish', [AboutPageController::class, 'publish'])
+            ->name('about.publish');
+        Route::patch('/about/{section}/unpublish', [AboutPageController::class, 'unpublish'])
+            ->name('about.unpublish');
 
         Route::get('/activity-logs', [AdminActivityLogController::class, 'index'])->name('activity-logs.index');
 

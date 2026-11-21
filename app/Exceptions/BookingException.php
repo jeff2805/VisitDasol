@@ -125,6 +125,22 @@ class BookingException extends RuntimeException
         );
     }
 
+    /**
+     * Only a request nobody has agreed to yet may be moved.
+     *
+     * Reached when a reservation was confirmed, declined or called off in
+     * the seconds between the page being drawn and the form being sent.
+     */
+    public static function notReschedulable(): self
+    {
+        return new self(
+            'This reservation can no longer be moved. It is only possible '
+            .'while the resort is still deciding — once they have answered, '
+            .'the dates are an arrangement between you both. Contact the '
+            .'resort, or cancel and book again.'
+        );
+    }
+
     public static function pastDate(): self
     {
         return new self(

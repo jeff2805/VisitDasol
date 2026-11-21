@@ -460,6 +460,34 @@ class BookingController extends Controller
     }
 
     /**
+     * Move a waiting request to different dates.
+     *
+     * Allowed only while the resort is still deciding; see
+     * BookingPolicy::reschedule, which the service asks again under a row
+     * lock in case the resort answered a second ago.
+     */
+    public function reschedule(
+        \App\Http\Requests\Tourist\RescheduleBookingRequest $request,
+        Booking $booking
+    ): RedirectResponse {
+        $this->authorize('reschedule', $booking);
+
+        try {
+            $this->bookings->reschedule($booking, $request->validated());
+        } catch (BookingException $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('tourist.bookings.show', $booking)
+            ->with(
+                'success',
+                'Your dates have been changed and the resort has been told. '
+                . 'The amount has been worked out again for the new dates.'
+            );
+    }
+
+    /**
      * Parse and validate a YYYY-MM-DD date.
      */
     private function date(mixed $value): ?CarbonImmutable

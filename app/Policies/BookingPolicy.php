@@ -66,6 +66,40 @@ class BookingPolicy
         return $booking->check_in_date->gt(CarbonImmutable::today()->addDays($cutoff));
     }
 
+    /**
+     * Move a request to different dates.
+     *
+     * WHILE IT IS STILL WAITING, AND ONLY THEN. A pending request is one
+     * nobody has agreed to yet: the resort has not accepted it, no money has
+     * been taken, and changing the dates costs nothing but the guest's own
+     * second thoughts. The moment the resort confirms, those dates are an
+     * arrangement between two people — a guest who could still move them
+     * would be rewriting something the resort has already planned around,
+     * and the resort would learn about it by looking.
+     *
+     * A confirmed stay therefore has no reschedule. The way to move one is
+     * to cancel and ask again, which is the same two decisions made in the
+     * open.
+     *
+     * The cut-off is the cancellation cut-off, deliberately the same rule:
+     * a guest too close to arrival to call the stay off must not be able to
+     * reach the same place by moving it to a date they can.
+     */
+    public function reschedule(User $user, Booking $booking): bool
+    {
+        if (! $user->isTourist() || (int) $booking->user_id !== (int) $user->id) {
+            return false;
+        }
+
+        if ($booking->status !== BookingStatus::Pending) {
+            return false;
+        }
+
+        $cutoff = (int) config('visitdasol.booking.tourist_cancel_cutoff_days', 0);
+
+        return $booking->check_in_date->gt(CarbonImmutable::today()->addDays($cutoff));
+    }
+
     /* Owner decisions ----------------------------------------------------- */
 
     /** Accept a request. Not possible once the arrival date has passed. */

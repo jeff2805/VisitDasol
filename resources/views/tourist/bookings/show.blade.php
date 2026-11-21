@@ -383,6 +383,61 @@
                 <aside class="vd-panel p-4">
                     <h2 class="h5 mb-3">Change of plans?</h2>
 
+                    {{-- Moving the dates, offered only while the resort is
+                         still deciding. Above cancelling on purpose: somebody
+                         whose plans shifted by a day wants this, and should
+                         meet it before they meet the button that throws the
+                         whole reservation away. --}}
+                    @can('reschedule', $booking)
+                        <p class="text-muted-vd">
+                            {{ $resort->name }} has not answered yet, so you can still change your dates.
+                            The amount is worked out again for the new dates, and nothing is charged.
+                        </p>
+
+                        <x-confirm-form id="reschedule-booking"
+                                        :action="route('tourist.bookings.reschedule', $booking)"
+                                        title="Change your dates?"
+                                        message="The resort will be told about the new dates before they answer. The rooms must be free on those dates."
+                                        trigger="Change my dates"
+                                        confirm="Change the dates"
+                                        icon="calendar-event"
+                                        variant="primary"
+                                        trigger-class="btn btn-outline-primary">
+                            <div class="row g-2 mt-2 text-start">
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label" for="reschedule_check_in">
+                                        New arrival date
+                                    </label>
+                                    <input type="date" class="form-control" id="reschedule_check_in"
+                                           name="check_in_date" required
+                                           min="{{ \Carbon\CarbonImmutable::today()->toDateString() }}"
+                                           value="{{ old('check_in_date', $booking->check_in_date->toDateString()) }}">
+                                </div>
+
+                                {{-- A tour is one date. Asking for a departure
+                                     would promise a second night nobody sold. --}}
+                                @if ($booking->booking_type->isOvernight())
+                                    <div class="col-12 col-sm-6">
+                                        <label class="form-label" for="reschedule_check_out">
+                                            New departure date
+                                        </label>
+                                        <input type="date" class="form-control" id="reschedule_check_out"
+                                               name="check_out_date" required
+                                               min="{{ \Carbon\CarbonImmutable::today()->addDay()->toDateString() }}"
+                                               value="{{ old('check_out_date', $booking->check_out_date->toDateString()) }}">
+                                    </div>
+                                @endif
+                            </div>
+
+                            <p class="form-text mb-0 mt-2 text-start">
+                                Your room and the size of your party stay the same. For a different room,
+                                cancel and book again.
+                            </p>
+                        </x-confirm-form>
+
+                        <hr class="my-4">
+                    @endcan
+
                     @can('cancelAsTourist', $booking)
                         <p class="text-muted-vd">
                             You can cancel until the day before check-in. The rooms go back to other guests straight away,

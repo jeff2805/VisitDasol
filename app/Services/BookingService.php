@@ -10,6 +10,7 @@ use App\Models\Booking;
 use App\Models\Room;
 use App\Models\User;
 use App\Notifications\BookingRequested;
+use App\Notifications\BookingRescheduled;
 use App\Services\Payments\PaymentPolicyService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -453,6 +454,152 @@ class BookingService
             );
 
             return $booking;
+        });
+    }
+
+    /**
+     * Move a waiting request to different dates.
+     *
+     * THE PARTY AND THE ROOM DO NOT CHANGE, only when they are coming. A
+     * guest who wants a different room or a bigger party is asking for a
+     * different reservation, and this is not the place to turn one into the
+     * other quietly.
+     *
+     * Only a pending request may move, and the rule is asked again HERE,
+     * under the row lock, because the policy decided it when the page was
+     * drawn — and the resort may have confirmed the stay in the seconds
+     * since. A confirmed stay is an arrangement between two people and is
+     * not the guest's alone to rewrite.
+     *
+     * THE BILL IS RE-QUOTED, which is the part worth saying out loud. Four
+     * nights cost more than two, so the total moves; and the payment
+     * deadline is counted from the arrival date, so a deadline left where it
+     * was would be measured from a day the guest is no longer arriving. Both
+     * are worked out again from the resort's terms as they stand now. That
+     * is honest for a request nobody has agreed to yet: nothing has been
+     * paid, and the guest is shown the new figures before the resort ever
+     * sees them.
+     *
+     * @param  array<string, mixed>  $data
+     *
+     * @throws BookingException
+     */
+    public function reschedule(Booking $booking, array $data): Booking
+    {
+        return DB::transaction(function () use ($booking, $data): Booking {
+            $locked = Booking::query()
+                ->whereKey($booking->id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($locked === null) {
+                throw BookingException::notBookable();
+            }
+
+            if ($locked->status !== BookingStatus::Pending) {
+                throw BookingException::notReschedulable();
+            }
+
+            $type = $locked->booking_type ?? BookingType::Overnight;
+
+            $checkIn = CarbonImmutable::parse($data['check_in_date'])->startOfDay();
+
+            // A tour is one date to the guest and [D, D+1) to the engine,
+            // exactly as it is when the booking is first made.
+            $checkOut = $type->isTour()
+                ? $checkIn->addDay()
+                : CarbonImmutable::parse($data['check_out_date'])->startOfDay();
+
+            $this->guardDates($checkIn, $checkOut);
+
+            $room = Room::query()->whereKey($locked->room_id)->lockForUpdate()->first();
+
+            if ($room === null || ! $room->isBookable()) {
+                throw BookingException::notBookable();
+            }
+
+            $room->load('resort');
+
+            $roomsBooked = (int) $locked->rooms_booked;
+
+            /*
+             * This booking's own units are not counted against it. Without
+             * the exclusion a guest moving a stay by one night would be
+             * refused by the very rooms they already hold.
+             */
+            $available = $this->availability->availableUnits(
+                $room,
+                $checkIn,
+                $checkOut,
+                $locked->id,
+            );
+
+            if ($available < $roomsBooked) {
+                throw BookingException::unavailable($available, $roomsBooked);
+            }
+
+            $nights = $type->isTour() ? 0 : (int) $checkIn->diffInDays($checkOut);
+
+            $price = $this->pricer->quote(
+                $room,
+                $nights,
+                $roomsBooked,
+                (int) $locked->adults,
+                (int) $locked->children,
+                (int) $locked->pwd_guests,
+                $type,
+            );
+
+            $terms = $this->policy->terms(
+                $room->resort->paymentTerms(),
+                $price->total,
+                $checkIn,
+            );
+
+            $was = $locked->check_in_date->toDateString().' to '.$locked->check_out_date->toDateString();
+
+            $locked->forceFill([
+                'check_in_date' => $checkIn,
+                'check_out_date' => $checkOut,
+                'nights' => $nights,
+
+                'subtotal_amount' => $price->subtotal,
+                'child_discount_amount' => $price->childDiscount,
+                'pwd_discount_amount' => $price->pwdDiscount,
+                'discount_total' => $price->discountTotal,
+                'total_amount' => $price->total,
+                'child_discount_percent' => $price->childPercent,
+                'pwd_discount_percent' => $price->pwdPercent,
+            ] + $terms->toSnapshot())->save();
+
+            $this->logger->log(
+                'booking.rescheduled',
+                $locked,
+                "Moved {$locked->booking_reference} from {$was} to "
+                    .$checkIn->toDateString().' to '.$checkOut->toDateString(),
+                [
+                    'from' => $was,
+                    'to' => $checkIn->toDateString().' to '.$checkOut->toDateString(),
+                    'nights' => $nights,
+                    'total_amount' => $price->total,
+                    'amount_due_now' => $terms->dueNow,
+                ],
+                $locked->tourist,
+            );
+
+            /*
+             * The resort is told, because they are looking at this request
+             * in their own list and the dates they were asked about have
+             * just changed underneath them.
+             */
+            $locked->setRelation('room', $room)->setRelation('resort', $room->resort);
+
+            $this->notifier->send(
+                $room->resort->owner,
+                new BookingRescheduled($locked, $was),
+            );
+
+            return $locked;
         });
     }
 

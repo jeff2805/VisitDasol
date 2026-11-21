@@ -71,7 +71,7 @@ class ConversationController extends Controller
             'conversations' => $conversations,
             'search' => $search,
             'unread' => $this->messaging->unreadCountFor($user),
-        ]);
+        ] + $this->chrome($user));
     }
 
     /** One thread, and everything said in it. */
@@ -98,7 +98,49 @@ class ConversationController extends Controller
                 ->with(['attachments', 'sender:id,first_name,last_name'])
                 ->orderBy('id')
                 ->get(),
-        ]);
+        ] + $this->chrome($user));
+    }
+
+    /**
+     * The shell these pages sit in, chosen by who is reading them.
+     *
+     * ONE SET OF MESSAGE PAGES, THREE PLACES THEY ARE READ FROM.
+     *
+     * Messaging is deliberately shared: the same thread, the same route,
+     * whichever side opens it. What was not shared was the chrome — the
+     * pages always drew the public site's header and footer, so a resort
+     * owner who clicked Messages in their own sidebar was thrown out of the
+     * dashboard and had to find their way back. Every other entry in that
+     * sidebar keeps them inside it.
+     *
+     * The subtitle changes for the same reason: an owner's conversations are
+     * with guests, not "with resorts on Dasol".
+     *
+     * @return array{layout: string, subtitle: string, inDashboard: bool}
+     */
+    private function chrome(\App\Models\User $user): array
+    {
+        if ($user->isResortOwner()) {
+            return [
+                'layout' => 'layouts.owner',
+                'subtitle' => 'Your conversations with guests.',
+                'inDashboard' => true,
+            ];
+        }
+
+        if ($user->isSuperAdmin()) {
+            return [
+                'layout' => 'layouts.admin',
+                'subtitle' => 'Your conversations.',
+                'inDashboard' => true,
+            ];
+        }
+
+        return [
+            'layout' => 'layouts.public',
+            'subtitle' => 'Your conversations with resorts on Dasol.',
+            'inDashboard' => false,
+        ];
     }
 
     /** Say something. */

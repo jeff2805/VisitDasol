@@ -770,6 +770,7 @@ class SettingsRegistry
                     'help' => null,
                 ],
             ],
+
         ];
     }
 
@@ -785,6 +786,14 @@ class SettingsRegistry
     public static function defaults(): array
     {
         return [
+            /*
+             * The About page's words used to live here, as six settings.
+             * They moved to the about_sections table and App\Enums\AboutSection
+             * when the office asked to publish drafts and manage pictures:
+             * a setting is a value, and that page needed two copies of
+             * everything plus a gallery.
+             */
+
             'general.description' => 'Plan a stay in Dasol, Pangasinan: resorts, beaches and how to reach them.',
             'general.timezone' => 'Asia/Manila',
             'general.currency' => 'PHP',

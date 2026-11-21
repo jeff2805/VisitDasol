@@ -214,6 +214,15 @@ class AppServiceProvider extends ServiceProvider
             'booking_extra' => BookingExtra::class,
 
             /*
+             * The About page's content. Registered because the audit trail
+             * records which section the office drafted and published, and
+             * the page is the municipality's public face: "who changed
+             * this and when" is the first question when a date on it turns
+             * out to be wrong.
+             */
+            'about_section' => \App\Models\AboutSection::class,
+
+            /*
              * Messaging. Registered because the audit trail records
              * that a conversation was opened — never what was said in
              * it. The bodies are private between the two parties, and

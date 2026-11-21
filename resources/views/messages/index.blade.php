@@ -1,4 +1,7 @@
-@extends('layouts.public')
+{{-- The shell follows whoever is reading: an owner keeps their dashboard
+     sidebar, a guest gets the public site. ConversationController::chrome()
+     decides, so the choice is made once rather than in each view. --}}
+@extends($layout)
 
 @section('title', 'Messages')
 
@@ -7,9 +10,9 @@
 @endpush
 
 @section('content')
-    <div class="container py-5">
-        <x-page-header title="Messages"
-                       subtitle="Your conversations with resorts on Dasol.">
+    {{-- The dashboard shell brings its own padding; the public one does not. --}}
+    <div class="{{ $inDashboard ? '' : 'container py-5' }}">
+        <x-page-header title="Messages" :subtitle="$subtitle">
             @if ($unread > 0)
                 <span class="vd-badge vd-badge--danger">{{ $unread }} unread</span>
             @endif

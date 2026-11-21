@@ -20,6 +20,10 @@
 <ul class="vd-sidebar__list">
     <x-sidebar-link route="admin.destinations.index" match="admin.destinations.*" icon="signpost-2">Destinations</x-sidebar-link>
     <x-sidebar-link route="admin.announcements.index" match="admin.announcements.*" icon="megaphone">Announcements</x-sidebar-link>
+    {{-- What the public About page says about Dasol. Under Tourism content
+         because it is writing about the municipality, not configuring the
+         system. --}}
+    <x-sidebar-link route="admin.about.index" match="admin.about.*" icon="info-circle">About Page Management</x-sidebar-link>
 </ul>
 
 <p class="vd-sidebar__group">Monitoring</p>

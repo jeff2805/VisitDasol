@@ -1,217 +1,280 @@
-{{-- 
-    NOTE FOR THE MUNICIPAL TOURISM OFFICE
-    The text below is deliberately brief and factual. Replace the
-    "About the municipality" section with your own official description,
-    and fill in the contact details in config/visitdasol.php.
---}}
 @extends('layouts.public')
 
 @section('title', 'About Dasol')
 @section('meta_description', 'About Visit Dasol, the tourism and reservation portal of the Municipality of Dasol, Pangasinan.')
 
+@push('styles')
+    <link rel="stylesheet" href="@vdasset('css/about.css')">
+@endpush
+
+@php
+    /*
+     * EVERY EDITABLE WORD AND PICTURE ON THIS PAGE COMES FROM THE DATABASE,
+     * through AboutPageService. Nothing the tourism office may change is
+     * written in this file.
+     *
+     * What IS written here, and deliberately stays here: how this site
+     * works, why listings are reviewed, and the address the resort owner
+     * button goes to. Those describe the software, and an office able to
+     * edit them could publish a promise the system does not keep — or
+     * quietly break resort registration with a mistyped URL.
+     *
+     * Nothing is printed unescaped. An office typing an angle bracket gets
+     * an angle bracket, not markup.
+     */
+    $isPreview = $isPreview ?? false;
+
+    $hero = $about['hero'];
+    $municipality = $about['municipality'];
+    $history = $about['history'];
+    $heritage = $about['heritage'];
+    $places = $about['destinations'];
+    $location = $about['location'];
+    $cta = $about['owner_cta'];
+
+    $imageUrl = fn (?string $path): ?string =>
+        filled($path) ? Storage::disk('public')->url($path) : null;
+
+    $paragraphs = fn (?string $text): array => preg_split(
+        '/\n\s*\n/', trim((string) $text), -1, PREG_SPLIT_NO_EMPTY
+    ) ?: [];
+
+    $heroImage = $imageUrl($hero['image_path'] ?? null);
+@endphp
+
 @section('content')
-    <div class="container py-5">
-        <div class="row g-4 g-lg-5">
-            <div class="col-lg-8">
+    <div class="vd-about">
 
-                <x-page-header title="About Visit Dasol"
-                    subtitle="Tourism information and resort reservations for Dasol, Pangasinan." />
+        @if ($isPreview)
+            {{-- Only the office ever sees this, from About Page Management.
+                 Said plainly, because a preview that looked exactly like the
+                 live page is a preview somebody mistakes for one. --}}
+            <p class="vd-about__preview-bar" role="status">
+                <i class="bi bi-eye" aria-hidden="true"></i>
+                Preview — this shows your drafts. Visitors still see the published page.
+            </p>
+        @endif
 
-                {{-- THE MUNICIPALITY --}}
-                <section class="mb-5" aria-labelledby="municipality-title">
-                    <h2 id="municipality-title" class="h4">The municipality</h2>
+        {{-- HERO ------------------------------------------------------- --}}
+        <header class="vd-about__hero"
+                @if ($heroImage) style="background-image:url('{{ $heroImage }}')" @endif>
+            <p class="vd-about__eyebrow">{{ $hero['label'] }}</p>
+            <h1 class="vd-about__title">{{ $hero['heading'] }}</h1>
 
-                    <p class="vd-prose">
-                        Dasol is a coastal municipality in the western part of Pangasinan, in the Ilocos Region
-                        of the Philippines. It is made up of 18 barangays and uses the postal code
-                        {{ config('visitdasol.postal_code') }}. The town is long associated with salt-making,
-                        and its shoreline faces Dasol.
-                    </p>
-                </section>
+            @if (filled($hero['subheading']))
+                <p class="vd-about__lede">{{ $hero['subheading'] }}</p>
+            @endif
 
-                {{-- HISTORY OF DASOL --}}
-                <section class="mb-5" aria-labelledby="history-title">
-                    <h2 id="history-title" class="h4 mb-3">History of Dasol</h2>
+            <div class="vd-about__brush" aria-hidden="true"></div>
+        </header>
 
-                    <p class="vd-prose">
-                        Dasol is a serene coastal municipality located in the western part of Pangasinan,
-                        known for its natural beauty and rich cultural heritage. It is recognized as one
-                        of Pangasinan’s hidden gems and is also known as the “Home of Quality Salt.”
-                    </p>
+        <div class="vd-about__body">
 
-                    <p class="vd-prose">
-                        The name Dasol originated from the medicinal herb called <em>dosol</em>, which
-                        reportedly grew abundantly in the area during the Spanish period. The plant was
-                        traditionally used to treat infected wounds. Its name was frequently mispronounced
-                        by the Spaniards as “Dasol,” eventually becoming the municipality’s official name.
-                        The Ilocano word <em>dasol</em>, meaning “to stretch,” is also associated with the
-                        long stretch of white-sand beaches along its coastline.
-                    </p>
+            {{-- LEFT COLUMN ------------------------------------------- --}}
+            <div class="vd-about__main">
 
-                    <p class="vd-prose">
-                        Originally part of the municipality of San Isidro de Potot, now known as Burgos,
-                        Dasol became a separate municipality during the American colonial period. It
-                        officially became an independent municipality on January 27, 1911. Its early
-                        settlers were primarily Ilocanos and Pangasinenses who relied on farming, fishing,
-                        and salt-making for their livelihood.
-                    </p>
+                {{-- The municipality --}}
+                <section class="vd-about__card" aria-labelledby="municipality-title">
+                    <div class="vd-about__split">
+                        @if ($url = $imageUrl($municipality['image_path'] ?? null))
+                            <figure class="vd-about__figure">
+                                <img src="{{ $url }}" alt="{{ $municipality['heading'] }}" loading="lazy">
+                            </figure>
+                        @endif
 
-                    <p class="vd-prose">
-                        During World War II, Dasol became historically significant as an area of underground
-                        guerrilla resistance against Japanese occupation. Its caves and rugged terrain served
-                        as shelters and meeting places for freedom fighters. The local salt industry also
-                        played an important role in sustaining communities during wartime shortages.
-                    </p>
+                        <div>
+                            <h2 class="vd-about__heading" id="municipality-title">
+                                <i class="bi bi-water" aria-hidden="true"></i>
+                                <span>{{ $municipality['heading'] }}</span>
+                            </h2>
 
-                    <p class="vd-prose">
-                        Today, Dasol is recognized for its beautiful coastal destinations, including
-                        Tambobong Beach and Balinmanok, crystal-clear waters, and hidden coves. It continues
-                        to develop as an emerging ecotourism destination while preserving its traditions,
-                        cultural identity, and resilient community.
-                    </p>
-
-                    <p class="vd-prose">
-                        Whether visitors come to enjoy its tranquil beaches, explore its history, discover
-                        its cultural heritage, or experience traditional salt farming, Dasol welcomes
-                        everyone with its natural beauty, rich history, and warm community.
-                    </p>
-                </section>
-
-                {{-- SALT-MAKING HERITAGE --}}
-                <section class="mb-5" aria-labelledby="heritage-title">
-                    <h2 id="heritage-title" class="h4 mb-3">
-                        Dasol's Salt-Making Heritage
-                    </h2>
-
-                    <p class="vd-prose">
-                        Salt-making is an important part of Dasol's local identity
-                        and livelihood. The municipality is recognized for its
-                        salt-producing industry, which contributes to its cultural
-                        and economic heritage.
-                    </p>
-
-                    <p class="vd-prose">
-                        Visitors can learn about the traditional salt-making
-                        industry and appreciate the local communities and
-                        livelihoods that help shape the identity of Dasol.
-                    </p>
-                </section>
-
-                {{-- HOW THIS SITE WORKS --}}
-                <section class="mb-5" aria-labelledby="how-title">
-                    <h2 id="how-title" class="h4">How this site works</h2>
-
-                    <p class="vd-prose">
-                        Visit Dasol brings the town's resorts and destinations together in one place, so
-                        visitors can compare them and request a room without calling around.
-                    </p>
-
-                    <div class="row g-4 mt-1">
-                        <div class="col-md-4">
-                            <div class="vd-feature">
-                                <span class="vd-feature__icon">
-                                    <i class="bi bi-person-walking" aria-hidden="true"></i>
-                                </span>
-                                <div>
-                                    <h3 class="vd-feature__title">Visitors</h3>
-                                    <p>Browse resorts and destinations, then request a room. A free account keeps your reservations in one place.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-4">
-                            <div class="vd-feature">
-                                <span class="vd-feature__icon">
-                                    <i class="bi bi-house-heart" aria-hidden="true"></i>
-                                </span>
-                                <div>
-                                    <h3 class="vd-feature__title">Resort owners</h3>
-                                    <p>Apply for an account, submit your resort for review, and manage your rooms and reservations.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="col-md-4">
-                            <div class="vd-feature">
-                                <span class="vd-feature__icon">
-                                    <i class="bi bi-buildings" aria-hidden="true"></i>
-                                </span>
-                                <div>
-                                    <h3 class="vd-feature__title">Tourism office</h3>
-                                    <p>Reviews every owner account and every resort before it is published, and keeps destination information current.</p>
-                                </div>
-                            </div>
+                            @foreach ($paragraphs($municipality['body']) as $paragraph)
+                                <p class="vd-about__prose">{{ $paragraph }}</p>
+                            @endforeach
                         </div>
                     </div>
                 </section>
 
-                {{-- WHY LISTINGS ARE REVIEWED --}}
-                <section aria-labelledby="review-title">
-                    <h2 id="review-title" class="h4">Why listings are reviewed</h2>
+                {{-- History --}}
+                <section class="vd-about__card vd-about__card--sand" aria-labelledby="history-title">
+                    <div class="vd-about__split">
+                        @if ($url = $imageUrl($history['image_path'] ?? null))
+                            <figure class="vd-about__figure">
+                                <img src="{{ $url }}" alt="{{ $history['heading'] }}" loading="lazy">
+                            </figure>
+                        @endif
 
-                    <p class="vd-prose">
-                        A resort appears on this site only after two checks: the tourism office approves the
-                        owner's account, and then approves the resort itself. If either is withdrawn, the
-                        listing stops appearing and can no longer be booked. Rates, photos, and room details
-                        are supplied by each resort.
-                    </p>
+                        <div>
+                            <h2 class="vd-about__heading" id="history-title">
+                                <i class="bi bi-book" aria-hidden="true"></i>
+                                <span>{{ $history['heading'] }}</span>
+                            </h2>
+
+                            {{-- An ordered list, so the office can move a
+                                 paragraph without cutting a sentence out of
+                                 the middle of a box. --}}
+                            @forelse ($history['paragraphs'] as $paragraph)
+                                <p class="vd-about__prose">{{ $paragraph }}</p>
+                            @empty
+                                <p class="vd-about__empty">No history has been written yet.</p>
+                            @endforelse
+                        </div>
+                    </div>
                 </section>
 
-            </div>
+                {{-- Salt-making heritage --}}
+                <section class="vd-about__card vd-about__card--sand" aria-labelledby="heritage-title">
+                    <div class="vd-about__split vd-about__split--text-first">
+                        <div>
+                            <h2 class="vd-about__heading" id="heritage-title">
+                                <i class="bi bi-moisture" aria-hidden="true"></i>
+                                <span>{{ $heritage['heading'] }}</span>
+                            </h2>
 
-            {{-- RIGHT SIDEBAR --}}
-            <div class="col-lg-4">
-                @php($contact = config('visitdasol.contact'))
+                            @foreach ($paragraphs($heritage['body']) as $paragraph)
+                                <p class="vd-about__prose">{{ $paragraph }}</p>
+                            @endforeach
+                        </div>
 
-                <aside class="vd-panel p-4 mb-4">
-                    <h2 class="h5 mb-3">{{ $contact['office'] }}</h2>
-
-                    <ul class="list-unstyled mb-0 small">
-                        <li class="mb-2">
-                            <i class="bi bi-geo-alt me-2" aria-hidden="true"></i>
-                            {{ $contact['address'] }}
-                        </li>
-
-                        @if (filled($contact['phone']))
-                            <li class="mb-2">
-                                <i class="bi bi-telephone me-2" aria-hidden="true"></i>
-                                {{ $contact['phone'] }}
-                            </li>
+                        @if (filled($heritage['images'] ?? []))
+                            <div class="vd-about__gallery">
+                                @foreach ($heritage['images'] as $image)
+                                    <figure>
+                                        <img src="{{ $imageUrl($image['path']) }}"
+                                             alt="{{ $image['caption'] ?? $heritage['heading'] }}"
+                                             loading="lazy">
+                                        @if (filled($image['caption']))
+                                            <figcaption>{{ $image['caption'] }}</figcaption>
+                                        @endif
+                                    </figure>
+                                @endforeach
+                            </div>
                         @endif
+                    </div>
+                </section>
 
-                        @if (filled($contact['email']))
-                            <li class="mb-2 text-break">
-                                <i class="bi bi-envelope me-2" aria-hidden="true"></i>
-                                <a href="mailto:{{ $contact['email'] }}">
-                                    {{ $contact['email'] }}
-                                </a>
-                            </li>
-                        @endif
+                {{-- Destinations. The records themselves come from the
+                     Destinations module; this page chooses which and in
+                     what order, and never describes one of its own. --}}
+                <section class="vd-about__card" aria-labelledby="places-title">
+                    <h2 class="vd-about__heading" id="places-title">
+                        <i class="bi bi-camera" aria-hidden="true"></i>
+                        <span>{{ $places['heading'] }}</span>
+                    </h2>
 
-                        @if (filled($contact['facebook_url']))
-                            <li>
-                                <i class="bi bi-facebook me-2" aria-hidden="true"></i>
-                                <x-external-link :href="$contact['facebook_url']">
-                                    Facebook page
-                                </x-external-link>
-                            </li>
-                        @endif
-                    </ul>
-                </aside>
+                    @if (filled($places['subheading']))
+                        <p class="vd-about__prose">{{ $places['subheading'] }}</p>
+                    @endif
 
-                <aside class="vd-panel p-4">
-                    <h2 class="h5 mb-2">Own a resort in Dasol?</h2>
+                    @if ($destinations->isNotEmpty())
+                        <ul class="vd-about__destinations">
+                            @foreach ($destinations as $destination)
+                                <li class="vd-about__destination">
+                                    <img src="{{ $destination->main_image_url }}"
+                                         alt="{{ $destination->name }}" loading="lazy">
 
-                    <p class="text-muted-vd small">
-                        Apply for an owner account. Once the tourism office approves it, you can submit your
-                        resort and manage your own rooms and reservations.
+                                    <a class="vd-about__destination-name"
+                                       href="{{ route('destinations.show', $destination) }}">
+                                        <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+                                        {{ $destination->name }}
+                                    </a>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <p class="vd-about__empty">No destinations have been chosen yet.</p>
+                    @endif
+                </section>
+
+                {{-- HOW THIS SITE WORKS and WHY LISTINGS ARE REVIEWED stay
+                     in this template on purpose. They describe what the
+                     software does, not what Dasol is. --}}
+                <section class="vd-about__card" aria-labelledby="how-title">
+                    <h2 class="vd-about__heading" id="how-title">
+                        <i class="bi bi-compass" aria-hidden="true"></i>
+                        <span>How this site works</span>
+                    </h2>
+
+                    <p class="vd-about__prose">
+                        Visit Dasol brings the municipality's resorts into one place. Visitors
+                        search by date and party size, send a reservation request, and deal with
+                        the resort directly. Resort owners list their rooms and answer requests
+                        from their own dashboard. The tourism office reviews listings and keeps
+                        the municipality's visitor statistics.
                     </p>
 
-                    <a class="btn btn-accent" href="{{ route('register.owner') }}">
-                        Apply as a resort owner
-                    </a>
-                </aside>
+                    <p class="vd-about__prose">
+                        Every resort on this site has been checked by the Municipal Tourism Office
+                        before it appears. A listing is read for a real address, real rooms and a
+                        contactable owner, so a visitor booking here is booking somewhere the
+                        office knows exists.
+                    </p>
+                </section>
             </div>
+
+            {{-- RIGHT COLUMN ------------------------------------------ --}}
+            <aside class="vd-about__aside">
+
+                <section class="vd-about__panel" aria-labelledby="location-title">
+                    <h2 id="location-title">
+                        <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+                        {{ $location['heading'] }}
+                    </h2>
+
+                    <p>{{ $location['municipality'] }}, {{ $location['province'] }}, {{ $location['country'] }}</p>
+
+                    <dl>
+                        <dt>Region</dt>
+                        <dd>{{ $location['region'] }}</dd>
+                        <dt>Postal code</dt>
+                        <dd>{{ $location['postal_code'] }}</dd>
+                    </dl>
+                </section>
+
+                @if ($cta['visible'])
+                    <section class="vd-about__panel" aria-labelledby="owner-title">
+                        <h2 id="owner-title">
+                            <i class="bi bi-house-door-fill" aria-hidden="true"></i>
+                            {{ $cta['heading'] }}
+                        </h2>
+
+                        <p>{{ $cta['body'] }}</p>
+
+                        {{-- The address is the application's, not the
+                             office's: a mistyped URL here would break resort
+                             registration for everybody, so it is not
+                             editable anywhere. --}}
+                        <a class="vd-about__cta" href="{{ route('register.owner') }}">
+                            {{ $cta['button_label'] }}
+                            <i class="bi bi-arrow-right" aria-hidden="true"></i>
+                        </a>
+                    </section>
+                @endif
+
+                <section class="vd-about__panel" aria-labelledby="office-title">
+                    @php($contact = config('visitdasol.contact'))
+
+                    <h2 id="office-title">
+                        <i class="bi bi-building" aria-hidden="true"></i>
+                        {{ $contact['office'] }}
+                    </h2>
+
+                    @if (filled($contact['address'] ?? null))
+                        <p>{{ $contact['address'] }}</p>
+                    @endif
+
+                    <dl>
+                        @if (filled($contact['email'] ?? null))
+                            <dt>Email</dt>
+                            <dd>{{ $contact['email'] }}</dd>
+                        @endif
+                        @if (filled($contact['phone'] ?? null))
+                            <dt>Phone</dt>
+                            <dd>{{ $contact['phone'] }}</dd>
+                        @endif
+                    </dl>
+                </section>
+            </aside>
         </div>
     </div>
 @endsection
