@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Enums\WalkInSubmissionStatus;
+use App\Models\AccreditedResort;
 use App\Models\ActivityLog;
 use App\Models\Amenity;
 use App\Models\Announcement;
@@ -213,6 +214,11 @@ class AppServiceProvider extends ServiceProvider
             'owner_profile' => OwnerProfile::class,
             'resort' => Resort::class,
             'resort_image' => ResortImage::class,
+
+            // The office's accreditation list. Registered because uploads
+            // and hand edits to it are written to the audit trail.
+            'accredited_resort' => AccreditedResort::class,
+
             'amenity' => Amenity::class,
             'room' => Room::class,
             'room_image' => RoomImage::class,

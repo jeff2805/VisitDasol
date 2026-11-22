@@ -52,8 +52,21 @@ class RoomRequest extends FormRequest
         $resortId = $this->user()->resort()->first()?->id;
 
         return [
+            /*
+             * One of the listed room type names. Enforced here and not
+             * only in the menu, because a menu is a suggestion to
+             * anything that posts the form directly.
+             *
+             * The room's OWN current name is allowed through as well.
+             * Rooms were named freely before this list existed, and an
+             * owner editing the price of a room called "ROOM1" would
+             * otherwise be refused until they renamed it — or worse, be
+             * renamed silently by a menu that could not show what was
+             * already saved.
+             */
             'name' => [
                 'required', 'string', 'min:2', 'max:120',
+                Rule::in(array_keys(Room::nameOptions($this->route('room')?->name))),
                 Rule::unique('rooms', 'name')
                     ->where('resort_id', $resortId)
                     ->ignore($this->route('room')?->id),

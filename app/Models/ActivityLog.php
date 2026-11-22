@@ -61,6 +61,13 @@ class ActivityLog extends Model
             'destination', 'category' => 'signpost-2',
             'amenity' => 'stars',
             'announcement' => 'megaphone',
+
+            // Uploads and hand corrections to the accreditation register.
+            // This group is where the office's upload history lives: the
+            // log carries the file name and how many rows each import
+            // added, updated and skipped.
+            'accreditation' => 'patch-check',
+
             default => 'clock-history',
         };
     }

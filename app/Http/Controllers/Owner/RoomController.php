@@ -64,6 +64,7 @@ class RoomController extends Controller
             'resort' => $resort,
             'room' => new Room,
             'roomTypes' => RoomType::options(),
+            'roomNames' => Room::nameOptions(),
         ]);
     }
 
@@ -93,6 +94,10 @@ class RoomController extends Controller
             'resort' => $room->resort,
             'room' => $room->load('images'),
             'roomTypes' => RoomType::options(),
+
+            // Carries the room's existing name in when it predates the
+            // list, so editing a price does not force a rename.
+            'roomNames' => Room::nameOptions($room->name),
             'committed' => $this->availability->peakUnitsCommittedAhead($room),
         ]);
     }

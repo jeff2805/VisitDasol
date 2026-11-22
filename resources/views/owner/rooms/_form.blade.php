@@ -2,8 +2,14 @@
 <div class="row g-4">
     <div class="col-lg-7">
         <section class="vd-panel p-4">
-            <x-form.input name="name" label="Room type name" :value="$room->name" required maxlength="120"
-                          help="For example: Seaview Deluxe, Family Cottage." />
+            {{-- A menu, not a text box. Owners typed "ROOM1", "Room2" and
+                 the resort's own name into this field, which left guests
+                 comparing a "ROOM1" at one resort against a "family" at
+                 another. The same five names everywhere make the listing
+                 readable across resorts. --}}
+            <x-form.select name="name" label="Room type name" :options="$roomNames"
+                           :value="$room->name" placeholder="Choose a room type" required
+                           help="Each room type can be listed once per resort." />
 
             <x-form.select name="room_type" label="Category" :options="$roomTypes"
                            :value="$room->room_type?->value" placeholder="Choose a category" required />

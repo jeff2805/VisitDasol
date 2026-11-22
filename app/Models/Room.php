@@ -27,6 +27,68 @@ class Room extends Model
     /** @use HasFactory<RoomFactory> */
     use HasFactory;
 
+    /**
+     * The room type names an owner may choose from.
+     *
+     * This was a free text box, and what owners typed into it was
+     * "ROOM1", "Room2", "family" and the resort's own name — so the
+     * listing showed guests a room called TobiasHomeStay inside a resort
+     * called TobiasHomeStay, and two resorts never named the same kind
+     * of room the same way. A guest cannot compare a "ROOM1" against a
+     * "Seaview Deluxe".
+     *
+     * Kept as a const array rather than an enum because these are
+     * labels, not behaviour: nothing in the system branches on which one
+     * is chosen, and OwnerProfile::POSITIONS already establishes the
+     * pattern for a fixed list of plain strings. The category an owner
+     * also picks — RoomType — stays an enum, because pricing and the
+     * public filters do branch on it.
+     *
+     * @var list<string>
+     */
+    public const NAMES = [
+        'Single Room',
+        'Double Room',
+        'Family Room',
+        'Deluxe',
+        'Standard Room',
+
+        /*
+         * Last because it is the odd one out: the five above are rooms
+         * inside a building and this is a hut of its own. Resorts around
+         * Dasol let plenty of them, and without it an owner with nothing
+         * but cottages had no name that described what they were letting.
+         *
+         * The RoomType category also has a Cottage case. That is not a
+         * duplicate — the category drives pricing and the public filters,
+         * this is the words a guest reads on the card — but an owner
+         * letting a cottage will now pick it in both places.
+         */
+        'Cottage',
+    ];
+
+    /**
+     * The choices for the menu, as value => label.
+     *
+     * A name already saved is carried in even when it is not on the list
+     * above. Rooms were named freely before this list existed, and an
+     * owner opening an old room to change its price must not be made to
+     * rename it first — nor silently have it renamed for them, which is
+     * what a plain menu would do the moment they saved.
+     *
+     * @return array<string, string>
+     */
+    public static function nameOptions(?string $current = null): array
+    {
+        $names = self::NAMES;
+
+        if (filled($current) && ! in_array($current, $names, true)) {
+            $names[] = $current;
+        }
+
+        return array_combine($names, $names);
+    }
+
     protected $fillable = [
         'name',
         'room_type',

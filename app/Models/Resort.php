@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AccreditationMatch;
 use App\Enums\ResortStatus;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
@@ -69,6 +70,11 @@ class Resort extends Model
             'longitude' => 'float',
             'submitted_at' => 'datetime',
             'reviewed_at' => 'datetime',
+
+            // The accreditation check. Not fillable: written only by
+            // AccreditationMatcher, never by anything an owner submits.
+            'accreditation_match_status' => AccreditationMatch::class,
+            'accreditation_checked_at' => 'datetime',
         ];
     }
 
@@ -77,6 +83,24 @@ class Resort extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class, 'owner_id');
+    }
+
+    /**
+     * The row on the office's accreditation list this was matched to.
+     *
+     * Null both when nothing matched and when the matched row has since
+     * been replaced by a later upload — which is why the accreditation
+     * number is also copied onto this record.
+     */
+    public function accreditedResort(): BelongsTo
+    {
+        return $this->belongsTo(AccreditedResort::class, 'matched_accredited_resort_id');
+    }
+
+    /** Whether the accreditation check has ever been run on this one. */
+    public function accreditationChecked(): bool
+    {
+        return $this->accreditation_match_status !== null;
     }
 
     public function reviewer(): BelongsTo

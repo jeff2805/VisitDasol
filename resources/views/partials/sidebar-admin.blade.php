@@ -7,6 +7,10 @@
 <ul class="vd-sidebar__list">
     <x-sidebar-link route="admin.owner-applications.index" match="admin.owner-applications.*" icon="person-check" :count="$pendingOwnerCount ?? null">Owner applications</x-sidebar-link>
     <x-sidebar-link route="admin.resort-applications.index" match="admin.resort-applications.*" icon="building-check" :count="$pendingResortCount ?? null">Resort applications</x-sidebar-link>
+
+    {{-- Beside the applications it is consulted from, not down with the
+         reports: the office opens it while reviewing one. --}}
+    <x-sidebar-link route="admin.accredited-resorts.index" match="admin.accredited-resorts.*" icon="patch-check">Accredited resorts</x-sidebar-link>
 </ul>
 
 <p class="vd-sidebar__group">People and listings</p>

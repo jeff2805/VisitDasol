@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AccreditedResortController;
 use App\Http\Controllers\Admin\ActivityLogController as AdminActivityLogController;
 use App\Http\Controllers\Admin\AnnouncementController as AdminAnnouncementController;
 use App\Http\Controllers\Admin\DestinationCategoryController as AdminDestinationCategoryController;
@@ -739,6 +740,25 @@ Route::prefix('admin')
         Route::get('/resort-applications/{resort}', [ResortApplicationController::class, 'show'])->name('resort-applications.show');
         Route::patch('/resort-applications/{resort}/approve', [ResortApplicationController::class, 'approve'])->name('resort-applications.approve');
         Route::patch('/resort-applications/{resort}/reject', [ResortApplicationController::class, 'reject'])->name('resort-applications.reject');
+
+        /*
+         * The office's official accreditation register.
+         *
+         * Uploading is two requests on purpose: preview reads the file
+         * and shows what it would do, import writes it. Both are
+         * throttled — they read an uploaded spreadsheet, which is the
+         * most expensive thing this role can ask for.
+         */
+        Route::get('/accredited-resorts', [AccreditedResortController::class, 'index'])
+            ->name('accredited-resorts.index');
+        Route::post('/accredited-resorts/preview', [AccreditedResortController::class, 'preview'])
+            ->middleware('throttle:20,1')->name('accredited-resorts.preview');
+        Route::post('/accredited-resorts/import', [AccreditedResortController::class, 'import'])
+            ->middleware('throttle:20,1')->name('accredited-resorts.import');
+        Route::put('/accredited-resorts/{accreditedResort}', [AccreditedResortController::class, 'update'])
+            ->name('accredited-resorts.update');
+        Route::delete('/accredited-resorts/{accreditedResort}', [AccreditedResortController::class, 'destroy'])
+            ->name('accredited-resorts.destroy');
 
         // All resorts
         Route::get('/resorts', [AdminResortController::class, 'index'])->name('resorts.index');

@@ -32,7 +32,9 @@ class RoomManagementTest extends TestCase
     private function payload(array $overrides = []): array
     {
         return array_merge([
-            'name' => 'Seaview Deluxe',
+            // One of Room::NAMES. The field is a menu now, and the rule
+            // behind it refuses anything not on the list.
+            'name' => 'Deluxe',
             'room_type' => 'premium',
             'description' => 'Two single beds with a view of the bay.',
             'capacity' => 2,
@@ -210,7 +212,7 @@ class RoomManagementTest extends TestCase
 
     public function test_room_names_must_be_unique_within_the_resort_only(): void
     {
-        Room::factory()->for($this->resort)->create(['name' => 'Seaview Deluxe']);
+        Room::factory()->for($this->resort)->create(['name' => 'Deluxe']);
 
         $this->actingAs($this->owner)->post(route('owner.rooms.store'), $this->payload())
             ->assertSessionHasErrors('name');
@@ -221,20 +223,20 @@ class RoomManagementTest extends TestCase
         $this->actingAs($otherOwner)->post(route('owner.rooms.store'), $this->payload())
             ->assertSessionHasNoErrors();
 
-        $this->assertSame(2, Room::where('name', 'Seaview Deluxe')->count());
+        $this->assertSame(2, Room::where('name', 'Deluxe')->count());
     }
 
     public function test_a_room_type_can_be_edited(): void
     {
-        $room = Room::factory()->for($this->resort)->create(['name' => 'Seaview Deluxe']);
+        $room = Room::factory()->for($this->resort)->create(['name' => 'Deluxe']);
 
         $this->actingAs($this->owner)->put(route('owner.rooms.update', $room), $this->payload([
-            'name' => 'Seaview Deluxe (renovated)',
+            'name' => 'Standard Room',
             'price_per_night' => 3200,
         ]))->assertRedirect(route('owner.rooms.index'));
 
         $room->refresh();
-        $this->assertSame('Seaview Deluxe (renovated)', $room->name);
+        $this->assertSame('Standard Room', $room->name);
         $this->assertSame('3200.00', $room->price_per_night);
     }
 

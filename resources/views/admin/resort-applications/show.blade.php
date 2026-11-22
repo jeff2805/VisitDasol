@@ -7,6 +7,11 @@
         <a class="btn btn-outline-primary" href="{{ route('admin.resort-applications.index') }}">Back to applications</a>
     </x-page-header>
 
+    {{-- Above the fold and across the full width, because it is the one
+         thing on this page the office cannot work out for itself by
+         reading the application. --}}
+    <x-accreditation-status :resort="$resort" />
+
     <div class="row g-4">
         <div class="col-lg-7">
             <section class="vd-panel p-4 mb-4">

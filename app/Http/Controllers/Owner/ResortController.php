@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Owner\ResortRequest;
 use App\Models\Amenity;
 use App\Models\Resort;
+use App\Services\AccreditationMatcher;
 use App\Services\ActivityLogger;
 use App\Services\ImageUploadService;
 use Illuminate\Contracts\View\View;
@@ -27,7 +28,34 @@ class ResortController extends Controller
     public function __construct(
         private readonly ImageUploadService $images,
         private readonly ActivityLogger $logger,
+        private readonly AccreditationMatcher $accreditation,
     ) {}
+
+    /**
+     * Checks the listing against the office's accreditation register.
+     *
+     * Called wherever a listing arrives at, or changes while sitting in,
+     * the review queue. Only for pending listings: a finding attached to
+     * an approved or rejected one is part of the record of a decision
+     * already taken, and must not be rewritten by a later edit.
+     *
+     * Never allowed to break the owner's save. The office can run the
+     * check again from the accreditation screen, and an owner being told
+     * their resort failed to submit because a background check threw
+     * would be a far worse outcome than a missing badge.
+     */
+    private function checkAccreditation(Resort $resort): void
+    {
+        if ($resort->status !== ResortStatus::Pending) {
+            return;
+        }
+
+        try {
+            $this->accreditation->apply($resort);
+        } catch (Throwable $e) {
+            report($e);
+        }
+    }
 
     public function show(Request $request): View|RedirectResponse
     {
@@ -84,6 +112,10 @@ class ResortController extends Controller
         $this->logger->log('resort.submitted', $resort, "Submitted the resort {$resort->name} for review", [
             'status' => $resort->status->value,
         ]);
+
+        // Outside the transaction: the listing is saved either way, and
+        // a failed check must not undo a submission.
+        $this->checkAccreditation($resort);
 
         return redirect()->route('owner.resort.show')
             ->with('success', 'Your resort has been sent to the Municipal Tourism Office for review.');
@@ -143,6 +175,16 @@ class ResortController extends Controller
             ]);
         }
 
+        /*
+         * An owner correcting the resort's name or barangay while it
+         * waits changes what it should match. Without this the office
+         * would be reading a finding about the name the application
+         * used to have.
+         */
+        if (array_intersect($changed, ['name', 'barangay']) !== []) {
+            $this->checkAccreditation($resort);
+        }
+
         return redirect()->route('owner.resort.show')->with('success', 'Your resort details have been saved.');
     }
 
@@ -162,6 +204,10 @@ class ResortController extends Controller
         ])->save();
 
         $this->logger->logStatusChange('resort.resubmitted', $resort, "Resubmitted the resort {$resort->name}", 'rejected', 'pending');
+
+        // Back in the queue, so it is checked against the list as it
+        // stands today rather than as it stood at the first attempt.
+        $this->checkAccreditation($resort);
 
         return redirect()->route('owner.resort.show')
             ->with('success', 'Your resort has been sent back to the tourism office for review.');
