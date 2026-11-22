@@ -34,7 +34,7 @@ class UpdateProfileRequest extends FormRequest
 
         return [
             ...$this->nameRules(),
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+            ...$this->emailRules($user->id),
             'phone' => [Rule::requiredIf($user->isResortOwner()), 'nullable', ...$this->phoneRule()],
             'home_city' => ['nullable', 'string', 'max:120'],
             'home_country' => ['nullable', 'string', 'max:80'],

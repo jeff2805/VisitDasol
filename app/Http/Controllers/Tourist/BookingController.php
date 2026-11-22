@@ -235,6 +235,14 @@ class BookingController extends Controller
             'extras' => $room->resort->extras()->active()->inOrder()->get(),
 
             'manualGcashAccount' => $manualGcashAccount,
+
+            /*
+             * Whether to draw the card fields under the Card choice. Needs
+             * both keys: the secret one opens the payment and the
+             * publishable one is what the browser hands the card to.
+             */
+            'cardPayable' => PaymentProvider::PayMongo->isConfigured()
+                && filled(config('services.paymongo.public')),
             'preferences' => $preferences,
 
             // Worked out above, where the payment methods are chosen from it.
@@ -372,6 +380,40 @@ class BookingController extends Controller
             }
         }
 
+        /*
+         * The card, when one was typed on the form.
+         *
+         * AFTER THE BOOKING, for the same reason as the ID above: the
+         * reservation is saved, and a gateway that is slow or unreachable
+         * must not undo it. A card that fails leaves a reservation the
+         * guest can still pay for from their own page.
+         *
+         * What arrives here is a PayMongo token, never a card number —
+         * see card-booking.js and the panel it reads.
+         */
+        if (filled($request->validated('card_payment_method'))) {
+            try {
+                ['redirect' => $bankUrl] = $this->payments->chargeOnBooking(
+                    $booking,
+                    (string) $request->validated('card_payment_method'),
+                    route('tourist.payments.card.return', $booking),
+                );
+
+                // The bank wants the cardholder to confirm. Most Philippine
+                // cards do, so this is the usual path and not the odd one.
+                if ($bankUrl !== null) {
+                    return redirect()->away($bankUrl);
+                }
+            } catch (Throwable $e) {
+                report($e);
+
+                return redirect()
+                    ->route('tourist.bookings.show', $booking)
+                    ->with('warning', 'Your reservation was sent, but the card payment did not '
+                        .'go through. You can try again from this page, or pay at the resort.');
+            }
+        }
+
         $redirect = redirect()
             ->route('tourist.bookings.show', $booking)
             ->with(
@@ -428,6 +470,17 @@ class BookingController extends Controller
             'terms' => $this->policies->stored($booking),
 
             'payable' => $this->payments->isPayable($booking),
+
+            /*
+             * Whether to draw the card form on this page at all. It needs
+             * BOTH keys: the secret one opens the payment, and the
+             * publishable one is what the browser hands the card to. With
+             * only the secret key the page falls back to PayMongo's own
+             * hosted checkout, which is a complete way to pay.
+             */
+            'cardPayable' => $this->payments->isPayable($booking)
+                && PaymentProvider::PayMongo->isConfigured()
+                && filled(config('services.paymongo.public')),
         ]);
     }
 

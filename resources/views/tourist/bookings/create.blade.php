@@ -4,6 +4,9 @@
 
 @push('scripts')
     <script src="@vdasset('js/booking-form.js')"></script>
+    {{-- Turns the card into a token before the form is sent. Loaded even
+         when no card form is drawn: it finds no panel and does nothing. --}}
+    <script src="@vdasset('js/card-booking.js')"></script>
 @endpush
 
 @section('content')
@@ -56,6 +59,12 @@
                       data-payment-terms-preview-url="{{ route('tourist.bookings.payment-terms-preview') }}">
                     @csrf
                     <input type="hidden" name="room" value="{{ $room->id }}" data-booking-room-id>
+
+                {{-- The only thing about the card that is ever posted here:
+                     a PayMongo token. Filled in by card-booking.js just
+                     before the form goes, and empty for every other way of
+                     paying. --}}
+                <input type="hidden" name="card_payment_method" value="" data-card-token>
 
                     <div class="row g-4">
                         <div class="col-lg-7">
@@ -667,11 +676,93 @@
     @enderror
 @endif
 
+{{-- CARD DETAILS, shown the moment Card is chosen.
+
+     Nothing here is posted to Visit Dasol. These four inputs carry no
+     name attribute the server reads: the number is handed straight to
+     PayMongo by card-booking.js and what reaches this site is a token.
+     That is also why there is no server-side validation of a card — there
+     is nothing to validate, because nothing arrives. --}}
+@if ($cardPayable ?? false)
+    <section class="vd-panel p-3 mt-3"
+             data-preference-panel="online"
+             data-card-panel
+             data-public-key="{{ config('services.paymongo.public') }}"
+             data-billing-email="{{ auth()->user()?->email }}"
+             hidden>
+        <p class="fw-semibold mb-1">
+            <i class="bi bi-credit-card-2-front me-1" aria-hidden="true"></i>
+            Card details
+        </p>
+
+        {{-- SAID PLAINLY, BECAUSE THE MONEY REALLY DOES GO NOW.
+
+             PayMongo will not hold a card for this account — manual
+             capture is refused — so paying on this form means paying
+             before the resort has agreed to anything. A guest whose
+             request is then declined has to be refunded by the office,
+             outside this system. They are owed that in writing before
+             they type a card number, not after. --}}
+        <div class="alert alert-warning d-flex gap-2" role="alert">
+            <i class="bi bi-exclamation-triangle mt-1" aria-hidden="true"></i>
+            <span>
+                <strong>Your card is charged now, before {{ $resort->name }} has replied.</strong>
+                If they cannot take your booking, the tourism office arranges your
+                money back with the resort — it is not returned automatically.
+
+                {{-- Only named when the resort actually offers it. Pointing
+                     a guest at a choice that is not on their screen is
+                     worse than saying nothing. --}}
+                @if (in_array(\App\Enums\PaymentPreference::OnArrival, $preferences, true))
+                    To pay only after they accept, choose <em>Pay at the resort</em> and
+                    settle from your reservation page once it is confirmed.
+                @endif
+            </span>
+        </div>
+
+        <p class="alert alert-danger" role="alert" data-card-error hidden></p>
+
+        <label class="form-label" for="card_name">Card holder name</label>
+        <input class="form-control mb-3" id="card_name" type="text"
+               autocomplete="cc-name" data-card-field="name"
+               data-required-with-panel
+               placeholder="Name as printed on the card">
+
+        <label class="form-label" for="card_number">Card number</label>
+        <input class="form-control mb-3" id="card_number" type="text"
+               inputmode="numeric" autocomplete="cc-number" maxlength="23"
+               data-card-field="number" data-required-with-panel
+               placeholder="0000 0000 0000 0000">
+
+        <div class="row g-2">
+            <div class="col-6">
+                <label class="form-label" for="card_expiry">Expiry</label>
+                <input class="form-control" id="card_expiry" type="text"
+                       inputmode="numeric" autocomplete="cc-exp" maxlength="7"
+                       data-card-field="expiry" data-required-with-panel
+                       placeholder="MM/YY">
+            </div>
+            <div class="col-6">
+                <label class="form-label" for="card_cvc">CVC</label>
+                <input class="form-control" id="card_cvc" type="text"
+                       inputmode="numeric" autocomplete="cc-csc" maxlength="4"
+                       data-card-field="cvc" data-required-with-panel
+                       placeholder="000">
+            </div>
+        </div>
+
+        <p class="form-text mb-0 mt-2">
+            <i class="bi bi-shield-lock me-1" aria-hidden="true"></i>
+            Sent straight to PayMongo. Your bank may ask you to confirm.
+        </p>
+    </section>
+@endif
+
 {{-- Manual GCash details --}}
 @if (isset($manualGcashAccount) && $manualGcashAccount)
     <section
         class="vd-panel p-3 mt-3"
-        data-manual-gcash-details
+        data-preference-panel="manual_gcash"
         hidden
     >
         
@@ -776,9 +867,21 @@
                                      True whether or not online payment is switched on: sending a
                                      request never charges anything, and paying only becomes
                                      possible once the resort has confirmed. --}}
-                                <p class="form-text text-center mb-0 mt-2">
-                                    Nothing is charged now. {{ $resort->name }} confirms or declines your
-                                    request first and works out the final amount.
+                                {{-- Two different sentences, because there
+                                     are now two different truths. Paying by
+                                     card takes the money here; every other
+                                     way still waits for the resort. Saying
+                                     "nothing is charged now" under a card
+                                     form would be false. --}}
+                                <p class="form-text text-center mb-0 mt-2" data-charge-note>
+                                    <span data-charge-note-card hidden>
+                                        Your card is charged when you send this request.
+                                        {{ $resort->name }} still confirms or declines it.
+                                    </span>
+                                    <span data-charge-note-later>
+                                        Nothing is charged now. {{ $resort->name }} confirms or declines your
+                                        request first and works out the final amount.
+                                    </span>
                                 </p>
 
                                 @if (count($preferences) > 1)

@@ -24,6 +24,7 @@ use App\Models\User;
 use App\Services\MessagingService;
 use App\Support\Asset;
 use App\Support\Money;
+use App\Support\PasswordPolicy;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Database\Eloquent\Model;
@@ -188,9 +189,22 @@ class AppServiceProvider extends ServiceProvider
                 ->line('If you did not ask for this, you can ignore this email. Your password stays the same.');
         });
 
-        // Minimum password strength everywhere Password::defaults() is used
-        // (registration and password changes).
-        Password::defaults(fn () => Password::min(8)->letters()->numbers());
+        /*
+         * Password strength everywhere Password::defaults() is used:
+         * both registration forms, the profile password change, and the
+         * reset-link form.
+         *
+         * Eight characters with mixed case, a number and a symbol. This
+         * used to be min(8)->letters()->numbers() written out here, which
+         * accepted "holiday2030" — and ignored the four boxes the
+         * settings screen had been offering the office all along. The
+         * policy lives in PasswordPolicy now, which also writes the hint
+         * shown under the box, so the two cannot disagree.
+         *
+         * Passed as a closure, not a built rule: the office's answers are
+         * read when a form is submitted, so a change takes effect at once.
+         */
+        Password::defaults(fn () => PasswordPolicy::rule());
 
         // Short, stable names stored in activity_logs.subject_type
         // instead of PHP class names.
@@ -212,15 +226,6 @@ class AppServiceProvider extends ServiceProvider
             'payment' => Payment::class,
             'resort_extra' => ResortExtra::class,
             'booking_extra' => BookingExtra::class,
-
-            /*
-             * The About page's content. Registered because the audit trail
-             * records which section the office drafted and published, and
-             * the page is the municipality's public face: "who changed
-             * this and when" is the first question when a date on it turns
-             * out to be wrong.
-             */
-            'about_section' => \App\Models\AboutSection::class,
 
             /*
              * Messaging. Registered because the audit trail records

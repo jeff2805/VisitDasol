@@ -43,7 +43,8 @@ class SignInCode extends Notification
             ->greeting('Hello '.$notifiable->first_name.',')
             ->line('Somebody has just signed in to your account with your password. Enter this code to finish:')
             ->line('**'.$this->code.'**')
-            ->line("The code stops working in {$minutes} minutes.")
+            // "in 1 minutes" is what a template writes and nobody says.
+            ->line('The code stops working in '.$minutes.' '.\Illuminate\Support\Str::plural('minute', $minutes).'.')
             /*
              * The whole reason this mail exists. Somebody reading it who did
              * not just sign in has learned that their password is known to

@@ -347,8 +347,8 @@ class EmailVerificationTest extends TestCase
             'phone' => '09171234567',
             'home_city' => 'Manila',
             'home_country' => 'Philippines',
-            'password' => 'holiday-2030',
-            'password_confirmation' => 'holiday-2030',
+            'password' => 'Holiday-2030',
+            'password_confirmation' => 'Holiday-2030',
             'terms' => '1',
         ])->assertRedirect(route('verification.notice'));
 
@@ -381,9 +381,9 @@ class EmailVerificationTest extends TestCase
         $owner = User::factory()
             ->resortOwner(UserStatus::Active)
             ->unverified()
-            ->create(['password' => Hash::make('seaside-2030')]);
+            ->create(['password' => Hash::make('Seaside-2030')]);
 
-        $this->post(route('login'), ['email' => $owner->email, 'password' => 'seaside-2030'])
+        $this->post(route('login'), ['email' => $owner->email, 'password' => 'Seaside-2030'])
             ->assertRedirect(route('dashboard'));
 
         $this->get(route('dashboard'))->assertRedirect(route('verification.notice'));

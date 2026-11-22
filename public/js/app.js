@@ -793,3 +793,51 @@ document.querySelectorAll('[data-resort-gallery]').forEach((gallery) => {
     start();
 });
 
+
+
+/* VisitDasol room photo gallery.
+ *
+ * The strip of thumbnails under each room opens one dialog per room,
+ * holding every photo that room has. Two things Bootstrap does not do
+ * on its own:
+ *
+ *   1. Start on the photo that was clicked. Without this, clicking the
+ *      third thumbnail opens the first photo, and a guest has to find
+ *      their way back to the one they were already looking at.
+ *
+ *   2. Answer the arrow keys. Bootstrap's carousel binds keydown to the
+ *      carousel element, but a modal takes focus itself when it opens,
+ *      so the keys reach the modal and stop there.
+ */
+document.querySelectorAll('[data-room-photo-carousel]').forEach((carousel) => {
+    const modal = carousel.closest('.modal');
+    if (!modal || modal.dataset.photoGalleryBound === 'true') return;
+    modal.dataset.photoGalleryBound = 'true';
+
+    const instance = () => window.bootstrap?.Carousel?.getOrCreateInstance(carousel);
+
+    /* On show, not on shown: the slide is changed while the dialog is
+       still invisible, so the guest does not watch it scroll past the
+       photos between the first and the one they asked for. */
+    modal.addEventListener('show.bs.modal', (event) => {
+        const index = Number(event.relatedTarget?.dataset.photoIndex);
+
+        // Slide 0 is already the active one, so there is nothing to do.
+        if (!Number.isInteger(index) || index <= 0) return;
+
+        instance()?.to(index);
+    });
+
+    modal.addEventListener('keydown', (event) => {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+
+        // Never steal an arrow key from something being typed in.
+        if (event.target.closest('input, textarea, select, [contenteditable]')) return;
+
+        const carouselInstance = instance();
+        if (!carouselInstance) return;
+
+        event.preventDefault();
+        event.key === 'ArrowLeft' ? carouselInstance.prev() : carouselInstance.next();
+    });
+});

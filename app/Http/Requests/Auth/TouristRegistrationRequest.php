@@ -31,7 +31,7 @@ class TouristRegistrationRequest extends FormRequest
     {
         return [
             ...$this->nameRules(),
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            ...$this->emailRules(),
             'phone' => ['required', ...$this->phoneRule()],
             'home_city' => ['required', 'string', 'max:120'],
             'home_country' => ['required', 'string', 'max:80'],

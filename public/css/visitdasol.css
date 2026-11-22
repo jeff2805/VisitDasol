@@ -6456,3 +6456,203 @@ h2.visually-hidden {
 .vd-welcome .vd-saltbeds {
     display: none !important;
 }
+/* The card form on the reservation page --------------------------------
+ *
+ * A disclosure rather than a permanently open form: most of the page is
+ * about the stay, and a bank-looking box sitting open under it reads as a
+ * demand rather than an option.
+ */
+.vd-card-pay {
+  margin-top: 1rem;
+  border: 1px solid var(--vd-border, #d7e3e8);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.vd-card-pay__summary {
+  padding: .75rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.vd-card-pay__summary::-webkit-details-marker { display: none; }
+
+.vd-card-pay__summary::after {
+  content: "\F282"; /* bi-chevron-down */
+  float: right;
+  font-family: "bootstrap-icons";
+  font-weight: 400;
+  transition: transform .15s ease;
+}
+
+.vd-card-pay[open] .vd-card-pay__summary::after { transform: rotate(180deg); }
+
+.vd-card-pay__form {
+  padding: 0 1rem 1rem;
+  border-top: 1px solid var(--vd-border, #d7e3e8);
+  padding-top: 1rem;
+}
+
+/* The number and the code are read back digit by digit when a payment is
+   queried, so they are easier to check in a face that does not vary. */
+.vd-card-pay__form input[inputmode="numeric"] {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .04em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vd-card-pay__summary::after { transition: none; }
+}
+
+
+/* ============================================================
+   Room photos that can be opened
+   ============================================================
+   The thumbnails under each room used to be bare <img> tags. They
+   looked exactly like the clickable ones in the resort's own header
+   gallery, so guests clicked them and nothing happened. These are
+   buttons now, and they say so: the cursor changes, the photo lifts
+   slightly, and a corner badge appears on hover and on keyboard
+   focus — never on hover alone, or the keyboard loses the cue. */
+
+.vd-photo-button {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: var(--vd-radius-sm);
+  overflow: hidden;
+  cursor: zoom-in;
+  line-height: 0;
+}
+
+/* The lift is small on purpose. These sit three to a row inside a
+   room card, and a thumbnail that jumps pushes the price out of
+   the corner of the eye. */
+.vd-photo-button img {
+  transition: transform .25s ease, opacity .25s ease;
+}
+
+.vd-photo-button:hover img,
+.vd-photo-button:focus-visible img {
+  transform: scale(1.05);
+  opacity: .92;
+}
+
+.vd-photo-button:focus-visible {
+  outline: 3px solid var(--vd-accent, #078fda);
+  outline-offset: 2px;
+}
+
+/* Shown on hover and focus. The badge is decoration — the button's
+   aria-label already says which photo it opens — so it is marked
+   aria-hidden in the template and must not be the only cue. */
+.vd-photo-button__zoom {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 1.1rem;
+  line-height: 1;
+  background: rgba(8, 44, 56, .35);
+  opacity: 0;
+  transition: opacity .25s ease;
+  pointer-events: none;
+}
+
+.vd-photo-button:hover .vd-photo-button__zoom,
+.vd-photo-button:focus-visible .vd-photo-button__zoom {
+  opacity: 1;
+}
+
+/* "+2" on the last thumbnail when the room has more photos than the
+   strip shows. Without it those photos are invisible: the strip
+   looks complete at three whether the room has three or nine. */
+.vd-photo-button__more {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(8, 44, 56, .62);
+  color: #fff;
+  font-weight: 600;
+  font-size: .95rem;
+  line-height: 1;
+}
+
+/* The badge sits over the hover wash, so the count stays readable
+   while the pointer is on it. */
+.vd-photo-button:hover .vd-photo-button__more,
+.vd-photo-button:focus-visible .vd-photo-button__more {
+  background: rgba(8, 44, 56, .72);
+}
+
+/* The opened gallery ----------------------------------------- */
+
+.vd-photo-carousel__frame {
+  display: grid;
+  place-items: center;
+  /* Tall enough to judge a room, short enough that the caption and
+     the dialog's own header still fit on a laptop without scrolling. */
+  height: min(62vh, 520px);
+  background: var(--vd-brine, #eef5f7);
+}
+
+.vd-photo-carousel__frame img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.vd-photo-carousel__caption {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .15rem .6rem;
+  align-items: baseline;
+  margin: 0;
+  padding: .7rem 1rem;
+  font-size: .875rem;
+  border-top: 1px solid var(--vd-border, #d7e3e8);
+}
+
+.vd-photo-carousel__text {
+  color: var(--vd-ink, #11333d);
+}
+
+/* Bootstrap's controls are white on white against a contained photo
+   that does not reach the edges. Give them something to sit on. */
+.vd-photo-carousel .carousel-control-prev,
+.vd-photo-carousel .carousel-control-next {
+  width: 12%;
+  opacity: 1;
+}
+
+.vd-photo-carousel .carousel-control-prev-icon,
+.vd-photo-carousel .carousel-control-next-icon {
+  padding: 1.1rem;
+  border-radius: 50%;
+  background-color: rgba(8, 44, 56, .55);
+  background-size: 48% 48%;
+}
+
+.vd-photo-carousel .carousel-control-prev:hover .carousel-control-prev-icon,
+.vd-photo-carousel .carousel-control-next:hover .carousel-control-next-icon {
+  background-color: rgba(8, 44, 56, .8);
+}
+
+@media (max-width: 575.98px) {
+  .vd-photo-carousel__frame { height: min(52vh, 360px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vd-photo-button img,
+  .vd-photo-button__zoom { transition: none; }
+  .vd-photo-button:hover img,
+  .vd-photo-button:focus-visible img { transform: none; }
+}

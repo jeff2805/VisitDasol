@@ -29,8 +29,8 @@ class RegistrationTest extends TestCase
             'phone' => '0917 123 4567',
             'home_city' => 'Manila',
             'home_country' => 'Philippines',
-            'password' => 'holiday-2030',
-            'password_confirmation' => 'holiday-2030',
+            'password' => 'Holiday-2030',
+            'password_confirmation' => 'Holiday-2030',
             'terms' => '1',
         ], $overrides);
     }
@@ -45,8 +45,8 @@ class RegistrationTest extends TestCase
             'last_name' => 'Reyes',
             'email' => 'carmela@example.test',
             'phone' => '09171234567',
-            'password' => 'seaside-2030',
-            'password_confirmation' => 'seaside-2030',
+            'password' => 'Seaside-2030',
+            'password_confirmation' => 'Seaside-2030',
             'business_name' => 'Salt Breeze Resort',
             'position' => 'Owner',
             'business_permit_no' => 'BP-2030-1234',
@@ -73,7 +73,7 @@ class RegistrationTest extends TestCase
         $this->assertSame(UserRole::Tourist, $tourist->role);
         $this->assertSame(UserStatus::Active, $tourist->status);
         $this->assertSame('09171234567', $tourist->phone, 'Spaces should be stripped from phone numbers.');
-        $this->assertTrue(Hash::check('holiday-2030', $tourist->password));
+        $this->assertTrue(Hash::check('Holiday-2030', $tourist->password));
         $this->assertAuthenticatedAs($tourist);
         $this->assertNull($tourist->email_verified_at);
     }
@@ -146,13 +146,13 @@ class RegistrationTest extends TestCase
         $this->post(route('register.owner'), $this->ownerPayload());
         $owner = User::sole();
 
-        $this->post(route('login'), ['email' => $owner->email, 'password' => 'seaside-2030']);
+        $this->post(route('login'), ['email' => $owner->email, 'password' => 'Seaside-2030']);
         $this->assertGuest();
 
         $owner->status = UserStatus::Active;
         $owner->save();
 
-        $this->post(route('login'), ['email' => $owner->email, 'password' => 'seaside-2030'])
+        $this->post(route('login'), ['email' => $owner->email, 'password' => 'Seaside-2030'])
             ->assertRedirect(route('dashboard'));
         $this->assertAuthenticatedAs($owner);
 

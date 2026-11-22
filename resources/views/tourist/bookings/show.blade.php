@@ -4,6 +4,14 @@
 
 @php($resort = $booking->resort)
 
+{{-- Loaded only where the card form is drawn, so a reservation that is not
+     payable carries no payment code at all. --}}
+@if ($cardPayable ?? false)
+    @push('scripts')
+        <script src="@vdasset('js/card-payment.js')" defer></script>
+    @endpush
+@endif
+
 @section('content')
     <div class="container py-5">
         <nav aria-label="Breadcrumb" class="mb-3">
@@ -155,10 +163,75 @@
                             @endif
                         </div>
 
+                        {{-- THE CARD FORM, on our own page.
+
+                             Drawn only when a publishable key exists, because
+                             without one there is nothing to hand the card to
+                             and the buttons above are the whole of it.
+
+                             The number typed here goes from the browser
+                             straight to PayMongo. It is not posted to this
+                             site, which is why none of these inputs carries a
+                             name this server reads. --}}
+                        @if ($cardPayable)
+                            <details class="vd-card-pay" @if (count($gateways) <= 1 && ! $manualPayable) open @endif>
+                                <summary class="vd-card-pay__summary">
+                                    <i class="bi bi-credit-card-2-front me-1" aria-hidden="true"></i>
+                                    Pay by card here
+                                </summary>
+
+                                <form class="vd-card-pay__form"
+                                      method="POST"
+                                      action="{{ route('tourist.payments.card.start', $booking) }}"
+                                      data-card-form
+                                      autocomplete="on">
+                                    @csrf
+
+                                    <p class="alert alert-danger" role="alert" data-card-error hidden></p>
+
+                                    <label class="form-label" for="card_name">Card holder name</label>
+                                    <input class="form-control mb-3" id="card_name" name="card_name"
+                                           type="text" required autocomplete="cc-name"
+                                           placeholder="Name as printed on the card">
+
+                                    <label class="form-label" for="card_number">Card number</label>
+                                    <input class="form-control mb-3" id="card_number" name="card_number"
+                                           type="text" required inputmode="numeric" autocomplete="cc-number"
+                                           maxlength="23" placeholder="0000 0000 0000 0000">
+
+                                    <div class="row g-2 mb-3">
+                                        <div class="col-6">
+                                            <label class="form-label" for="card_expiry">Expiry</label>
+                                            <input class="form-control" id="card_expiry" name="card_expiry"
+                                                   type="text" required inputmode="numeric"
+                                                   autocomplete="cc-exp" maxlength="7" placeholder="MM/YY">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label" for="card_cvc">CVC</label>
+                                            <input class="form-control" id="card_cvc" name="card_cvc"
+                                                   type="text" required inputmode="numeric"
+                                                   autocomplete="cc-csc" maxlength="4" placeholder="000">
+                                        </div>
+                                    </div>
+
+                                    <button type="submit" class="btn btn-accent btn-lg w-100"
+                                            data-card-submit data-busy="Contacting your bank…">
+                                        <i class="bi bi-lock-fill me-1" aria-hidden="true"></i>
+                                        Pay @peso($dueNow, true)
+                                    </button>
+
+                                    <p class="form-text text-center mb-0 mt-2">
+                                        Your card goes straight to PayMongo. Your bank may ask you to
+                                        confirm before the payment completes.
+                                    </p>
+                                </form>
+                            </details>
+                        @endif
+
                         <p class="form-text mb-0">
                             <i class="bi bi-shield-lock me-1" aria-hidden="true"></i>
-                            You pay on the provider's own secure page. Your card and wallet details
-                            are never typed into, or stored by, this site.
+                            Your card details are sent straight to PayMongo and are never stored by,
+                            or even seen by, this site.
                         </p>
                     </section>
                 @elseif ($booking->payment_preference === \App\Enums\PaymentPreference::Online

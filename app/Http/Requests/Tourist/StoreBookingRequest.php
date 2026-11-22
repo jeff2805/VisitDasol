@@ -485,6 +485,18 @@ class StoreBookingRequest extends FormRequest
                     )
                 ),
             ],
+
+            /*
+             * A PayMongo card token, put here by card-booking.js just
+             * before the form is sent. NOT a card number: the inputs the
+             * guest typed into have no name and are never posted, so this
+             * is the only trace of a card that reaches this server.
+             *
+             * The shape is checked so a hand-made request cannot send
+             * something else entirely; whether the token is real is
+             * PayMongo's to say, and it says so when the charge is tried.
+             */
+            'card_payment_method' => ['nullable', 'string', 'max:64', 'regex:/^pm_[A-Za-z0-9]+$/'],
         ];
     }
 

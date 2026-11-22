@@ -84,7 +84,7 @@
                         <x-form.input name="current_password" type="password" label="Current password" required autocomplete="current-password"
                                       id="password-current" />
                         <x-form.input name="password" type="password" label="New password" required autocomplete="new-password"
-                                      id="password-new" help="At least 8 characters, including letters and numbers." />
+                                      id="password-new" :help="\App\Support\PasswordPolicy::describe()" />
                         <x-form.input name="password_confirmation" type="password" label="Confirm new password" required autocomplete="new-password"
                                       id="password-confirm" />
 

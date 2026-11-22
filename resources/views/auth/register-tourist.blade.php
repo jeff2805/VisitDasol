@@ -35,7 +35,7 @@
         <p class="form-text mt-0 mb-3">Where you are travelling from. The tourism office uses this for visitor statistics only.</p>
 
         <x-form.input name="password" type="password" label="Password" required autocomplete="new-password"
-                      help="At least 8 characters, including letters and numbers." />
+                      :help="\App\Support\PasswordPolicy::describe()" />
         <x-form.input name="password_confirmation" type="password" label="Confirm password" required autocomplete="new-password" />
 
         {{-- The box now actually stands for something: it names the two

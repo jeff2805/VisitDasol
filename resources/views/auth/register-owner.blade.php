@@ -37,7 +37,7 @@
                       help="The tourism office uses this to reach you about your application." />
 
         <x-form.input name="password" type="password" label="Password" required autocomplete="new-password"
-                      help="At least 8 characters, including letters and numbers." />
+                      :help="\App\Support\PasswordPolicy::describe()" />
         <x-form.input name="password_confirmation" type="password" label="Confirm password" required autocomplete="new-password" />
 
         <h2 class="h5 mt-4 mb-3">Your resort or business</h2>

@@ -6,7 +6,7 @@
 
 @section('content')
     <h1 class="h2 mb-1">Choose a new password</h1>
-    <p class="text-muted-vd mb-4">At least 8 characters, including letters and numbers.</p>
+    <p class="text-muted-vd mb-4">{{ \App\Support\PasswordPolicy::describe() }}</p>
 
     <form method="POST" action="{{ route('password.store') }}" novalidate data-submit-once>
         @csrf

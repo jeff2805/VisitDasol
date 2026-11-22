@@ -40,7 +40,8 @@ class VerifyEmailWithCode extends Notification
             ->greeting('Hello '.$notifiable->first_name.',')
             ->line('Enter this code to confirm your email address and finish setting up your account:')
             ->line('**'.$this->code.'**')
-            ->line("The code stops working in {$minutes} minutes.")
+            // "in 1 minutes" is what a template writes and nobody says.
+            ->line('The code stops working in '.$minutes.' '.\Illuminate\Support\Str::plural('minute', $minutes).'.')
             ->line('If you did not create an account, you can ignore this email and nothing will happen.')
             ->salutation(config('visitdasol.contact.office').', '.config('visitdasol.municipality'));
     }

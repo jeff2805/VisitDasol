@@ -399,19 +399,75 @@
                                             </div>
                                         </div>
 
-                                        {{-- Room images --}}
+                                        {{-- Room photos.
+                                             Each one opens the room's own gallery at the
+                                             photo that was clicked. They used to be bare
+                                             <img> tags: a guest choosing where to sleep
+                                             would click a 90-pixel thumbnail of the bed
+                                             and nothing happened.
+
+                                             The strip still shows three, because the room
+                                             list is two columns of cards and a fourth
+                                             thumbnail wraps. But the three were a dead end
+                                             before — a room with five photos showed three
+                                             and the other two could not be reached from
+                                             anywhere on the site. The gallery holds all of
+                                             them, and the third thumbnail says how many
+                                             more are behind it. --}}
                                         @if ($room->images->isNotEmpty())
+                                            @php
+                                                $roomPhotos = $room->images->values();
+                                                $strip = $roomPhotos->take(3);
+                                                $beyondStrip = $roomPhotos->count() - $strip->count();
+                                                $galleryId = 'room-photos-'.$room->id;
+                                            @endphp
+
                                             <ul class="vd-gallery__strip mb-3">
-                                                @foreach ($room->images->take(3) as $image)
+                                                @foreach ($strip as $index => $image)
                                                     <li>
-                                                        <img
-                                                            src="{{ $image->url }}"
-                                                            alt="{{ $image->caption ?? $room->name }}"
-                                                            loading="lazy"
+                                                        {{-- A button, not a link: this opens a
+                                                             dialog on the same page rather than
+                                                             going anywhere. --}}
+                                                        <button
+                                                            type="button"
+                                                            class="vd-photo-button"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#{{ $galleryId }}"
+                                                            data-photo-index="{{ $index }}"
+                                                            aria-label="{{ $loop->last && $beyondStrip > 0
+                                                                ? 'View all '.$roomPhotos->count().' photos of '.$room->name
+                                                                : 'View photo '.($index + 1).' of '.$room->name }}"
                                                         >
+                                                            <img
+                                                                src="{{ $image->url }}"
+                                                                alt="{{ $image->caption ?? $room->name }}"
+                                                                loading="lazy"
+                                                            >
+
+                                                            {{-- The cue that there is something to
+                                                                 click. Hidden from screen readers
+                                                                 because the button's own label
+                                                                 already says what it opens. --}}
+                                                            <span class="vd-photo-button__zoom" aria-hidden="true">
+                                                                <i class="bi bi-arrows-angle-expand"></i>
+                                                            </span>
+
+                                                            @if ($loop->last && $beyondStrip > 0)
+                                                                <span class="vd-photo-button__more" aria-hidden="true">
+                                                                    +{{ $beyondStrip }}
+                                                                </span>
+                                                            @endif
+                                                        </button>
                                                     </li>
                                                 @endforeach
                                             </ul>
+
+                                            <x-room-photo-gallery
+                                                :id="$galleryId"
+                                                :room="$room"
+                                                :resort="$resort"
+                                                :photos="$roomPhotos"
+                                            />
                                         @else
                                             <p class="text-muted-vd small mb-3">
                                                 <i class="bi bi-camera" aria-hidden="true"></i>

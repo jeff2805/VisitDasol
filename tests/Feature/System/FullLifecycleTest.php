@@ -46,7 +46,7 @@ class FullLifecycleTest extends TestCase
         $this->post(route('register.owner'), [
             'first_name' => 'Ana', 'last_name' => 'Mendoza',
             'email' => 'ana@example.test', 'phone' => '09171234567',
-            'password' => 'seaside-2030', 'password_confirmation' => 'seaside-2030',
+            'password' => 'Seaside-2030', 'password_confirmation' => 'Seaside-2030',
             'business_name' => 'Sunrise Cove Resort', 'position' => 'Owner',
             'business_permit_no' => 'BP-2030-0142',
             'permit_document' => UploadedFile::fake()->create('permit.pdf', 200, 'application/pdf'),
@@ -57,7 +57,7 @@ class FullLifecycleTest extends TestCase
         $this->assertSame(UserStatus::Pending, $owner->status);
 
         /* 2. They cannot sign in until the office decides. ---------------- */
-        $this->post(route('login'), ['email' => 'ana@example.test', 'password' => 'seaside-2030']);
+        $this->post(route('login'), ['email' => 'ana@example.test', 'password' => 'Seaside-2030']);
         $this->assertGuest();
 
         /* 3. The office reviews the permit and approves. ------------------- */
@@ -68,7 +68,7 @@ class FullLifecycleTest extends TestCase
         $this->post(route('logout'));
 
         /* 4. The owner signs in and lists the resort. ----------------------- */
-        $this->post(route('login'), ['email' => 'ana@example.test', 'password' => 'seaside-2030'])
+        $this->post(route('login'), ['email' => 'ana@example.test', 'password' => 'Seaside-2030'])
             ->assertRedirect(route('dashboard'));
         $this->assertAuthenticatedAs($owner);
 
@@ -123,7 +123,7 @@ class FullLifecycleTest extends TestCase
             'first_name' => 'Bea', 'last_name' => 'Santos',
             'email' => 'bea@example.test', 'phone' => '09179876543',
             'home_city' => 'Quezon City', 'home_country' => 'Philippines',
-            'password' => 'holiday-2030', 'password_confirmation' => 'holiday-2030',
+            'password' => 'Holiday-2030', 'password_confirmation' => 'Holiday-2030',
             'terms' => '1',
         ]);
         $bea = User::query()->where('email', 'bea@example.test')->sole();

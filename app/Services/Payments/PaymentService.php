@@ -130,6 +130,204 @@ class PaymentService
     }
 
     /**
+     * Open a card payment the guest will type into OUR page.
+     *
+     * Everything start() refuses, this refuses too — a reservation the
+     * resort has not accepted cannot be paid for, and neither can one with
+     * nothing outstanding. The rule lives in one place and both doors use
+     * it.
+     *
+     * What comes back is handed to the browser: an intent id and a client
+     * key that can attach a card to that one intent and do nothing else.
+     * The card itself goes from the browser to PayMongo and never passes
+     * through here, which is the whole reason for the arrangement.
+     *
+     * @return array{payment: Payment, client_key: string}
+     *
+     * @throws PaymentException
+     */
+    public function startCard(Booking $booking): array
+    {
+        if (! PaymentProvider::PayMongo->isConfigured() || blank(config('services.paymongo.public'))) {
+            throw PaymentException::notConfigured('Card payments');
+        }
+
+        $owed = $this->dueNow($booking);
+
+        if ($booking->status !== BookingStatus::Confirmed || $owed <= 0) {
+            throw PaymentException::nothingToPay();
+        }
+
+        $payment = DB::transaction(function () use ($booking, $owed): Payment {
+            /*
+             * An open card attempt is reused rather than piled on top of.
+             * A guest whose card was declined and who tries again should
+             * not leave a trail of abandoned intents, and PayMongo lets an
+             * intent take another payment method after a failure.
+             */
+            $existing = $booking->payments()
+                ->open()
+                ->where('provider', PaymentProvider::PayMongo->value)
+                ->where('method', 'card')
+                ->lockForUpdate()
+                ->first();
+
+            if ($existing && (float) $existing->amount === $owed && filled($existing->provider_reference)) {
+                return $existing;
+            }
+
+            return $booking->payments()->create([
+                'payment_reference' => $this->reference(),
+                'provider' => PaymentProvider::PayMongo,
+                'method' => 'card',
+                'amount' => number_format($owed, 2, '.', ''),
+                'currency' => 'PHP',
+                'status' => PaymentStatus::Pending,
+            ]);
+        });
+
+        $gateway = app(PayMongoGateway::class);
+
+        // An attempt reused from a moment ago already has its intent; a
+        // fresh one needs it made.
+        if (blank($payment->provider_reference)) {
+            $opened = $gateway->startCardIntent($payment->load('booking.resort'));
+
+            $payment->forceFill([
+                'provider_reference' => $opened['reference'],
+                'payload' => $opened['payload'],
+            ])->save();
+
+            return ['payment' => $payment, 'client_key' => $opened['client_key']];
+        }
+
+        /*
+         * Reused: the client key is read back out of the stored answer
+         * rather than asked for again. It is part of the intent, not a
+         * thing that changes.
+         */
+        $clientKey = (string) data_get($payment->payload, 'data.attributes.client_key');
+
+        if ($clientKey === '') {
+            throw PaymentException::refused('PayMongo');
+        }
+
+        return ['payment' => $payment, 'client_key' => $clientKey];
+    }
+
+    /**
+     * Charge a card for a reservation that has only just been requested.
+     *
+     * THE RESORT HAS NOT AGREED TO THIS YET, AND THE MONEY GOES ANYWAY.
+     *
+     * Every other payment path in this file refuses a booking that is not
+     * Confirmed, for the obvious reason: a request can still be declined,
+     * and money taken for one would have to be sent back. This one does
+     * not refuse, because the tourism office asked for the card to be
+     * taken on the booking form and PayMongo will not hold a card for this
+     * account — it was tried; the answer was "Manual capture is not
+     * supported for your card provider".
+     *
+     * So a declined reservation leaves a guest who has paid, and this
+     * system cannot put it back. The office settles those by hand. The
+     * booking form says so in as many words before the card is typed,
+     * which is the least this can do.
+     *
+     * @return array{payment: Payment, redirect: ?string}
+     *
+     * @throws PaymentException
+     */
+    public function chargeOnBooking(Booking $booking, string $paymentMethodId, string $returnUrl): array
+    {
+        if (! PaymentProvider::PayMongo->isConfigured()) {
+            throw PaymentException::notConfigured('Card payments');
+        }
+
+        $owed = $this->dueNow($booking);
+
+        if ($owed <= 0) {
+            throw PaymentException::nothingToPay();
+        }
+
+        $payment = $booking->payments()->create([
+            'payment_reference' => $this->reference(),
+            'provider' => PaymentProvider::PayMongo,
+            'method' => 'card',
+            'amount' => number_format($owed, 2, '.', ''),
+            'currency' => 'PHP',
+            'status' => PaymentStatus::Pending,
+        ]);
+
+        $answer = app(PayMongoGateway::class)
+            ->chargeCard($payment->load('booking.resort'), $paymentMethodId, $returnUrl);
+
+        $payment->forceFill([
+            'provider_reference' => $answer['reference'],
+            'status' => $answer['status'],
+            'failure_reason' => $answer['failure'],
+            'paid_at' => $answer['status'] === PaymentStatus::Paid ? now() : null,
+            'payload' => $answer['payload'],
+        ])->save();
+
+        if ($answer['status'] === PaymentStatus::Paid) {
+            $this->logger->log(
+                'payment.paid',
+                $booking,
+                "Paid {$payment->payment_reference} for {$booking->booking_reference} by card at booking",
+                ['amount' => (string) $payment->amount, 'method' => 'card'],
+                $booking->tourist,
+            );
+        }
+
+        return ['payment' => $payment, 'redirect' => $answer['redirect']];
+    }
+
+    /**
+     * Read a card payment's fate from PayMongo and record it.
+     *
+     * NOT FROM THE BROWSER. The page that attached the card knows how it
+     * went and can be made to say anything; this asks PayMongo with the
+     * secret key, which only this server holds.
+     *
+     * @throws PaymentException
+     */
+    public function settleCard(Payment $payment): Payment
+    {
+        if ($payment->isSettled() || blank($payment->provider_reference)) {
+            return $payment;
+        }
+
+        $answer = app(PayMongoGateway::class)->settleCardIntent($payment->load('booking'));
+
+        if ($answer['status'] !== PaymentStatus::Paid) {
+            $payment->forceFill([
+                'failure_reason' => $answer['failure'],
+                'payload' => $answer['payload'],
+            ])->save();
+
+            return $payment;
+        }
+
+        $payment->forceFill([
+            'status' => PaymentStatus::Paid,
+            'method' => 'card',
+            'paid_at' => now(),
+            'failure_reason' => null,
+            'payload' => $answer['payload'],
+        ])->save();
+
+        $this->logger->log(
+            'payment.paid',
+            $payment->booking,
+            "Paid {$payment->payment_reference} for {$payment->booking->booking_reference} by card",
+            ['amount' => (string) $payment->amount, 'method' => 'card'],
+            $payment->booking->tourist,
+        );
+
+        return $payment;
+    }
+
+    /**
      * Ask the gateway what became of a payment and record the answer.
      *
      * Safe to call as often as you like: a payment that is already settled is

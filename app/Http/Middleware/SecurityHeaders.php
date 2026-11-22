@@ -62,19 +62,45 @@ class SecurityHeaders
                 : [],
         ));
 
+        /*
+         * WHERE THE CARD NUMBER IS ALLOWED TO GO.
+         *
+         * The in-page card form posts the number from the browser straight
+         * to PayMongo's API, so that one host has to be reachable by
+         * fetch(). Without this line the request is refused by the policy
+         * and the form fails with nothing in the server log to explain it —
+         * the browser console is the only place it shows.
+         *
+         * Added only when the publishable key exists, because that is the
+         * only time any card form is drawn.
+         */
+        $cardApi = $this->hosts(
+            filled(config('services.paymongo.public'))
+                ? ['https://api.paymongo.com']
+                : []
+        );
+
         $policy = implode('; ', [
             "default-src 'self'",
             "script-src 'self'",
             "style-src 'self' 'unsafe-inline'",
             'img-src '.trim("'self' data: ".self::storageOrigin().' '.$tiles),
             "font-src 'self'",
-            // The routing service, and nothing else. Mapbox was named
-            // here too and is no longer called.
-            'connect-src '.trim("'self' ".$routing),
+            // The routing service, and PayMongo's API when a card form is
+            // drawn — that is the one request carrying a card number, and
+            // it goes to them rather than to us.
+            'connect-src '.trim("'self' ".$routing.' '.$cardApi),
             "object-src 'none'",
             "base-uri 'self'",
             'form-action '.trim("'self' ".$checkout),
             "frame-ancestors 'self'",
+            /*
+             * Where a card may send the visitor next: their own bank, for
+             * the 3-D Secure step. The bank is not knowable in advance —
+             * it is whichever issued the card — so this cannot be a list
+             * of hosts, and the redirect is a top-level navigation rather
+             * than a frame either way.
+             */
         ]);
 
         $headers = [

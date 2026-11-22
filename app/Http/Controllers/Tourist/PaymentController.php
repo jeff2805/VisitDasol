@@ -55,6 +55,83 @@ class PaymentController extends Controller
      * The reservation is only credited if the gateway itself says the money
      * arrived, so opening this URL by hand achieves nothing.
      */
+    /**
+     * Open a card payment for the form on our own page.
+     *
+     * Answers JSON, because the page asks with fetch() and then talks to
+     * PayMongo itself. What goes back is an intent id and a client key —
+     * never the secret key, which would let whoever held it read every
+     * payment this site has ever taken.
+     *
+     * The billing email comes from the booking rather than from the form:
+     * PayMongo requires one, the guest already gave it, and a field asking
+     * again is a field to mistype.
+     */
+    public function startCard(Booking $booking): \Illuminate\Http\JsonResponse
+    {
+        $this->authorize('view', $booking);
+
+        try {
+            ['payment' => $payment, 'client_key' => $clientKey] = $this->payments->startCard($booking);
+        } catch (Throwable $e) {
+            return response()->json(['message' => $this->payments->report($e, $booking)], 422);
+        }
+
+        $booking->loadMissing('tourist');
+
+        return response()->json([
+            'public_key' => config('services.paymongo.public'),
+            'intent_id' => $payment->provider_reference,
+            'client_key' => $clientKey,
+            'amount' => (string) $payment->amount,
+            'billing' => [
+                'name' => $booking->contact_name,
+                'email' => $booking->contact_email ?: $booking->tourist?->email,
+            ],
+            // Where the bank sends the cardholder back after 3-D Secure.
+            'return_url' => route('tourist.payments.card.return', $booking),
+        ]);
+    }
+
+    /**
+     * The cardholder is back — from the bank's 3-D Secure page, or from
+     * the form itself when no authentication was needed.
+     *
+     * Nothing in the request is believed. The payment is read back from
+     * PayMongo with the secret key, and that answer alone decides whether
+     * this reservation has been paid for.
+     */
+    public function cardReturn(Booking $booking): RedirectResponse
+    {
+        $this->authorize('view', $booking);
+
+        $payment = $booking->payments()
+            ->open()
+            ->where('method', 'card')
+            ->latest('id')
+            ->first();
+
+        if ($payment === null) {
+            return redirect()->route('tourist.bookings.show', $booking);
+        }
+
+        try {
+            $payment = $this->payments->settleCard($payment);
+        } catch (Throwable $e) {
+            return redirect()->route('tourist.bookings.show', $booking)
+                ->with('error', $this->payments->report($e, $booking));
+        }
+
+        if ($payment->isSettled()) {
+            return redirect()->route('tourist.bookings.show', $booking)
+                ->with('success', 'Thank you. Your card payment went through.');
+        }
+
+        return redirect()->route('tourist.bookings.show', $booking)
+            ->with('warning', $payment->failure_reason
+                ?: 'That payment has not completed. You can try again, or pay at the resort.');
+    }
+
     public function return(Booking $booking): RedirectResponse
     {
         $this->authorize('view', $booking);

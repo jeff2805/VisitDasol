@@ -68,6 +68,13 @@ enum PaymentProvider: string
     {
         $names = [
             'gcash' => 'GCash',
+            /*
+             * "card", not "credit or debit card". Spelling it out reads
+             * well on its own and badly in a list — "GCash or credit or
+             * debit card" — and this phrase has to serve both. The radio
+             * label upper-cases the first letter, so a card-only site
+             * shows "Card", which is what every other checkout calls it.
+             */
             'card' => 'card',
             'paymaya' => 'Maya',
             'grab_pay' => 'GrabPay',

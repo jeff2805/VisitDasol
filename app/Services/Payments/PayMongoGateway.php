@@ -59,6 +59,228 @@ class PayMongoGateway implements PaymentGateway
         return ['reference' => $id, 'checkout_url' => $url, 'payload' => (array) $response->json()];
     }
 
+    /**
+     * Open a payment the guest will pay for with a card typed on OUR page.
+     *
+     * A Payment Intent rather than a Checkout Session, because the two
+     * answer different questions. A session says "send them to PayMongo and
+     * they will sort it out"; an intent says "here is an amount, something
+     * will be attached to it shortly" — and that something is a payment
+     * method the BROWSER makes, out of a card number this server never
+     * sees and could not log if it tried.
+     *
+     * What comes back is the intent's id and its client key. The client key
+     * is safe in the page: it can attach a payment method to this one
+     * intent and do nothing else — it cannot read a customer, list
+     * payments, or touch another booking.
+     *
+     * @return array{reference: string, client_key: string, payload: array<string, mixed>}
+     *
+     * @throws PaymentException
+     */
+    public function startCardIntent(Payment $payment): array
+    {
+        $response = $this->request()->post(self::BASE.'/payment_intents', [
+            'data' => [
+                'attributes' => [
+                    'amount' => $payment->centavos(),
+                    'currency' => $payment->currency,
+                    'description' => $this->description($payment),
+                    'statement_descriptor' => mb_substr(config('visitdasol.name'), 0, 22),
+                    'payment_method_allowed' => ['card'],
+                    /*
+                     * Automatic: the card is charged the moment it clears,
+                     * with no second "capture" step. A resort expecting the
+                     * money to arrive has nothing further to press, and a
+                     * guest is never left with a hold that quietly expires.
+                     */
+                    'capture_type' => 'automatic',
+                ],
+            ],
+        ]);
+
+        if ($response->failed()) {
+            throw PaymentException::refused('PayMongo');
+        }
+
+        $id = $response->json('data.id');
+        $clientKey = $response->json('data.attributes.client_key');
+
+        if (! is_string($id) || ! is_string($clientKey)) {
+            throw PaymentException::refused('PayMongo');
+        }
+
+        return [
+            'reference' => $id,
+            'client_key' => $clientKey,
+            'payload' => (array) $response->json(),
+        ];
+    }
+
+    /**
+     * Charge a card, now.
+     *
+     * THE MONEY IS TAKEN HERE AND CANNOT BE PUT BACK BY THIS SITE.
+     *
+     * This was written as a HOLD first — reserve the amount, take it only
+     * once the resort accepts, release it if they decline — which is how a
+     * booking that can still be refused ought to be paid for. PayMongo
+     * refused: "Manual capture is not supported for your card provider."
+     * Refunds are not wired up either. So a guest whose reservation is
+     * declined after paying has no way back through this system, and the
+     * office has to settle it by hand.
+     *
+     * That is a decision the tourism office made knowing the consequence.
+     * What this code owes them in return is that the guest is told the
+     * same thing before they type a card — see the booking form.
+     *
+     * capture_type automatic: there is no second step to forget.
+     *
+     * @return array{reference: string, status: PaymentStatus, redirect: ?string, failure: ?string, payload: array<string, mixed>}
+     *
+     * @throws PaymentException
+     */
+    public function chargeCard(Payment $payment, string $paymentMethodId, string $returnUrl): array
+    {
+        $intent = $this->request()->post(self::BASE.'/payment_intents', [
+            'data' => [
+                'attributes' => [
+                    'amount' => $payment->centavos(),
+                    'currency' => $payment->currency,
+                    'description' => $this->description($payment),
+                    'statement_descriptor' => mb_substr((string) config('visitdasol.name'), 0, 22),
+                    'payment_method_allowed' => ['card'],
+                    'capture_type' => 'automatic',
+                ],
+            ],
+        ]);
+
+        if ($intent->failed()) {
+            throw PaymentException::refused('PayMongo');
+        }
+
+        $id = (string) $intent->json('data.id');
+        $clientKey = (string) $intent->json('data.attributes.client_key');
+
+        $attached = $this->request()->post(
+            self::BASE.'/payment_intents/'.$id.'/attach?client_key='.urlencode($clientKey),
+            ['data' => ['attributes' => [
+                'payment_method' => $paymentMethodId,
+                'return_url' => $returnUrl,
+            ]]]
+        );
+
+        if ($attached->failed()) {
+            return [
+                'reference' => $id,
+                'status' => PaymentStatus::Failed,
+                'redirect' => null,
+                'failure' => (string) ($attached->json('errors.0.detail') ?? 'The card was not accepted.'),
+                'payload' => (array) $attached->json(),
+            ];
+        }
+
+        return $this->readIntent($id, (array) $attached->json());
+    }
+
+    /*
+     * capture() and release() were written here and then taken out.
+     *
+     * They were the two halves of paying by hold: capture when the resort
+     * accepts, release when it declines. PayMongo answers
+     * "Manual capture is not supported for your card provider", so
+     * neither could ever have run — and a method that cannot work is worse
+     * than no method, because the next person to read this file would
+     * build on it.
+     *
+     * If that provider restriction is ever lifted, this is the shape the
+     * payment flow should go back to: charging for a reservation that can
+     * still be declined is what makes a refund necessary in the first
+     * place.
+     */
+
+    /**
+     * One intent's state, read the same way wherever it came from.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array{reference: string, status: PaymentStatus, redirect: ?string, failure: ?string, payload: array<string, mixed>}
+     */
+    private function readIntent(string $id, array $payload): array
+    {
+        $attributes = (array) data_get($payload, 'data.attributes', []);
+        $state = (string) ($attributes['status'] ?? '');
+        $redirect = data_get($attributes, 'next_action.redirect.url');
+        $failure = data_get($attributes, 'last_payment_error.detail');
+
+        return [
+            'reference' => $id,
+            /*
+             * awaiting_capture is a hold that worked: the bank has
+             * reserved the money and is waiting to be told to take it.
+             * It is NOT paid, and must never be recorded as such — the
+             * guest has not been charged a peso yet.
+             */
+            'status' => match ($state) {
+                'succeeded' => PaymentStatus::Paid,
+                'awaiting_capture' => PaymentStatus::Pending,
+                'awaiting_next_action', 'processing', 'awaiting_payment_method' => PaymentStatus::Pending,
+                'cancelled' => PaymentStatus::Cancelled,
+                default => PaymentStatus::Pending,
+            },
+            'redirect' => is_string($redirect) ? $redirect : null,
+            'failure' => is_string($failure) ? $failure : null,
+            'payload' => $payload,
+        ];
+    }
+
+    /**
+     * What became of a card payment, asked of PayMongo and nobody else.
+     *
+     * THE BROWSER'S WORD IS NOT EVIDENCE. The page that attached the card
+     * knows whether it worked, and a page can be made to say anything; this
+     * reads the intent back with the secret key, which only this server
+     * holds.
+     *
+     * @return array{status: PaymentStatus, method: ?string, failure: ?string, payload: array<string, mixed>}
+     *
+     * @throws PaymentException
+     */
+    public function settleCardIntent(Payment $payment): array
+    {
+        $response = $this->request()->get(self::BASE.'/payment_intents/'.$payment->provider_reference);
+
+        if ($response->failed()) {
+            throw PaymentException::unreachable('PayMongo');
+        }
+
+        $attributes = (array) $response->json('data.attributes', []);
+        $state = (string) ($attributes['status'] ?? '');
+
+        /*
+         * PayMongo's own words, mapped to ours.
+         *
+         * awaiting_next_action is the 3-D Secure step: the bank wants the
+         * cardholder to confirm, and until they do the payment is neither
+         * finished nor failed. It stays open, because a guest who stepped
+         * away mid-authentication must find the payment still waiting.
+         */
+        $status = match ($state) {
+            'succeeded' => PaymentStatus::Paid,
+            'awaiting_payment_method' => PaymentStatus::Pending,
+            'awaiting_next_action', 'processing' => PaymentStatus::Pending,
+            default => PaymentStatus::Pending,
+        };
+
+        $last = (array) ($attributes['last_payment_error'] ?? []);
+
+        return [
+            'status' => $status,
+            'method' => 'card',
+            'failure' => is_string($last['detail'] ?? null) ? $last['detail'] : null,
+            'payload' => (array) $response->json(),
+        ];
+    }
+
     public function settle(Payment $payment): array
     {
         $response = $this->request()->get(self::BASE.'/checkout_sessions/'.$payment->provider_reference);

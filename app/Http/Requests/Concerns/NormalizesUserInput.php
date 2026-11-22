@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Concerns;
 
+use App\Rules\NotAMistypedEmailDomain;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 /**
  * Cleans common account fields before validation:
@@ -39,6 +41,42 @@ trait NormalizesUserInput
         return [
             'first_name' => ['required', 'string', 'max:100', 'regex:/^[\pL\pM\s.\'-]+$/u'],
             'last_name' => ['required', 'string', 'max:100', 'regex:/^[\pL\pM\s.\'-]+$/u'],
+        ];
+    }
+
+    /**
+     * The email rules for creating an account.
+     *
+     * Lives here, shared, because the tourist form and the owner form had
+     * a copy each and nothing kept them equal. An address good enough for
+     * one and not the other is a bug waiting on whichever one gets edited
+     * next.
+     *
+     * "strict" rejects the malformed shapes RFC 5322 merely tolerates;
+     * NotAMistypedEmailDomain rejects the well-formed ones that go
+     * nowhere, which is the larger problem. A sign-up is the one moment
+     * the address can still be corrected: the person is at the keyboard
+     * and knows what they meant. Every later chance to catch it — the
+     * verification code that never arrives, the booking confirmation that
+     * bounces — costs somebody a phone call to the office.
+     *
+     * Pass the current user's id when an existing account is editing its
+     * own address, so the uniqueness check does not flag the address the
+     * account already holds.
+     *
+     * @return array<string, list<mixed>>
+     */
+    protected function emailRules(?int $ignoreUserId = null): array
+    {
+        return [
+            'email' => [
+                'required',
+                'string',
+                'email:rfc,strict',
+                'max:255',
+                new NotAMistypedEmailDomain,
+                Rule::unique('users', 'email')->ignore($ignoreUserId),
+            ],
         ];
     }
 

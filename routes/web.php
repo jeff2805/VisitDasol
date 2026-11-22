@@ -47,7 +47,6 @@ use App\Http\Controllers\Owner\ResortController as OwnerResortController;
 use App\Http\Controllers\Owner\StatisticsController as OwnerStatisticsController;
 use App\Http\Controllers\Owner\WalkInController as OwnerWalkInController;
 use App\Http\Controllers\Admin\WalkInSubmissionController as AdminWalkInController;
-use App\Http\Controllers\Admin\AboutPageController;
 use App\Http\Controllers\Owner\BookingExtraController as OwnerBookingExtraController;
 use App\Http\Controllers\Owner\ResortExtraController as OwnerExtraController;
 use App\Http\Controllers\Owner\RoomController as OwnerRoomController;
@@ -398,6 +397,24 @@ Route::prefix('tourist')
         Route::post('/bookings/{booking}/pay', [TouristPaymentController::class, 'start'])
             ->middleware('throttle:20,1')
             ->name('payments.start');
+        /*
+        | THE CARD FORM ON OUR OWN PAGE.
+        |
+        | start-card answers JSON: an intent id and a client key the page
+        | uses to hand the card straight to PayMongo. The card number goes
+        | browser -> PayMongo and never reaches this server, which is why
+        | there is no route here that accepts one.
+        |
+        | card/return is where the bank sends the cardholder back after
+        | 3-D Secure. Nothing it is sent is believed; the payment is read
+        | back from PayMongo with the secret key.
+        */
+        Route::post('/bookings/{booking}/pay/card', [TouristPaymentController::class, 'startCard'])
+            ->middleware('throttle:20,1')
+            ->name('payments.card.start');
+        Route::get('/bookings/{booking}/pay/card/return', [TouristPaymentController::class, 'cardReturn'])
+            ->name('payments.card.return');
+
         Route::get('/bookings/{booking}/pay/return', [TouristPaymentController::class, 'return'])->name('payments.return');
         Route::get('/bookings/{booking}/pay/cancel', [TouristPaymentController::class, 'cancel'])->name('payments.cancel');
 
@@ -631,28 +648,10 @@ Route::prefix('admin')
         */
 
         /*
-        | ABOUT PAGE MANAGEMENT.
-        |
-        | Seven sections, each saved and published on its own. Saving and
-        | publishing are separate addresses because they are separate
-        | decisions: PUT writes a draft the public cannot see, and only
-        | the publish route moves anything in front of a visitor.
-        |
-        | The preview renders the real public template with the draft
-        | content poured into it, so what the office checks is the page
-        | itself rather than an approximation that could be wrong in its
-        | own way. It sits behind the same authorization as the editor —
-        | an unpublished draft is not public yet, and a preview address
-        | that leaked would make it so.
+        | About Page Management was here. It is gone: the About page is a
+        | Blade template again, edited in resources/views/site/about.blade.php.
+        | See the removal migration for the table it used.
         */
-        Route::get('/about', [AboutPageController::class, 'index'])->name('about.index');
-        Route::get('/about/preview', [AboutPageController::class, 'preview'])->name('about.preview');
-        Route::get('/about/{section}', [AboutPageController::class, 'edit'])->name('about.edit');
-        Route::put('/about/{section}', [AboutPageController::class, 'update'])->name('about.update');
-        Route::patch('/about/{section}/publish', [AboutPageController::class, 'publish'])
-            ->name('about.publish');
-        Route::patch('/about/{section}/unpublish', [AboutPageController::class, 'unpublish'])
-            ->name('about.unpublish');
 
         Route::get('/activity-logs', [AdminActivityLogController::class, 'index'])->name('activity-logs.index');
 

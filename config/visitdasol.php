@@ -453,9 +453,74 @@ return [
     | resend_cooldown_seconds wait between "send another code" requests, so the
     |             form cannot be used to flood someone's inbox.
     */
+    /*
+    |--------------------------------------------------------------------------
+    | Signing in
+    |--------------------------------------------------------------------------
+    |
+    | How many wrong passwords before the door shuts, and for how long.
+    |
+    | Counted per email address AND per IP together, so one person guessing
+    | at one account cannot lock out everybody, and somebody sweeping many
+    | accounts from one machine is stopped on each of them.
+    |
+    | THESE USED TO BE CONSTANTS IN LoginRequest while the settings screen
+    | offered the office its own two boxes for them. The boxes wrote to the
+    | database and the database was never read: an office that set the
+    | lockout to an hour got fifteen minutes and no indication why. They
+    | are configuration now, and the settings screen points at them.
+    */
+    'auth' => [
+        'login_max_attempts' => (int) env('LOGIN_MAX_ATTEMPTS', 3),
+        'lockout_minutes' => (int) env('LOGIN_LOCKOUT_MINUTES', 30),
+
+        /*
+        | WHAT COUNTS AS A STRONG PASSWORD. Eight characters is the floor,
+        | and App\Support\PasswordPolicy enforces that floor even if a
+        | smaller number is edited straight into the database.
+        |
+        | Eight characters of mixed case, a number and a symbol is a far
+        | larger space to search than eight lower-case letters — and the
+        | accounts here are not only tourists: resort owners hold their
+        | business details and the office files returns for the Department
+        | of Tourism.
+        |
+        | THESE FOUR WERE THE SAME DEAD-SETTING BUG as the two above. The
+        | settings screen offered the office all four boxes, stored every
+        | answer, and AppServiceProvider went on applying letters and
+        | numbers only. Worse than silent: the screen's own default said
+        | upper and lower case was required when it was not, so the office
+        | would have reported a policy to the panel that the site did not
+        | have. They are configuration now, and both the rule and the hint
+        | under the password box are built from them.
+        */
+        'password' => [
+            'min' => (int) env('PASSWORD_MIN_LENGTH', 8),
+            'mixed_case' => (bool) env('PASSWORD_MIXED_CASE', true),
+            'numbers' => (bool) env('PASSWORD_NUMBERS', true),
+            'symbols' => (bool) env('PASSWORD_SYMBOLS', true),
+        ],
+    ],
+
     'otp' => [
         'length' => 6,
-        'ttl_minutes' => 10,
+
+        /*
+        | How long a one-time code works for, in minutes. One minute — the
+        | sixty seconds the office asked for.
+        |
+        | SHORT ENOUGH THAT THE MAIL ITSELF IS PART OF THE BUDGET. A code
+        | sent through Gmail can take ten or twenty seconds to arrive, and
+        | the clock here starts when it is SENT, not when it lands. What is
+        | left is the time to open the mailbox and type six digits. Expect
+        | people to need a second code sometimes; the resend button is
+        | there, and its own cooldown is the same sixty seconds.
+        |
+        | The office can change this without a developer: Settings ->
+        | Security -> "One-time code lifetime in minutes", up to 60.
+        */
+        'ttl_minutes' => (int) env('OTP_TTL_MINUTES', 1),
+
         'max_attempts' => 5,
         'resend_cooldown_seconds' => 60,
 

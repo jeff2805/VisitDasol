@@ -45,6 +45,24 @@
             tests/Feature/Auth/LoginOtpTest.php.
         -->
         <env name="AUTH_LOGIN_OTP" value="false"/>
+        <!--
+            No payment gateway unless a test asks for one.
+
+            These used to fall through to .env, so whether a test passed
+            depended on whether the developer running it happened to have a
+            PayMongo key configured. Two tests about Manual GCash being the
+            ONLY method on offer broke the day a real key was added to a
+            laptop — the code was fine; the suite was reading the room.
+
+            Pinned empty here, which is what the rest of this file does for
+            the database and the mail. The payment tests switch a gateway on
+            themselves with config([...]) in their own setUp.
+        -->
+        <env name="PAYMONGO_SECRET_KEY" value=""/>
+        <env name="PAYMONGO_WEBHOOK_SECRET" value=""/>
+        <env name="PAYMONGO_METHODS" value="qrph"/>
+        <env name="PAYPAL_CLIENT_ID" value=""/>
+        <env name="PAYPAL_SECRET" value=""/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>

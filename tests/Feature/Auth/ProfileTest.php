@@ -127,11 +127,11 @@ class ProfileTest extends TestCase
 
         $this->actingAs($tourist)->put(route('profile.password'), [
             'current_password' => 'secret-password-1',
-            'password' => 'brand-new-2030',
-            'password_confirmation' => 'brand-new-2030',
+            'password' => 'Brand-new-2030',
+            'password_confirmation' => 'Brand-new-2030',
         ])->assertRedirect(route('profile.edit'))->assertSessionHasNoErrors('password');
 
-        $this->assertTrue(Hash::check('brand-new-2030', $tourist->fresh()->password));
+        $this->assertTrue(Hash::check('Brand-new-2030', $tourist->fresh()->password));
     }
 
     public function test_the_current_password_must_be_correct(): void
@@ -140,8 +140,8 @@ class ProfileTest extends TestCase
 
         $this->actingAs($tourist)->put(route('profile.password'), [
             'current_password' => 'wrong-password',
-            'password' => 'brand-new-2030',
-            'password_confirmation' => 'brand-new-2030',
+            'password' => 'Brand-new-2030',
+            'password_confirmation' => 'Brand-new-2030',
         ])->assertSessionHasErrors('current_password', null, 'password');
 
         $this->assertTrue(Hash::check('secret-password-1', $tourist->fresh()->password));
@@ -159,7 +159,7 @@ class ProfileTest extends TestCase
 
         $this->actingAs($tourist)->put(route('profile.password'), [
             'current_password' => 'secret-password-1',
-            'password' => 'brand-new-2030',
+            'password' => 'Brand-new-2030',
             'password_confirmation' => 'different-2030',
         ])->assertSessionHasErrors('password', null, 'password');
     }
@@ -180,8 +180,8 @@ class ProfileTest extends TestCase
 
         $this->actingAs($tourist)->put(route('profile.password'), [
             'current_password' => 'secret-password-1',
-            'password' => 'brand-new-2030',
-            'password_confirmation' => 'brand-new-2030',
+            'password' => 'Brand-new-2030',
+            'password_confirmation' => 'Brand-new-2030',
         ]);
 
         $this->assertDatabaseMissing('sessions', ['id' => 'other-device-of-this-user']);

@@ -35,7 +35,7 @@ class OwnerRegistrationRequest extends FormRequest
 
         return [
             ...$this->nameRules(),
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            ...$this->emailRules(),
             'phone' => ['required', ...$this->phoneRule()],
             'password' => ['required', 'string', 'confirmed', Password::defaults()],
             'business_name' => ['required', 'string', 'max:150'],

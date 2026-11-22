@@ -278,10 +278,21 @@ class SettingsRegistry
             ],
 
             'security' => [
+                /*
+                 * All four pointed at nothing, the same way the two
+                 * sign-in boxes below did. The office could set them, the
+                 * answers were stored, and AppServiceProvider went on
+                 * requiring letters and numbers only — while the default
+                 * shown here said upper and lower case was required. A
+                 * screen that misdescribes the system is worse than one
+                 * that offers nothing. They point at configuration now,
+                 * and the hint under every password box is built from the
+                 * same values.
+                 */
                 'security.password_min' => [
                     'type' => 'number',
                     'label' => 'Minimum password length',
-                    'config' => null,
+                    'config' => 'visitdasol.auth.password.min',
                     'rules' => ['required', 'integer', 'min:8', 'max:64'],
                     'help' => 'Eight is the floor. Raising it does not affect '
                         .'passwords already set.',
@@ -289,37 +300,45 @@ class SettingsRegistry
                 'security.password_mixed_case' => [
                     'type' => 'bool',
                     'label' => 'Require upper and lower case',
-                    'config' => null,
+                    'config' => 'visitdasol.auth.password.mixed_case',
                     'rules' => ['boolean'],
                     'help' => null,
                 ],
                 'security.password_numbers' => [
                     'type' => 'bool',
                     'label' => 'Require a number',
-                    'config' => null,
+                    'config' => 'visitdasol.auth.password.numbers',
                     'rules' => ['boolean'],
                     'help' => null,
                 ],
                 'security.password_symbols' => [
                     'type' => 'bool',
                     'label' => 'Require a symbol',
-                    'config' => null,
+                    'config' => 'visitdasol.auth.password.symbols',
                     'rules' => ['boolean'],
-                    'help' => null,
+                    'help' => 'Turning this off weakens every password set '
+                        .'from then on. Passwords already set keep working.',
                 ],
+                /*
+                 * Both of these pointed at nothing. The office could set
+                 * them, the values were stored, and LoginRequest went on
+                 * using its own constants — so the screen described a
+                 * system that did not exist. They point at the real
+                 * configuration now.
+                 */
                 'security.login_max_attempts' => [
                     'type' => 'number',
                     'label' => 'Sign-in attempts before lockout',
-                    'config' => null,
+                    'config' => 'visitdasol.auth.login_max_attempts',
                     'rules' => ['required', 'integer', 'min:3', 'max:20'],
-                    'help' => null,
+                    'help' => 'Counted per account and per device together.',
                 ],
                 'security.lockout_minutes' => [
                     'type' => 'number',
                     'label' => 'Lockout length in minutes',
-                    'config' => null,
+                    'config' => 'visitdasol.auth.lockout_minutes',
                     'rules' => ['required', 'integer', 'min:1', 'max:1440'],
-                    'help' => null,
+                    'help' => 'How long the account is shut after the last wrong password.',
                 ],
                 'security.otp_length' => [
                     'type' => 'number',
@@ -787,11 +806,9 @@ class SettingsRegistry
     {
         return [
             /*
-             * The About page's words used to live here, as six settings.
-             * They moved to the about_sections table and App\Enums\AboutSection
-             * when the office asked to publish drafts and manage pictures:
-             * a setting is a value, and that page needed two copies of
-             * everything plus a gallery.
+             * The About page's words briefly lived here as settings, then
+             * in a table of their own. Both are gone: the page is a Blade
+             * template again, edited in the file.
              */
 
             'general.description' => 'Plan a stay in Dasol, Pangasinan: resorts, beaches and how to reach them.',
@@ -807,9 +824,9 @@ class SettingsRegistry
             'security.password_min' => 8,
             'security.password_mixed_case' => true,
             'security.password_numbers' => true,
-            'security.password_symbols' => false,
-            'security.login_max_attempts' => 5,
-            'security.lockout_minutes' => 15,
+            'security.password_symbols' => true,
+            'security.login_max_attempts' => 3,
+            'security.lockout_minutes' => 30,
             'security.require_email_verification' => true,
 
             'notifications.booking_created' => true,

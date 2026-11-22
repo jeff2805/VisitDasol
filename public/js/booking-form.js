@@ -248,39 +248,65 @@
    * data-manual-gcash-details
    */
   function setUpPaymentPreference(form) {
-    var details = form.querySelector(
-      '[data-manual-gcash-details]'
-    );
-
     var radios = form.querySelectorAll(
       '[data-payment-preference]'
     );
 
-    if (!details || !radios.length) {
+    /*
+     * Every panel that belongs to one way of paying, each naming the
+     * method it goes with. There were two of these written separately
+     * before the card form arrived, and a third would have been a third
+     * copy of the same four lines.
+     */
+    var panels = form.querySelectorAll('[data-preference-panel]');
+
+    if (!radios.length || !panels.length) {
       return;
     }
 
-    function updateGcashDetails() {
+    function update() {
       var selected = form.querySelector(
         '[data-payment-preference]:checked'
       );
 
-      var show = !!selected &&
-        selected.value === 'manual_gcash';
+      var chosen = selected ? selected.value : null;
 
-      details.hidden = !show;
+      /*
+       * The sentence under the button. Paying by card takes the money
+       * when the request is sent; every other way waits for the resort,
+       * and one note cannot say both.
+       */
+      var payingByCard = chosen === 'online';
+      var cardNote = form.querySelector('[data-charge-note-card]');
+      var laterNote = form.querySelector('[data-charge-note-later]');
 
-      details.querySelectorAll('[data-gcash-required]')
-        .forEach(function (field) {
-          field.required = show;
-        });
+      if (cardNote && laterNote) {
+        cardNote.hidden = !payingByCard;
+        laterNote.hidden = payingByCard;
+      }
+
+      panels.forEach(function (panel) {
+        var show = panel.getAttribute('data-preference-panel') === chosen;
+
+        panel.hidden = !show;
+
+        /*
+         * A hidden field must not be required, or the form refuses to
+         * send and the browser cannot say why — it is being asked to
+         * focus something nobody can see.
+         */
+        panel.querySelectorAll('[data-required-with-panel]')
+          .forEach(function (field) {
+            field.required = show;
+          });
+      });
     }
 
     radios.forEach(function (radio) {
-      radio.addEventListener('change', updateGcashDetails);
+      radio.addEventListener('change', update);
     });
 
-    updateGcashDetails();
+    update();
   }
 
   /*

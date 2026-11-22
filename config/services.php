@@ -99,6 +99,19 @@ return [
      */
     'paymongo' => [
         'secret' => env('PAYMONGO_SECRET_KEY'),
+
+        /*
+         * The publishable key, and it is meant to be published: the card
+         * form hands the number straight from the browser to PayMongo with
+         * it, so the number never touches this server and never appears in
+         * a log, a backup or a database column.
+         *
+         * Without it there is no in-page card form, and paying falls back
+         * to PayMongo's own hosted checkout page — which is a complete way
+         * to pay, just a different-looking one.
+         */
+        'public' => env('PAYMONGO_PUBLIC_KEY'),
+
         'webhook_secret' => env('PAYMONGO_WEBHOOK_SECRET'),
         /*
          * Which methods PayMongo offers on its checkout page.

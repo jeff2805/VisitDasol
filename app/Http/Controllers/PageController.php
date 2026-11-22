@@ -12,29 +12,13 @@ class PageController extends Controller
     /**
      * What the site says about Dasol.
      *
-     * The three prose sections are the tourism office's to write, from
-     * Settings -> About page. Everything else on the page — how the site
-     * works, why listings are reviewed — describes the software and stays
-     * in the template, because an office that could edit those could
-     * publish a promise the system does not keep.
+     * A Blade template. There was briefly a database-backed editor behind
+     * this page; it was removed, so changing these words means changing
+     * resources/views/site/about.blade.php.
      */
-    public function about(\App\Services\AboutPageService $about): View
+    public function about(): View
     {
-        $content = $about->published();
-
-        return view('site.about', [
-            'about' => $content,
-
-            // The real destination records, in the office's order. Read
-            // here rather than in the template so the page cannot quietly
-            // start querying from inside a loop.
-            'destinations' => $about->destinationsFor(
-                (array) ($content['destinations']['destination_ids'] ?? [])
-            ),
-
-            // The preview passes true; the public page never does.
-            'isPreview' => false,
-        ]);
+        return view('site.about');
     }
 
     /**

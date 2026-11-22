@@ -89,12 +89,12 @@ class PasswordResetTest extends TestCase
         $this->post(route('password.store'), [
             'token' => $token,
             'email' => 'bea@example.test',
-            'password' => 'brand-new-2030',
-            'password_confirmation' => 'brand-new-2030',
+            'password' => 'Brand-new-2030',
+            'password_confirmation' => 'Brand-new-2030',
         ])->assertRedirect(route('login'))->assertSessionHas('success');
 
         $user->refresh();
-        $this->assertTrue(Hash::check('brand-new-2030', $user->password));
+        $this->assertTrue(Hash::check('Brand-new-2030', $user->password));
         $this->assertNotSame($oldRememberToken, $user->remember_token);
         $this->assertDatabaseMissing('sessions', ['id' => 'stolen-session']);
         $this->assertDatabaseHas('activity_logs', ['action' => 'user.password_reset', 'subject_id' => $user->id]);
@@ -108,13 +108,13 @@ class PasswordResetTest extends TestCase
         $user = User::factory()->create(['email' => 'bea@example.test']);
         $token = Password::createToken($user);
 
-        $payload = ['token' => $token, 'email' => 'bea@example.test', 'password' => 'brand-new-2030', 'password_confirmation' => 'brand-new-2030'];
+        $payload = ['token' => $token, 'email' => 'bea@example.test', 'password' => 'Brand-new-2030', 'password_confirmation' => 'Brand-new-2030'];
 
         $this->post(route('password.store'), $payload)->assertRedirect(route('login'));
-        $this->post(route('password.store'), array_merge($payload, ['password' => 'second-try-2030', 'password_confirmation' => 'second-try-2030']))
+        $this->post(route('password.store'), array_merge($payload, ['password' => 'Second-try-2030', 'password_confirmation' => 'Second-try-2030']))
             ->assertSessionHasErrors('email');
 
-        $this->assertTrue(Hash::check('brand-new-2030', $user->fresh()->password));
+        $this->assertTrue(Hash::check('Brand-new-2030', $user->fresh()->password));
     }
 
     public function test_an_expired_link_is_refused(): void
@@ -126,7 +126,7 @@ class PasswordResetTest extends TestCase
 
         $this->post(route('password.store'), [
             'token' => $token, 'email' => 'bea@example.test',
-            'password' => 'brand-new-2030', 'password_confirmation' => 'brand-new-2030',
+            'password' => 'Brand-new-2030', 'password_confirmation' => 'Brand-new-2030',
         ])->assertSessionHasErrors('email');
 
         $this->assertTrue(Hash::check('old-password-1', $user->fresh()->password));
@@ -141,13 +141,13 @@ class PasswordResetTest extends TestCase
         // A guessed token.
         $this->post(route('password.store'), [
             'token' => 'guessed-token', 'email' => 'victim@example.test',
-            'password' => 'taken-over-2030', 'password_confirmation' => 'taken-over-2030',
+            'password' => 'Taken-over-2030', 'password_confirmation' => 'Taken-over-2030',
         ])->assertSessionHasErrors('email');
 
         // A real token, but for a different account.
         $this->post(route('password.store'), [
             'token' => $attackerToken, 'email' => 'victim@example.test',
-            'password' => 'taken-over-2030', 'password_confirmation' => 'taken-over-2030',
+            'password' => 'Taken-over-2030', 'password_confirmation' => 'Taken-over-2030',
         ])->assertSessionHasErrors('email');
 
         $this->assertTrue(Hash::check('old-password-1', $victim->fresh()->password));
@@ -165,7 +165,7 @@ class PasswordResetTest extends TestCase
 
         $this->post(route('password.store'), [
             'token' => $token, 'email' => 'bea@example.test',
-            'password' => 'brand-new-2030', 'password_confirmation' => 'different-2030',
+            'password' => 'Brand-new-2030', 'password_confirmation' => 'different-2030',
         ])->assertSessionHasErrors('password');
     }
 
@@ -176,10 +176,10 @@ class PasswordResetTest extends TestCase
 
         $this->post(route('password.store'), [
             'token' => $token, 'email' => 'owner@example.test',
-            'password' => 'brand-new-2030', 'password_confirmation' => 'brand-new-2030',
+            'password' => 'Brand-new-2030', 'password_confirmation' => 'Brand-new-2030',
         ])->assertRedirect(route('login'));
 
-        $this->post(route('login'), ['email' => 'owner@example.test', 'password' => 'brand-new-2030']);
+        $this->post(route('login'), ['email' => 'owner@example.test', 'password' => 'Brand-new-2030']);
 
         $this->assertGuest();
         $this->assertStringContainsString('still being reviewed', session('warning'));
